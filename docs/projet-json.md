@@ -1,0 +1,109 @@
+# La fiche projet : `projet.json`
+
+Chaque dossier de `projets/` qui contient un fichier `projet.json` est un projet pour
+Toolkit. Le nom du dossier sert d'**identifiant** (ex. `projets/compteur-de-mots/` →
+identifiant `compteur-de-mots`) ; il est utilisé pour les liens `[[compteur-de-mots]]`
+et le stockage des données des outils.
+
+Tous les chemins de la fiche sont **relatifs au dossier du projet**, avec des `/`.
+Seul `nom` est vraiment utile : tous les autres champs sont facultatifs. Un champ inconnu
+est conservé tel quel par Toolkit (on peut donc y ranger ses propres notes).
+
+## Exemple complet
+
+```json
+{
+  "schema": 1,
+  "nom": "Convertisseur MCData → GIF",
+  "description": "Convertit les fichiers animés mcdata de Minecraft en GIF.",
+  "type": "script",
+  "categorie": "Minecraft",
+  "tags": ["conversion", "gif"],
+  "favori": false,
+  "icone": "icone.png",
+  "point_entree": "index.html",
+  "ouvrir_avec": "vscode",
+  "actions": [
+    {
+      "nom": "Convertir",
+      "description": "Convertit des fichiers .mcdata en GIF.",
+      "commande": "python convert.py {entree} {sortie}",
+      "dossier": ".",
+      "parametres": [
+        { "id": "entree", "type": "fichiers", "libelle": "Fichiers à convertir", "extensions": ["mcdata"] },
+        { "id": "sortie", "type": "dossier", "libelle": "Dossier de sortie" }
+      ],
+      "ouvrir_dossier_apres": "{sortie}"
+    }
+  ],
+  "outils_lies": [
+    { "nom": "Visionneuse de skin 3D", "point_entree": "app/src/main/assets/skin-viewer/index.html" }
+  ],
+  "git": { "remote": "https://github.com/moi/convertisseur-mcdata.git" }
+}
+```
+
+## Champs
+
+| Champ | Type | Défaut | Rôle |
+|---|---|---|---|
+| `schema` | nombre | `1` | Version du format de la fiche. |
+| `nom` | texte | nom du dossier | Nom affiché. |
+| `description` | texte | vide | Une ou deux phrases sur le projet. |
+| `type` | `html`, `script`, `mod-minecraft`, `android`, `autre` | `autre` | Nature du projet (libellé, boutons automatiques). |
+| `categorie` | texte | `Sans catégorie` | Catégorie dans la barre latérale ; décide aussi de la couleur de l'icône par défaut. |
+| `tags` | liste de textes | `[]` | Mots-clés libres. |
+| `favori` | `true` / `false` | `false` | Affiché dans « Favoris ». |
+| `icone` | chemin | aucune | Image (png, jpg, svg, ico…). Sans icône : initiales sur fond coloré. |
+| `point_entree` | chemin | aucun | Fichier principal : la page HTML d'un outil, le script principal, etc. |
+| `ouvrir_avec` | `vscode`, `android-studio`, `notepad++`, `explorateur` | aucun | Éditeur proposé par défaut pour « Ouvrir avec… ». |
+| `actions` | liste | `[]` | Boutons qui lancent une commande (voir ci-dessous). |
+| `outils_lies` | liste | `[]` | Pages HTML situées dans ce projet, à ouvrir comme des outils (voir ci-dessous). |
+| `git.remote` | URL | aucune | Adresse du repo GitHub du projet (indicatif). |
+
+### `actions`
+
+Chaque action devient un bouton dans le panneau de détails. Ainsi, on ajoute des fonctions
+à un projet **sans toucher au code de Toolkit**.
+
+| Champ | Rôle |
+|---|---|
+| `nom` | Texte du bouton (obligatoire). |
+| `description` | Aide affichée au survol. |
+| `commande` | Commande à lancer (obligatoire). `{id}` est remplacé par la valeur du paramètre `id`, automatiquement entre guillemets ; pour `fichiers`, chaque fichier devient un argument séparé. |
+| `dossier` | Dossier où lancer la commande, relatif au projet. Défaut : `.` (le projet). |
+| `parametres` | Champs du petit formulaire affiché avant de lancer l'action. |
+| `ouvrir_dossier_apres` | Dossier à proposer d'ouvrir à la fin (peut contenir `{id}`). |
+
+Types de paramètres :
+
+| `type` | Champ affiché | Valeur |
+|---|---|---|
+| `fichier` | choix d'un fichier | un chemin |
+| `fichiers` | choix de plusieurs fichiers | plusieurs chemins |
+| `dossier` | choix d'un dossier | un chemin |
+| `texte` | zone de texte | le texte saisi |
+| `case` | case à cocher | `true` ou `false` |
+| `choix` | liste déroulante (`options`) | l'option choisie |
+
+Champs communs : `id` (obligatoire, sans espace), `libelle`, `defaut`, `obligatoire`
+(`true` par défaut), `options` (pour `choix`), `extensions` (pour `fichier` et `fichiers`,
+ex. `["jpg", "png"]`).
+
+### `outils_lies`
+
+Pages HTML situées **à l'intérieur** du projet, affichées comme des outils dans Toolkit
+sans être copiées. Exemple : les outils HTML rangés dans `app/src/main/assets/` d'une
+application Android.
+
+| Champ | Rôle |
+|---|---|
+| `nom` | Nom affiché. |
+| `point_entree` | Chemin de la page HTML, relatif au projet (obligatoire). |
+| `description` | Texte d'aide facultatif. |
+
+## En cas d'erreur
+
+Si la fiche contient une erreur de syntaxe, le projet reste visible dans Toolkit avec un
+avertissement qui indique la ligne et la colonne. Les valeurs inconnues (type, éditeur…)
+sont signalées et remplacées par leur valeur par défaut, sans modifier le fichier.

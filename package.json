@@ -1,13 +1,18 @@
 {
   "name": "toolkit",
   "productName": "Toolkit",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "Application de bureau qui centralise mes projets et intègre Claude Code.",
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
-    "verifier": "node scripts/verifier-prerequis.js"
+    "verifier": "node scripts/verifier-prerequis.js",
+    "postinstall": "node node_modules/electron/install.js && node scripts/creer-lanceur.js",
+    "icones": "node scripts/generer-icones.js"
   },
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "dependencies": {
+    "electron": "^44.9.3"
+  }
 }

@@ -55,23 +55,41 @@ Toolkit/                  ← racine (déplaçable n'importe où)
 ```
 app/
 ├── package.json
-├── scripts/                 scripts utilitaires (vérification des prérequis, installation)
+├── assets/                  icône de Toolkit (générée par scripts/generer-icones.js)
+├── docs/projet-json.md      format complet de la fiche projet.json
+├── scripts/                 vérification des prérequis, création du lanceur, icônes
 ├── templates/               modèles fournis pour « Nouvel outil »
 └── src/
     ├── main/                processus principal (Node) : disque, processus, Git…
-    │   ├── main.js          démarrage, fenêtre, zone de notification
-    │   ├── chemins.js       tous les chemins, calculés depuis la racine
-    │   ├── <domaine>.js     un module par domaine (projets, reglages, git…)
-    │   └── ipc/<domaine>.js enregistre les canaux IPC d'un domaine
+    │   ├── main.js              démarrage, fenêtre, fermeture vers la zone de notification
+    │   ├── chemins.js           tous les chemins, calculés depuis la racine
+    │   ├── fichiers.js          lecture/écriture JSON sûre (écriture atomique)
+    │   ├── journal.js           erreurs techniques -> donnees/journal.log
+    │   ├── reglages.js          donnees/reglages.json
+    │   ├── projets.js           lecture, normalisation, modification, surveillance des fiches
+    │   ├── activite.js          compteur de tâches en cours (fenêtre cachée au lieu de détruite)
+    │   ├── lanceur.js           (re)crée « Lancer Toolkit.vbs »
+    │   ├── zone-notification.js icône près de l'horloge
+    │   └── ipc/
+    │       ├── gerer.js         enregistre un canal et renvoie les erreurs proprement
+    │       └── <domaine>.js     canaux IPC d'un domaine
     ├── preload/preload.js   expose `window.toolkit.<domaine>.<fonction>()` à l'interface
-    └── renderer/            interface
-        ├── index.html
-        ├── styles/          thème sombre via variables CSS (`--couleur-…`)
-        └── composants/      un fichier par panneau
+    └── renderer/            interface (modules ES, sans compilation)
+        ├── index.html, renderer.js (point d'entrée)
+        ├── styles/          theme.css (couleurs) et app.css (mise en page)
+        └── composants/
+            ├── etat.js          état partagé + abonnements (tout changement redessine)
+            ├── actions.js       actions de l'interface (appels à window.toolkit)
+            ├── dom.js           el() pour construire le HTML sans innerHTML
+            ├── icones.js        icônes SVG
+            ├── dialogue.js      demanderTexte(), confirmer()
+            ├── notifications.js notifier(message, type)
+            └── barre-laterale.js, bibliotheque.js, details.js, icone-projet.js
 ```
 
-État d'avancement : voir la section « Phases » plus bas. Les modules apparaissent au fil
-des phases.
+Les fiches `projet.json` : format dans `docs/projet-json.md`. `projets.js` normalise une
+fiche pour l'interface sans jamais la réécrire ; une modification ne touche que les champs
+concernés et conserve les autres.
 
 ### Bibliothèques
 
@@ -133,7 +151,25 @@ entrée dans `actions` de son `projet.json`.
 npm install        (une seule fois, ou après ajout d'une dépendance)
 npm start          lance Toolkit avec les sources
 npm run verifier   vérifie les prérequis
+npm run icones     régénère assets/icone.png et assets/icone.ico
 ```
+
+## Pièges connus
+
+- **Electron 44 ne télécharge plus son exécutable pendant `npm install`** (il le fait au
+  premier `npm start`). Le `postinstall` de `package.json` lance donc
+  `node_modules/electron/install.js` lui-même, car `Lancer Toolkit.vbs` appelle
+  directement `electron.exe`.
+- **`ELECTRON_RUN_AS_NODE`** : si cette variable est définie (c'est le cas dans les
+  processus lancés par l'extension VS Code), `electron.exe` se comporte comme Node et
+  `require('electron')` échoue. Pour tester depuis un tel environnement :
+  `env -u ELECTRON_RUN_AS_NODE npm start`. Toolkit doit retirer cette variable de
+  l'environnement des processus qu'il lance (terminaux, scripts).
+- `prompt()`, `alert()` et `confirm()` n'existent pas dans Electron : utiliser
+  `composants/dialogue.js`.
+- La politique de sécurité (CSP) de `index.html` interdit les styles et scripts en ligne :
+  pas d'attribut `style="…"` ni de `<script>` en ligne ; utiliser des classes CSS ou
+  `element.style.setProperty()`.
 
 ## Phases
 
@@ -141,7 +177,7 @@ Construction par phases ; à la fin de chacune : commit, explication simple, lis
 pour l'utilisateur, attente de sa validation.
 
 - [x] 0. Mise en place (structure, prérequis, documentation)
-- [ ] 1. Coquille (fenêtre, thème, bibliothèque, détails, zone de notification)
+- [x] 1. Coquille (fenêtre, thème, bibliothèque, détails, zone de notification)
 - [ ] 2. Outils HTML (protocole, onglets, stockage persistant, export/import)
 - [ ] 3. Ouvrir avec… et réglages des éditeurs
 - [ ] 4. Terminal intégré et Claude Code
@@ -163,3 +199,5 @@ pour l'utilisateur, attente de sa validation.
   seulement cachée.
 - Thème sombre uniquement.
 - Repo GitHub de l'application : pas encore (prévu en phase 7, avec confirmation).
+- Electron 44 (et non 45, sorti trois jours avant le début du projet) : passage à une
+  version plus récente prévu aux finitions.

@@ -38,7 +38,9 @@ Dans la même fenêtre PowerShell, dans le dossier `Toolkit\app` :
 npm install
 ```
 
-Patiente jusqu'à la fin (une à quelques minutes, une connexion internet est nécessaire).
+Patiente jusqu'à la fin (une à quelques minutes, une connexion internet est nécessaire :
+environ 100 Mo sont téléchargés). À la fin, le fichier `Lancer Toolkit.vbs` apparaît dans
+le dossier `Toolkit`.
 
 ## 3. Lancer Toolkit
 
@@ -46,6 +48,10 @@ Patiente jusqu'à la fin (une à quelques minutes, une connexion internet est n�
   Aucune fenêtre noire ne s'ouvre, seulement Toolkit.
 - **Pour voir les messages techniques** (utile en cas de problème) : dans PowerShell, dans
   `Toolkit\app`, tape `npm start`.
+
+**Fermer et quitter :** fermer la fenêtre (la croix) ne quitte pas Toolkit : il reste
+disponible via son icône près de l'horloge (clic pour rouvrir). Pour le quitter vraiment :
+clic droit sur cette icône > **Quitter Toolkit**.
 
 ## 4. Comment sont rangés les dossiers
 
@@ -59,7 +65,8 @@ Toolkit\
 ```
 
 Chaque projet contient une **fiche** `projet.json` (nom, description, catégorie, boutons…)
-et un fichier `CLAUDE.md` qui explique le projet à Claude Code.
+et un fichier `CLAUDE.md` qui explique le projet à Claude Code. Le format de la fiche est
+expliqué dans [docs/projet-json.md](docs/projet-json.md).
 
 ## 5. Déplacer le dossier Toolkit
 
@@ -83,6 +90,8 @@ Tout suit automatiquement : projets, réglages, données des outils, démarrage 
 
 | Problème | Solution |
 |---|---|
-| Rien ne se passe au double-clic sur `Lancer Toolkit.vbs` | Lance `npm start` dans `Toolkit\app` pour voir le message d'erreur. |
+| Rien ne se passe au double-clic sur `Lancer Toolkit.vbs` | Toolkit est peut-être déjà ouvert : regarde près de l'horloge (flèche ^ si l'icône est cachée). Sinon, lance `npm start` dans `Toolkit\app` pour voir le message d'erreur. |
+| Un projet affiche un triangle jaune | Sa fiche `projet.json` a un problème : clique dessus, le panneau de droite explique lequel. |
+| Une erreur s'est produite | Les détails techniques sont notés dans `donnees\journal.log`. |
 | `npm` n'est pas reconnu | Node.js n'est pas installé : lance `npm run verifier` pour obtenir la marche à suivre. |
 | Après une modification par Claude, Toolkit ne démarre plus | Dans `Toolkit\app`, tape `git log` pour voir les derniers changements, puis demande à Claude de les annuler. |

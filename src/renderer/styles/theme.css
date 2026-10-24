@@ -1,0 +1,31 @@
+/* Thème sombre de Toolkit : toutes les couleurs de l'interface sont définies ici. */
+:root {
+  --fond: #1e1e1e;
+  --fond-barre: #181818;
+  --fond-panneau: #1f1f1f;
+  --fond-element: #2a2a2a;
+  --fond-champ: #313131;
+  --fond-survol: #2a2d2e;
+  --fond-actif: #37373d;
+  --bordure: #2b2b2b;
+  --bordure-forte: #3c3c3c;
+
+  --texte: #cccccc;
+  --texte-fort: #e8e8e8;
+  --texte-faible: #8b8b8b;
+
+  --accent: #0078d4;
+  --accent-survol: #1a8ae6;
+  --accent-texte: #4daafc;
+  --favori: #e2b93d;
+  --succes: #4caf50;
+  --attention: #cca700;
+  --erreur: #f14c4c;
+
+  --rayon: 6px;
+  --ombre: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --police: 'Segoe UI', system-ui, sans-serif;
+  --police-code: 'Cascadia Code', Consolas, monospace;
+
+  color-scheme: dark;
+}
