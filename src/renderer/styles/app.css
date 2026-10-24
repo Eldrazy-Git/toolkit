@@ -655,7 +655,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 
 .dialogue {
-  width: 420px;
+  width: 480px;
   max-width: calc(100vw - 32px);
   padding: 18px;
   border: 1px solid var(--bordure-forte);
@@ -677,7 +677,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   outline: none;
 }
 .dialogue input[type="text"]:focus { border-color: var(--accent); }
-.dialogue-boutons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.dialogue-boutons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 .dialogue:has(.champ-formulaire) { width: 560px; }
 .champ-formulaire { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
 .champ-libelle { font-weight: 600; color: var(--texte-fort); }
