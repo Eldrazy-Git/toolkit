@@ -1,0 +1,22 @@
+# Dépendances (réinstallées avec « npm install »)
+node_modules/
+
+# Paquets compilés éventuels
+out/
+dist/
+
+# Journaux
+*.log
+npm-debug.log*
+
+# Fichiers sensibles : ne jamais versionner
+.env
+.env.*
+*.jks
+*.keystore
+local.properties
+
+# Fichiers système
+Thumbs.db
+desktop.ini
+.DS_Store

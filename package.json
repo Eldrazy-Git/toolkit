@@ -1,0 +1,13 @@
+{
+  "name": "toolkit",
+  "productName": "Toolkit",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Application de bureau qui centralise mes projets et intègre Claude Code.",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "verifier": "node scripts/verifier-prerequis.js"
+  },
+  "license": "UNLICENSED"
+}
