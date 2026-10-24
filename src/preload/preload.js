@@ -26,6 +26,14 @@ contextBridge.exposeInMainWorld('toolkit', {
     renommerTag: (ancien, nouveau) => appeler('projets:renommer-tag', ancien, nouveau),
     surChangement: (rappel) => ecouter('projets:changes', rappel),
   },
+  outils: {
+    // Renvoie { id, nom, url, partition, chemin… } pour créer la <webview> de l'outil.
+    preparer: (projetId, outilLie) => appeler('outils:preparer', projetId, outilLie),
+    exporter: (idContenu, nom) => appeler('outils:exporter', idContenu, nom),
+    importer: (idContenu, nom) => appeler('outils:importer', idContenu, nom),
+    // Raccourcis clavier pressés dans un outil (ex. 'fermer' pour Ctrl+W).
+    surRaccourci: (rappel) => ecouter('outils:raccourci', rappel),
+  },
   reglages: {
     lire: () => appeler('reglages:lire'),
     modifier: (changements) => appeler('reglages:modifier', changements),

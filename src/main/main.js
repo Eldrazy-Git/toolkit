@@ -10,12 +10,14 @@ const projets = require('./projets');
 const activite = require('./activite');
 const lanceur = require('./lanceur');
 const zoneNotification = require('./zone-notification');
+const outilsHtml = require('./outils-html');
 
 // Toujours avant « ready » : les données d'Electron (cache, stockage des outils…)
 // vont dans donnees/ pour suivre le dossier Toolkit s'il est déplacé.
 app.setPath('userData', chemins.donneesElectron);
 app.setName('Toolkit');
 app.setAppUserModelId('Toolkit');
+outilsHtml.enregistrerSchema();
 
 // Une erreur imprévue est notée dans le journal au lieu de faire planter Toolkit.
 process.on('uncaughtException', (erreur) => journal.erreur('Erreur non gérée :', erreur));
@@ -64,6 +66,7 @@ function creerFenetre() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      webviewTag: true, // les outils HTML s'affichent dans des <webview> (voir outils-html.js)
     },
   });
 
@@ -72,6 +75,7 @@ function creerFenetre() {
   fenetre.loadFile(chemins.interface);
 
   const contenu = fenetre.webContents;
+  outilsHtml.attacher(contenu);
 
   // F12 : outils de développement. Ctrl+R / F5 : recharger l'interface.
   contenu.on('before-input-event', (evenement, touche) => {
@@ -156,6 +160,7 @@ async function demarrer() {
 
   require('./ipc/projets').enregistrer();
   require('./ipc/application').enregistrer({ quitter });
+  require('./ipc/outils').enregistrer();
 
   zoneNotification.creer({ afficher: afficherFenetre, quitter });
 

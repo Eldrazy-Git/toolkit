@@ -102,6 +102,14 @@ application Android.
 | `point_entree` | Chemin de la page HTML, relatif au projet (obligatoire). |
 | `description` | Texte d'aide facultatif. |
 
+## Données des outils HTML
+
+Un outil HTML (point d'entrée `.html`, ou outil lié) garde ses données (localStorage,
+IndexedDB) d'une ouverture à l'autre. Elles sont rattachées au **nom du dossier** du
+projet (et, pour un outil lié, à son `point_entree`). Avant de renommer le dossier d'un
+projet ou de déplacer un outil lié, utilise **Exporter les données**, puis **Importer
+les données** une fois le changement fait.
+
 ## En cas d'erreur
 
 Si la fiche contient une erreur de syntaxe, le projet reste visible dans Toolkit avec un

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' file: data:">
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data:; frame-src toolkit-outil:">
   <title>Toolkit</title>
   <link rel="stylesheet" href="styles/theme.css">
   <link rel="stylesheet" href="styles/app.css">
@@ -11,7 +11,14 @@
 <body>
   <div class="application">
     <nav id="barre-laterale" class="barre-laterale" aria-label="Navigation"></nav>
-    <main id="bibliotheque" class="bibliotheque"></main>
+    <div class="zone-principale">
+      <div id="onglets" class="barre-onglets" role="tablist"></div>
+      <!-- La bibliothèque et chaque outil ouvert sont des panneaux superposés :
+           seul le panneau de l'onglet actif est visible. -->
+      <div id="zone-contenu" class="zone-contenu">
+        <main id="bibliotheque" class="bibliotheque panneau"></main>
+      </div>
+    </div>
     <aside id="details" class="details" hidden></aside>
   </div>
   <div id="notifications" class="notifications" aria-live="polite"></div>

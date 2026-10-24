@@ -105,7 +105,9 @@ function rendreProjet(projet) {
       alertes(projet),
       el('p', { classe: `details-description${f.description ? '' : ' vide'}` }, f.description || 'Aucune description.'),
       el('div', { classe: 'details-boutons' },
-        bientot('Ouvrir', 'lecture', 2, true),
+        actions.estOuvrableCommeOutil(projet)
+          ? el('button', { classe: 'bouton principal', title: 'Ouvrir l\'outil dans un onglet', onClick: () => actions.ouvrirOutil(projet.id) }, icone('lecture'), 'Ouvrir')
+          : bientot('Ouvrir', 'lecture', 3, true),
         bientot('Ouvrir avec…', 'ouvrirAvec', 3),
         bientot('Modifier avec Claude', 'claude', 4)),
 
@@ -122,8 +124,9 @@ function rendreProjet(projet) {
         ? section('Outils liés',
           el('div', { classe: 'liste-actions' }, f.outils_lies.map((o) => el('button', {
             classe: 'bouton',
-            disabled: true,
-            title: `${o.point_entree} — disponible à l'étape 2 de la construction`,
+            disabled: Boolean(projet.erreur),
+            title: o.description ? `${o.description}\n${o.point_entree}` : o.point_entree,
+            onClick: () => actions.ouvrirOutil(projet.id, o.point_entree),
           }, icone('outil'), o.nom))))
         : null,
 
@@ -159,13 +162,21 @@ function rendreToolkit(infos) {
         el('dl', { classe: 'infos' },
           el('dt', {}, 'Ctrl+F'), el('dd', {}, 'Filtrer les projets'),
           el('dt', {}, 'Échap'), el('dd', {}, 'Fermer ce panneau'),
-          el('dt', {}, 'F5'), el('dd', {}, 'Recharger l\'interface'),
+          el('dt', {}, 'Double-clic'), el('dd', {}, 'Ouvrir un outil HTML'),
+          el('dt', {}, 'Ctrl+Tab'), el('dd', {}, 'Onglet suivant'),
+          el('dt', {}, 'Ctrl+W'), el('dd', {}, 'Fermer l\'onglet de l\'outil'),
+          el('dt', {}, 'F5'), el('dd', {}, 'Recharger l\'outil ou l\'interface'),
           el('dt', {}, 'F12'), el('dd', {}, 'Outils de développement')))),
   ];
 }
 
 export function rendre() {
   const e = etat.obtenir();
+  // Le panneau n'accompagne que la bibliothèque : les outils prennent toute la largeur.
+  if (e.ongletActif !== 'bibliotheque') {
+    conteneur.hidden = true;
+    return;
+  }
   if (e.selection === etat.ID_TOOLKIT && e.infosApp) {
     conteneur.hidden = false;
     conteneur.replaceChildren(...rendreToolkit(e.infosApp));

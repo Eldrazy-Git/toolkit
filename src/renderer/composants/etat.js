@@ -12,6 +12,8 @@ const etat = {
   texteFiltre: '',
   vue: 'grille', // grille | liste
   selection: null, // id d'un projet, ID_TOOLKIT ou null
+  onglets: [], // outils HTML ouverts : { id, nom, projetId, outilLie, url, partition, chemin }
+  ongletActif: 'bibliotheque', // 'bibliotheque' ou l'id d'un outil ouvert
 };
 
 const abonnes = new Set();

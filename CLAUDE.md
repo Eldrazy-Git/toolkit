@@ -69,6 +69,8 @@ app/
     │   ├── projets.js           lecture, normalisation, modification, surveillance des fiches
     │   ├── activite.js          compteur de tâches en cours (fenêtre cachée au lieu de détruite)
     │   ├── lanceur.js           (re)crée « Lancer Toolkit.vbs »
+    │   ├── outils-html.js       protocole toolkit-outil://, partitions, sécurité des <webview>
+    │   ├── outils-donnees.js    export / import localStorage + IndexedDB en JSON
     │   ├── zone-notification.js icône près de l'horloge
     │   └── ipc/
     │       ├── gerer.js         enregistre un canal et renvoie les erreurs proprement
@@ -84,6 +86,7 @@ app/
             ├── icones.js        icônes SVG
             ├── dialogue.js      demanderTexte(), confirmer()
             ├── notifications.js notifier(message, type)
+            ├── onglets.js       barre d'onglets + panneaux des outils (<webview>)
             └── barre-laterale.js, bibliotheque.js, details.js, icone-projet.js
 ```
 
@@ -106,9 +109,25 @@ légères sans compilation native.
 
 ### Outils HTML
 
-Servis par un protocole personnalisé `toolkit://<id-outil>/...` (adresse stable, donc
-localStorage et IndexedDB conservés) dans une partition persistante dédiée par outil
-(`persist:outil-<id>`). Les données d'Electron (`userData`) sont redirigées vers `donnees/`.
+Voir `src/main/outils-html.js` (explications en tête du fichier) et
+`src/main/outils-donnees.js` (export / import).
+
+- Protocole `toolkit-outil://<hote>/...` : `<hote>` est stable (nom du dossier du projet +
+  empreinte), donc localStorage et IndexedDB sont conservés. Racine servie = dossier du
+  projet ; tout chemin qui en sort reçoit une erreur 403.
+- Une partition persistante par outil (`persist:outil-<hote>`), stockée dans
+  `donnees/electron/Partitions/`. Renommer le dossier d'un projet change l'hôte, donc le
+  stockage : passer par Exporter / Importer.
+- Affichage dans des `<webview>` (choisies plutôt que `WebContentsView` car ce sont des
+  éléments du DOM : nos boîtes de dialogue et notifications passent par-dessus).
+  Sécurité imposée dans `will-attach-webview` (pas de Node, pas de preload, sandbox).
+- Les touches pressées dans un outil n'atteignent pas l'interface : les raccourcis (F12,
+  F5, Ctrl+W) sont interceptés dans `before-input-event` du processus principal.
+- Liens vers Internet : ouverts dans le navigateur par défaut.
+- Import : l'outil est remplacé par une page vide de même origine (pour fermer ses bases
+  IndexedDB), les données sont restaurées, puis l'outil est rechargé.
+
+Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
 
 ## Comment ajouter une fonctionnalité
 
@@ -167,9 +186,13 @@ npm run icones     régénère assets/icone.png et assets/icone.ico
   l'environnement des processus qu'il lance (terminaux, scripts).
 - `prompt()`, `alert()` et `confirm()` n'existent pas dans Electron : utiliser
   `composants/dialogue.js`.
-- La politique de sécurité (CSP) de `index.html` interdit les styles et scripts en ligne :
-  pas d'attribut `style="…"` ni de `<script>` en ligne ; utiliser des classes CSS ou
-  `element.style.setProperty()`.
+- La politique de sécurité (CSP) de `index.html` interdit les scripts en ligne. Les styles
+  en ligne sont autorisés uniquement parce que `<webview>` en a besoin en interne : dans
+  notre code, préférer les classes CSS ou `element.style.setProperty()`.
+- `new URL('toolkit-outil://x/').origin` vaut `"null"` dans Node (protocole non standard
+  pour Node) : reconstruire l'origine avec `${SCHEMA}://${url.host}`.
+- `element.replaceChildren(...)` et `append(...)` ne déplient pas les tableaux : utiliser
+  `...liste` (sinon on obtient « [object HTMLDivElement] »). `el()` les déplie, lui.
 
 ## Phases
 
@@ -178,7 +201,7 @@ pour l'utilisateur, attente de sa validation.
 
 - [x] 0. Mise en place (structure, prérequis, documentation)
 - [x] 1. Coquille (fenêtre, thème, bibliothèque, détails, zone de notification)
-- [ ] 2. Outils HTML (protocole, onglets, stockage persistant, export/import)
+- [x] 2. Outils HTML (protocole, onglets, stockage persistant, export/import)
 - [ ] 3. Ouvrir avec… et réglages des éditeurs
 - [ ] 4. Terminal intégré et Claude Code
 - [ ] 5. Actions et scripts

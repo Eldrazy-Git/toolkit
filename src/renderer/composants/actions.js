@@ -53,11 +53,78 @@ export function listeTags() {
 // --- Navigation --------------------------------------------------------------------
 
 export function choisirFiltre(filtre) {
-  etat.modifier({ filtre });
+  etat.modifier({ filtre, ongletActif: 'bibliotheque' });
 }
 
 export function selectionner(id) {
-  etat.modifier({ selection: id });
+  etat.modifier({ selection: id, ...(id ? { ongletActif: 'bibliotheque' } : {}) });
+}
+
+// --- Outils HTML et onglets ----------------------------------------------------------
+
+// Un projet s'ouvre comme outil si son point d'entrée est une page HTML.
+export function estOuvrableCommeOutil(projet) {
+  return !projet.erreur && /\.html?$/i.test(projet.fiche.point_entree || '');
+}
+
+export async function ouvrirOutil(projetId, outilLie = null) {
+  const { onglets } = etat.obtenir();
+  const existant = onglets.find((o) => o.projetId === projetId && o.outilLie === outilLie);
+  if (existant) {
+    etat.modifier({ ongletActif: existant.id });
+    return;
+  }
+  const onglet = await essayer(() => api.outils.preparer(projetId, outilLie));
+  if (!onglet) return;
+  etat.modifier({ onglets: [...etat.obtenir().onglets, onglet], ongletActif: onglet.id });
+}
+
+export function activerOnglet(id) {
+  etat.modifier({ ongletActif: id });
+}
+
+export function fermerOnglet(id) {
+  const { onglets, ongletActif } = etat.obtenir();
+  const position = onglets.findIndex((o) => o.id === id);
+  if (position === -1) return;
+  const restants = onglets.filter((o) => o.id !== id);
+  // L'onglet actif est fermé : on active son voisin, sinon la bibliothèque.
+  const voisin = restants[Math.min(position, restants.length - 1)];
+  etat.modifier({
+    onglets: restants,
+    ongletActif: ongletActif === id ? (voisin?.id || 'bibliotheque') : ongletActif,
+  });
+}
+
+export function fermerOngletActif() {
+  const { ongletActif } = etat.obtenir();
+  if (ongletActif !== 'bibliotheque') fermerOnglet(ongletActif);
+}
+
+export function ongletSuivant(sens = 1) {
+  const { onglets, ongletActif } = etat.obtenir();
+  const ids = ['bibliotheque', ...onglets.map((o) => o.id)];
+  const position = ids.indexOf(ongletActif);
+  etat.modifier({ ongletActif: ids[(position + sens + ids.length) % ids.length] });
+}
+
+export async function exporterDonnees(onglet, idContenu) {
+  const fichier = await essayer(() => api.outils.exporter(idContenu, onglet.nom));
+  if (fichier) notifier(`Données exportées dans « ${fichier} ».`, 'succes');
+}
+
+export async function importerDonnees(onglet, idContenu) {
+  const ok = await confirmer({
+    titre: 'Importer des données',
+    message: `Les données actuelles de « ${onglet.nom} » vont être REMPLACÉES par celles du fichier choisi.\n\nConseil : exporte d'abord les données actuelles pour pouvoir revenir en arrière.`,
+    bouton: 'Choisir le fichier…',
+    danger: true,
+  });
+  if (!ok) return;
+  const resultat = await essayer(() => api.outils.importer(idContenu, onglet.nom));
+  if (resultat) {
+    notifier(`Données importées depuis « ${resultat.fichier} » (${resultat.cles} entrée(s), ${resultat.bases} base(s) de données).`, 'succes');
+  }
 }
 
 export async function changerVue(vue) {

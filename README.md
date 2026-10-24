@@ -53,7 +53,18 @@ le dossier `Toolkit`.
 disponible via son icône près de l'horloge (clic pour rouvrir). Pour le quitter vraiment :
 clic droit sur cette icône > **Quitter Toolkit**.
 
-## 4. Comment sont rangés les dossiers
+## 4. Utiliser un outil HTML
+
+- **Ouvrir :** double-clic sur l'outil, ou bouton **Ouvrir** dans le panneau de droite.
+  L'outil s'ouvre dans un onglet de Toolkit ; tu peux en ouvrir plusieurs.
+- **Ses données** (textes saisis, réglages…) sont conservées quand tu le fermes.
+- **Sauvegarder ses données :** bouton **Exporter les données** au-dessus de l'outil
+  (crée un fichier `.json`). **Importer les données** remet les données d'un tel fichier
+  (elles remplacent les données actuelles).
+- **Raccourcis :** F5 recharge l'outil, F12 ouvre les outils de développement,
+  Ctrl+W ferme l'onglet, Ctrl+Tab passe à l'onglet suivant.
+
+## 5. Comment sont rangés les dossiers
 
 ```
 Toolkit\
@@ -68,7 +79,7 @@ Chaque projet contient une **fiche** `projet.json` (nom, description, catégorie
 et un fichier `CLAUDE.md` qui explique le projet à Claude Code. Le format de la fiche est
 expliqué dans [docs/projet-json.md](docs/projet-json.md).
 
-## 5. Déplacer le dossier Toolkit
+## 6. Déplacer le dossier Toolkit
 
 Tu peux déplacer le dossier `Toolkit` entier où tu veux (autre disque, autre dossier) :
 
@@ -78,7 +89,7 @@ Tu peux déplacer le dossier `Toolkit` entier où tu veux (autre disque, autre d
 
 Tout suit automatiquement : projets, réglages, données des outils, démarrage avec Windows.
 
-## 6. Sauvegardes
+## 7. Sauvegardes
 
 - Chaque projet peut avoir son propre historique Git et son propre repo GitHub.
 - Le dossier `donnees\` contient tes réglages et les données de tes outils : il n'est
@@ -86,7 +97,7 @@ Tout suit automatiquement : projets, réglages, données des outils, démarrage 
 - Le code de l'application (`app\`) a son propre repo Git : en le récupérant ailleurs, on
   obtient un Toolkit vide, sans tes projets.
 
-## 7. En cas de problème
+## 8. En cas de problème
 
 | Problème | Solution |
 |---|---|

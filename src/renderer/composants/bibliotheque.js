@@ -75,11 +75,17 @@ function marques(projet) {
   ];
 }
 
+// Double-clic : ouvre l'outil HTML (les autres types auront « Ouvrir avec » à l'étape 3).
+function ouvrir(projet) {
+  if (actions.estOuvrableCommeOutil(projet)) actions.ouvrirOutil(projet.id);
+}
+
 function carte(projet, selection) {
   return el('div', {
     classe: `carte${projet.id === selection ? ' selectionne' : ''}`,
     title: projet.fiche.description || projet.fiche.nom,
     onClick: () => actions.selectionner(projet.id),
+    onDblclick: () => ouvrir(projet),
   },
   el('div', { classe: 'carte-marques' }, marques(projet)),
   iconeProjet(projet, 56),
@@ -92,6 +98,7 @@ function ligne(projet, selection) {
   return el('div', {
     classe: `ligne${projet.id === selection ? ' selectionne' : ''}`,
     onClick: () => actions.selectionner(projet.id),
+    onDblclick: () => ouvrir(projet),
   },
   iconeProjet(projet, 32),
   el('div', { classe: 'ligne-texte' },
