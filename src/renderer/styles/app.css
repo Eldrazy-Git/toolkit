@@ -270,6 +270,37 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .panneau-terminal .statut { margin-right: 4px; }
 .statut.termine { color: var(--texte-faible); }
 
+/* Console d'une action (script) */
+.panneau-console { display: flex; flex-direction: column; background: #1e1e1e; }
+.sortie-console {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 10px 14px;
+  overflow: auto;
+  font-family: var(--police-code);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.ligne-stderr { color: #f0a35c; }
+.ligne-erreur { color: var(--erreur); font-weight: 600; }
+.ligne-succes { color: var(--succes); font-weight: 600; }
+.ligne-info { color: var(--texte-faible); }
+.bandeau-fin {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--bordure);
+  background: rgba(0, 120, 212, 0.12);
+}
+.bandeau-fin > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bandeau-fin code { font-family: var(--police-code); }
+.bouton.petit.danger { background: #a1260d; border-color: #a1260d; color: #fff; }
+
 /* --- Bibliothèque ------------------------------------------------------------------- */
 
 .bibliotheque {
@@ -694,4 +725,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .dialogue select { height: 32px; padding: 0 8px; }
 .dialogue textarea { resize: vertical; min-height: 110px; line-height: 1.45; user-select: text; }
 .dialogue select:focus, .dialogue textarea:focus { border-color: var(--accent); }
-.dialogue-erreur { margin: 0; color: var(--erreur); }
+.dialogue-erreur { margin: 0; color: var(--erreur); white-space: pre-line; }
+.champ-chemin { display: flex; gap: 6px; }
+.champ-chemin input { flex: 1; min-width: 0; cursor: pointer; }
+.champ-chemin .bouton { height: 32px; }
+.champ-case { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; cursor: pointer; }
+.champ-case input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.champ-case .champ-aide { flex-basis: 100%; }

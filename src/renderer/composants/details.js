@@ -130,10 +130,11 @@ function rendreProjet(projet) {
       section('Actions',
         f.actions.length === 0
           ? el('p', { classe: 'details-aide' }, 'Aucune action. On peut en ajouter dans projet.json (champ « actions »).')
-          : el('div', { classe: 'liste-actions' }, f.actions.map((a) => el('button', {
+          : el('div', { classe: 'liste-actions' }, f.actions.map((a, index) => el('button', {
             classe: 'bouton',
-            disabled: true,
-            title: a.description || `Disponible à l'étape 5 de la construction`,
+            disabled: Boolean(projet.erreur),
+            title: [a.description, a.commande].filter(Boolean).join('\n'),
+            onClick: () => actions.lancerAction(projet, index),
           }, icone('lecture'), a.nom)))),
 
       f.outils_lies.length > 0

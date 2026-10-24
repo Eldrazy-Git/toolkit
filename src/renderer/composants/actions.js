@@ -90,10 +90,12 @@ export async function fermerOnglet(id) {
     return;
   }
   const aFermer = etat.obtenir().onglets.find((o) => o.id === id);
-  if (aFermer?.genre === 'terminal' && aFermer.enCours) {
+  if ((aFermer?.genre === 'terminal' || aFermer?.genre === 'console') && aFermer.enCours) {
     const ok = await confirmer({
-      titre: 'Fermer le terminal',
-      message: aFermer.mode === 'claude'
+      titre: aFermer.genre === 'console' ? 'Arrêter le script' : 'Fermer le terminal',
+      message: aFermer.genre === 'console'
+        ? 'Le script est encore en cours. Fermer cet onglet l\'arrête.'
+        : aFermer.mode === 'claude'
         ? 'Claude est encore en cours dans cet onglet. Le fermer l\'arrête (ce qu\'il a déjà modifié est conservé).'
         : 'Un programme tourne encore dans ce terminal. Le fermer l\'arrête.',
       bouton: 'Fermer',
@@ -295,11 +297,91 @@ export async function changerEditeurParDefaut(projet, editeur) {
 export function ouvrirReglages() {
   etat.modifier({ reglagesOuverts: true, ongletActif: 'reglages' });
   chargerEditeurs();
+  chargerProgrammes();
+}
+
+export async function chargerProgrammes() {
+  const programmes = await essayer(() => api.programmes.etat());
+  if (programmes) etat.modifier({ programmes });
 }
 
 export const redetecterEditeurs = () => chargerEditeurs(() => api.editeurs.redetecter());
 export const definirCheminEditeur = (id, chemin) => chargerEditeurs(() => api.editeurs.definir(id, chemin));
 export const parcourirEditeur = (id) => chargerEditeurs(() => api.editeurs.parcourir(id));
+
+// --- Actions de projet.json (scripts) -----------------------------------------------------
+
+// Derniers paramètres saisis pour une action, proposés au lancement suivant.
+function cleParametres(projet, action) {
+  return `toolkit:action:${projet.id}:${action.nom}`;
+}
+
+function lireParametresPrecedents(cle) {
+  try {
+    return JSON.parse(localStorage.getItem(cle)) || {};
+  } catch {
+    return {};
+  }
+}
+
+// Lance l'action n° index du projet : formulaire des paramètres s'il y en a, puis console.
+export async function lancerAction(projet, index) {
+  const action = projet.fiche.actions[index];
+  if (!action) return;
+
+  let valeurs = {};
+  if (action.parametres.length > 0) {
+    const cle = cleParametres(projet, action);
+    const precedentes = lireParametresPrecedents(cle);
+    valeurs = await formulaire({
+      titre: action.nom,
+      message: action.description || null,
+      champs: action.parametres.map((p) => ({
+        id: p.id,
+        libelle: p.libelle,
+        type: p.type,
+        obligatoire: p.obligatoire,
+        valeur: precedentes[p.id] ?? p.defaut ?? (p.type === 'choix' ? p.options[0] : ''),
+        options: p.options.map((o) => ({ valeur: o, libelle: o })),
+        extensions: p.extensions,
+      })),
+      bouton: 'Lancer',
+    });
+    if (!valeurs) return;
+    try {
+      localStorage.setItem(cle, JSON.stringify(valeurs));
+    } catch {
+      // Mémorisation impossible : sans gravité.
+    }
+  }
+
+  // Une console existe déjà pour cette action : on la réutilise.
+  const { onglets } = etat.obtenir();
+  const existant = onglets.find((o) => o.genre === 'console' && o.projetId === projet.id && o.indexAction === index);
+  if (existant) {
+    if (existant.enCours) {
+      etat.modifier({ ongletActif: existant.id });
+      notifier('Cette action est déjà en cours.');
+      return;
+    }
+    etat.modifier({
+      onglets: onglets.map((o) => (o.id === existant.id ? { ...o, valeurs, lancement: o.lancement + 1 } : o)),
+      ongletActif: existant.id,
+    });
+    return;
+  }
+  const onglet = {
+    id: `console-${crypto.randomUUID()}`,
+    genre: 'console',
+    projetId: projet.id,
+    indexAction: index,
+    valeurs,
+    lancement: 1,
+    nom: `${action.nom} · ${projet.fiche.nom}`,
+    enCours: true,
+  };
+  etat.modifier({ onglets: [...onglets, onglet], ongletActif: onglet.id });
+}
 
 // --- Terminaux et Claude Code ---------------------------------------------------------------
 

@@ -75,7 +75,21 @@ clic droit sur cette icône > **Quitter Toolkit**.
   **Réglages** (en bas à gauche) > **Choisir le programme…**, puis sélectionne son
   fichier `.exe`.
 
-## 6. Claude Code dans Toolkit
+## 6. Lancer les scripts d'un projet (actions)
+
+Les boutons de la rubrique **Actions** (panneau de droite) lancent les scripts du projet.
+- S'il faut choisir des fichiers, un dossier ou des options, un petit formulaire s'ouvre
+  (tes derniers choix sont repris la fois suivante).
+- Une **console** affiche ce que fait le script, en direct ; les messages d'erreur sont en
+  orange. **Arrêter** interrompt le script ; **Relancer** le recommence.
+- À la fin, si le script produit des fichiers, **Ouvrir dans l'Explorateur** montre le
+  dossier de sortie.
+- Les boutons d'un projet se définissent dans son `projet.json` (champ `actions`) : le plus
+  simple est de demander à Claude d'en ajouter.
+- Si Python, Node.js ou Java manquent, Toolkit explique comment les installer
+  (**Réglages** > Programmes pour les scripts).
+
+## 7. Claude Code dans Toolkit
 
 Tout passe par **ta** commande `claude` (ton abonnement Claude Pro), dans un terminal
 intégré à Toolkit. Aucune clé API n'est utilisée.
@@ -93,7 +107,7 @@ intégré à Toolkit. Aucune clé API n'est utilisée.
 - Dans un terminal : sélectionner du texte puis **Ctrl+C** le copie, **Ctrl+V** colle,
   clic droit copie la sélection ou colle.
 
-## 7. Comment sont rangés les dossiers
+## 8. Comment sont rangés les dossiers
 
 ```
 Toolkit\
@@ -108,7 +122,7 @@ Chaque projet contient une **fiche** `projet.json` (nom, description, catégorie
 et un fichier `CLAUDE.md` qui explique le projet à Claude Code. Le format de la fiche est
 expliqué dans [docs/projet-json.md](docs/projet-json.md).
 
-## 8. Déplacer le dossier Toolkit
+## 9. Déplacer le dossier Toolkit
 
 Tu peux déplacer le dossier `Toolkit` entier où tu veux (autre disque, autre dossier) :
 
@@ -118,7 +132,7 @@ Tu peux déplacer le dossier `Toolkit` entier où tu veux (autre disque, autre d
 
 Tout suit automatiquement : projets, réglages, données des outils, démarrage avec Windows.
 
-## 9. Sauvegardes
+## 10. Sauvegardes
 
 - Chaque projet peut avoir son propre historique Git et son propre repo GitHub.
 - Le dossier `donnees\` contient tes réglages et les données de tes outils : il n'est
@@ -126,7 +140,7 @@ Tout suit automatiquement : projets, réglages, données des outils, démarrage 
 - Le code de l'application (`app\`) a son propre repo Git : en le récupérant ailleurs, on
   obtient un Toolkit vide, sans tes projets.
 
-## 10. En cas de problème
+## 11. En cas de problème
 
 | Problème | Solution |
 |---|---|

@@ -16,6 +16,7 @@ const etat = {
   ongletActif: 'bibliotheque', // 'bibliotheque', 'reglages' ou l'id d'un outil ouvert
   reglagesOuverts: false, // onglet « Réglages » affiché
   editeurs: [], // [{ id, nom, chemin, source, disponible }]
+  programmes: null, // [{ nom, libelle, chemin, version, installation }] (chargé à l'ouverture des Réglages)
 };
 
 const abonnes = new Set();

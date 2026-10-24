@@ -83,12 +83,48 @@ Types de paramètres :
 | `fichiers` | choix de plusieurs fichiers | plusieurs chemins |
 | `dossier` | choix d'un dossier | un chemin |
 | `texte` | zone de texte | le texte saisi |
-| `case` | case à cocher | `true` ou `false` |
+| `case` | case à cocher | `valeur_si_coche` / `valeur_si_decoche` si définis, sinon `true` / `false` |
 | `choix` | liste déroulante (`options`) | l'option choisie |
 
 Champs communs : `id` (obligatoire, sans espace), `libelle`, `defaut`, `obligatoire`
 (`true` par défaut), `options` (pour `choix`), `extensions` (pour `fichier` et `fichiers`,
-ex. `["jpg", "png"]`).
+ex. `["jpg", "png"]`), `valeur_si_coche` et `valeur_si_decoche` (pour `case`, ex.
+`"--verbeux"` et `""`).
+
+Les dernières valeurs saisies pour une action sont proposées la fois suivante.
+
+#### Comment la commande est construite
+
+1. La commande est découpée en arguments aux espaces ; des guillemets `"…"` regroupent un
+   argument contenant des espaces.
+2. Un argument qui est **exactement** `{id}` est remplacé par la valeur, qui reste UN seul
+   argument quels que soient ses espaces ou caractères spéciaux. Pour `fichiers`, chaque
+   fichier devient un argument. Une valeur vide fait disparaître l'argument (pratique pour
+   une case à cocher : `{verbeux}` avec `"valeur_si_coche": "--verbeux"`).
+3. `{id}` à l'intérieur d'un argument (ex. `--mode={mode}`) est remplacé dans le texte.
+4. Le premier mot est le programme : d'abord cherché dans le dossier de l'action (ex.
+   `gradlew` → `gradlew.bat`), puis sur le PC (`python`, `node`…). S'il manque, Toolkit
+   explique comment l'installer.
+
+Aucun shell n'interprète la commande : `&`, `|`, `>` ne sont pas des opérateurs. Pour
+enchaîner plusieurs commandes, écrire un petit script (`.py`, `.js`, `.bat`). Avec un
+programme `.bat` ou `.cmd`, les valeurs ne peuvent pas contenir `"` ni `%`.
+
+Exemple :
+
+```json
+{
+  "nom": "Convertir",
+  "commande": "python convertir.py --qualite={qualite} {detaille} --sortie {sortie} {images}",
+  "parametres": [
+    { "id": "images", "type": "fichiers", "libelle": "Images", "extensions": ["png", "jpg"] },
+    { "id": "qualite", "type": "choix", "libelle": "Qualité", "options": ["haute", "moyenne"] },
+    { "id": "detaille", "type": "case", "libelle": "Afficher le détail", "valeur_si_coche": "--verbeux" },
+    { "id": "sortie", "type": "dossier", "libelle": "Dossier de sortie" }
+  ],
+  "ouvrir_dossier_apres": "{sortie}"
+}
+```
 
 ### `outils_lies`
 

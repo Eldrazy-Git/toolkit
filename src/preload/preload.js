@@ -65,6 +65,23 @@ contextBridge.exposeInMainWorld('toolkit', {
     // valeurs : { nom, modeleId, categorie, description } -> { id, nom, demande, avertissement }
     creerProjet: (valeurs) => appeler('modeles:creer-projet', valeurs),
   },
+  // Actions de projet.json (scripts lancés avec une console).
+  executions: {
+    // Lance l'action n° indexAction ; valeurs : { idParametre: valeur }. Renvoie { commande, dossier }.
+    lancer: (id, projetId, indexAction, valeurs) => appeler('executions:lancer', id, projetId, indexAction, valeurs),
+    arreter: (id) => appeler('executions:arreter', id),
+    oublier: (id) => appeler('executions:oublier', id),
+    ouvrirDossier: (id) => appeler('executions:ouvrir-dossier', id),
+    surSortie: (rappel) => ecouter('execution:sortie', rappel), // rappel(id, 'stdout' | 'stderr', texte)
+    surFin: (rappel) => ecouter('execution:fin', rappel), // rappel(id, { code, erreur, arrete, duree, dossierApres })
+  },
+  dialogues: {
+    // options : { type: 'fichier' | 'fichiers' | 'dossier', titre, extensions? } -> chemin(s) ou null
+    choisirChemin: (options) => appeler('dialogues:choisir-chemin', options),
+  },
+  programmes: {
+    etat: () => appeler('programmes:etat'), // [{ nom, libelle, chemin, version, installation }]
+  },
   reglages: {
     lire: () => appeler('reglages:lire'),
     modifier: (changements) => appeler('reglages:modifier', changements),

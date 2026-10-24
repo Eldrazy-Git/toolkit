@@ -90,6 +90,9 @@ function normaliserFiche(brut, id) {
           defaut: p.defaut ?? null,
           options: listeDeTextes(p.options),
           extensions: listeDeTextes(p.extensions),
+          // Pour « case » : texte ajouté à la commande si la case est cochée / décochée.
+          valeur_si_coche: typeof p.valeur_si_coche === 'string' ? p.valeur_si_coche : undefined,
+          valeur_si_decoche: typeof p.valeur_si_decoche === 'string' ? p.valeur_si_decoche : undefined,
         };
       });
     fiche.actions.push({

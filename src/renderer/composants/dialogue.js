@@ -80,14 +80,55 @@ export async function informer({ titre, message, bouton = 'Compris' }) {
   }));
 }
 
-// Formulaire. champs : [{ id, libelle, type: 'texte' | 'zone' | 'choix', valeur?, options?: [{ valeur, libelle }],
-// suggestions?: [textes], exemple?, aide?, obligatoire? }]
-// Renvoie { id: valeur } ou null si annulé.
+// Formulaire. champs : [{ id, libelle, type, valeur?, options?, suggestions?, extensions?, exemple?, aide?, obligatoire? }]
+// Types : 'texte' | 'zone' (texte sur plusieurs lignes) | 'choix' (options : [{ valeur, libelle }])
+//       | 'case' (case à cocher) | 'fichier' | 'fichiers' | 'dossier' (bouton « Parcourir… »).
+// Renvoie { id: valeur } ou null si annulé (« fichiers » : liste de chemins ; « case » : true/false).
 export function formulaire({ titre, message, champs, bouton = 'Valider' }) {
   return ouvrir((fermer) => {
+    // id -> { element (à focaliser), lire() }
     const controles = {};
     const erreur = el('p', { classe: 'dialogue-erreur', hidden: true });
+
     const lignes = champs.map((c) => {
+      // (Une case à cocher n'est jamais « obligatoire » : pas d'astérisque.)
+      const libelle = el('span', { classe: 'champ-libelle' }, c.libelle, c.obligatoire && c.type !== 'case' ? ' *' : '');
+      const aide = c.aide ? el('span', { classe: 'champ-aide' }, c.aide) : null;
+
+      if (c.type === 'case') {
+        const caseACocher = el('input', { type: 'checkbox' });
+        caseACocher.checked = c.valeur === true || c.valeur === 'true';
+        controles[c.id] = { element: caseACocher, lire: () => caseACocher.checked };
+        return el('label', { classe: 'champ-formulaire champ-case' }, caseACocher, libelle, aide);
+      }
+
+      if (['fichier', 'fichiers', 'dossier'].includes(c.type)) {
+        let valeur = c.type === 'fichiers' ? (Array.isArray(c.valeur) ? c.valeur : []) : (c.valeur || '');
+        const affichage = el('input', { type: 'text', readonly: true, placeholder: c.type === 'dossier' ? 'Aucun dossier choisi' : 'Aucun fichier choisi' });
+        const afficher = () => {
+          if (c.type !== 'fichiers') affichage.value = valeur;
+          else affichage.value = valeur.length <= 1 ? (valeur[0] || '') : `${valeur.length} fichiers : ${valeur.map((f) => f.split(/[\\/]/).pop()).join(', ')}`;
+          affichage.title = Array.isArray(valeur) ? valeur.join('\n') : valeur;
+        };
+        const parcourir = async () => {
+          try {
+            const choix = await window.toolkit.dialogues.choisirChemin({ type: c.type, titre: c.libelle, extensions: c.extensions || [] });
+            if (choix) {
+              valeur = choix;
+              afficher();
+            }
+          } catch (e) {
+            erreur.textContent = e.message;
+            erreur.hidden = false;
+          }
+        };
+        const bouton = el('button', { type: 'button', classe: 'bouton', onClick: parcourir }, 'Parcourir…');
+        affichage.addEventListener('dblclick', parcourir);
+        afficher();
+        controles[c.id] = { element: bouton, lire: () => valeur };
+        return el('div', { classe: 'champ-formulaire' }, libelle, el('div', { classe: 'champ-chemin' }, affichage, bouton), aide);
+      }
+
       let controle;
       let suggestions = null;
       if (c.type === 'zone') {
@@ -102,28 +143,25 @@ export function formulaire({ titre, message, champs, bouton = 'Valider' }) {
         // Suggestions proposées pendant la saisie (ex. catégories existantes).
         if (idListe) suggestions = el('datalist', { id: idListe }, c.suggestions.map((s) => el('option', { value: s })));
       }
-      controles[c.id] = controle;
-      return el('label', { classe: 'champ-formulaire' },
-        el('span', { classe: 'champ-libelle' }, c.libelle, c.obligatoire ? ' *' : ''),
-        controle,
-        suggestions,
-        c.aide ? el('span', { classe: 'champ-aide' }, c.aide) : null);
+      controles[c.id] = { element: controle, lire: () => controle.value.trim() };
+      return el('label', { classe: 'champ-formulaire' }, libelle, controle, suggestions, aide);
     });
 
     const valider = () => {
-      const valeurs = Object.fromEntries(champs.map((c) => [c.id, controles[c.id].value.trim()]));
-      const manquant = champs.find((c) => c.obligatoire && !valeurs[c.id]);
+      const valeurs = Object.fromEntries(champs.map((c) => [c.id, controles[c.id].lire()]));
+      const vide = (v) => (Array.isArray(v) ? v.length === 0 : v === '' || v === null || v === undefined);
+      const manquant = champs.find((c) => c.obligatoire && c.type !== 'case' && vide(valeurs[c.id]));
       if (manquant) {
         erreur.textContent = `Le champ « ${manquant.libelle} » est obligatoire.`;
         erreur.hidden = false;
-        controles[manquant.id].focus();
+        controles[manquant.id].element.focus();
         return;
       }
       fermer(valeurs);
     };
 
     return {
-      focus: controles[champs[0].id],
+      focus: controles[champs[0].id].element,
       valider,
       contenu: [
         el('h2', {}, titre),

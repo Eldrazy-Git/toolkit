@@ -71,6 +71,7 @@ app/
     │   ├── lanceur.js           (re)crée « Lancer Toolkit.vbs »
     │   ├── processus.js         lancer un programme (environnement nettoyé), lire une sortie
     │   ├── terminal.js          terminaux node-pty (Claude Code, PowerShell)
+    │   ├── executions.js        actions de projet.json : commande, programme, sortie, arrêt
     │   ├── git.js               opérations Git locales (init, commit de sauvegarde)
     │   ├── modeles.js           modèles de « Nouvel outil » et création du projet
     │   ├── claude-md.js         génération du CLAUDE.md d'un projet
@@ -96,6 +97,7 @@ app/
             ├── onglets.js       barre d'onglets + panneaux des outils (<webview>)
             ├── reglages.js      onglet « Réglages »
             ├── terminal.js      panneau de terminal (xterm.js), copier/coller, relance
+            ├── console.js       panneau d'exécution d'une action (sortie en direct)
             ├── menu.js          ouvrirMenu(bouton, elements) : menu déroulant
             └── barre-laterale.js, bibliotheque.js, details.js, icone-projet.js
 ```
@@ -158,6 +160,20 @@ Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
   Claude est lancé avec la description comme demande initiale.
 - Chaque terminal compte dans `activite.js` : tant qu'il tourne, fermer la fenêtre la cache
   au lieu de la détruire. Tous les terminaux sont arrêtés quand Toolkit quitte.
+
+### Actions et scripts
+
+`src/main/executions.js` + `composants/console.js`. Règles de construction de la commande
+dans `docs/projet-json.md`. Points clés :
+- jamais de shell : la commande est découpée en arguments puis `spawn(programme, args)` ;
+  les `.bat` / `.cmd` passent par `cmd.exe /d /s /c` avec des guillemets (refus de `"` et `%`) ;
+- programme cherché dans le dossier de l'action puis sur le PC (`where`) ; `python` est
+  vérifié (le faux raccourci du Microsoft Store est ignoré, repli sur `py`) ;
+- sortie décodée en UTF-8 (repli windows-1252), Python forcé en UTF-8 sans tampon ;
+  stdin fermé (un script qui attend une saisie ne bloque pas) ;
+- « Arrêter » = `taskkill /T /F` (arbre de processus, ex. Java lancé par Gradle) ;
+- onglet de genre `console` ; recliquer l'action relance dans le même onglet
+  (`onglet.lancement` incrémenté, lu par `mettreAJour()` du panneau).
 
 ### Éditeurs (« Ouvrir avec… »)
 
@@ -228,6 +244,10 @@ npm run icones     régénère assets/icone.png et assets/icone.ico
   `npm approve-scripts <paquet>`). node-pty en a besoin (il vérifie ses fichiers
   précompilés). node-pty 1.1.0 fournit des binaires Windows précompilés (N-API) : pas de
   compilation ni de Visual Studio Build Tools.
+- **Écrire du code avec des antislashs** (`\n`, `\'`) : ne pas passer par un script
+  Python dans un heredoc bash, qui transforme `\n` en vrai retour à la ligne. Utiliser
+  l'outil Edit, puis vérifier la syntaxe :
+  `node --check --input-type=module < fichier.js` (interface) ou `node --check fichier.js`.
 - **Ne jamais modifier l'état pendant un rendu** : un composant créé pendant `rendre()`
   (ex. panneau de terminal) qui appelle `etat.modifier()` relance le rendu en plein milieu
   (création en double). Différer avec `queueMicrotask()`.
@@ -254,7 +274,7 @@ pour l'utilisateur, attente de sa validation.
 - [x] 2. Outils HTML (protocole, onglets, stockage persistant, export/import)
 - [x] 3. Ouvrir avec… et réglages des éditeurs
 - [x] 4. Terminal intégré et Claude Code
-- [ ] 5. Actions et scripts
+- [x] 5. Actions et scripts
 - [ ] 6. Assistant d'import
 - [ ] 7. Git et GitHub
 - [ ] 8. Recherche et Markdown

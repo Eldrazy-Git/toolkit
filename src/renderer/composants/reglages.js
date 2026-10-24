@@ -37,8 +37,18 @@ function ligneEditeur(editeur) {
         : null));
 }
 
+function ligneProgramme(p) {
+  return el('div', { classe: 'reglage-editeur' },
+    el('div', { classe: 'reglage-editeur-entete' },
+      el('strong', {}, p.libelle),
+      p.chemin
+        ? el('span', { classe: 'statut ok' }, icone('coche'), p.version || 'Installé')
+        : el('span', { classe: 'statut erreur' }, icone('erreur'), 'Introuvable')),
+    el('code', { classe: 'reglage-chemin' }, p.chemin || p.installation || 'Non installé'));
+}
+
 export function rendre() {
-  const { editeurs, reglagesOuverts } = etat.obtenir();
+  const { editeurs, programmes, reglagesOuverts } = etat.obtenir();
   if (!reglagesOuverts) return;
   const listes = editeurs.filter((e) => e.source !== 'systeme');
   panneau.replaceChildren(el('div', { classe: 'page-reglages' },
@@ -53,6 +63,14 @@ export function rendre() {
       listes.length === 0 ? el('p', { classe: 'details-aide' }, 'Recherche des éditeurs…') : listes.map(ligneEditeur),
       el('p', { classe: 'details-aide' }, 'L\'Explorateur Windows est toujours disponible.'),
       el('button', { classe: 'bouton', onClick: actions.redetecterEditeurs }, icone('recherche'), 'Détecter à nouveau')),
+
+    el('section', { classe: 'section-reglages' },
+      el('h2', {}, 'Programmes pour les scripts'),
+      el('p', { classe: 'details-aide' },
+        'Les boutons d\'action des projets utilisent ces programmes. Ils sont détectés automatiquement ; ',
+        'n\'installe que ceux dont tes projets ont besoin.'),
+      programmes ? programmes.map(ligneProgramme) : el('p', { classe: 'details-aide' }, 'Recherche des programmes…'),
+      el('button', { classe: 'bouton', onClick: actions.chargerProgrammes }, icone('recherche'), 'Détecter à nouveau')),
 
     el('section', { classe: 'section-reglages' },
       el('h2', {}, 'Autres réglages'),

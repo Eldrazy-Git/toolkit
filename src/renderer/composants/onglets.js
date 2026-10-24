@@ -1,7 +1,8 @@
 // Onglets : « Bibliothèque » puis un onglet par outil HTML ouvert.
 // Onglets ouverts (etat.onglets) de deux genres :
 // - 'outil' : outil HTML dans une <webview> ;
-// - 'terminal' : Claude Code ou PowerShell (voir terminal.js).
+// - 'terminal' : Claude Code ou PowerShell (voir terminal.js) ;
+// - 'console' : exécution d'une action de projet.json (voir console.js).
 // Chaque panneau est créé une seule fois puis conservé tant que son onglet est ouvert
 // (changer d'onglet ne recharge pas l'outil et n'interrompt pas le terminal).
 import { el } from './dom.js';
@@ -12,6 +13,7 @@ import * as actions from './actions.js';
 import * as reglages from './reglages.js';
 import { ID_REGLAGES } from './reglages.js';
 import { creerPanneauTerminal } from './terminal.js';
+import { creerPanneauConsole } from './console.js';
 
 export const ID_BIBLIOTHEQUE = 'bibliotheque';
 
@@ -19,7 +21,7 @@ const barre = document.getElementById('onglets');
 const zone = document.getElementById('zone-contenu');
 const panneauBibliotheque = document.getElementById('bibliotheque');
 
-// id d'onglet -> { element, focus?, detruire? }
+// id d'onglet -> { element, focus?, detruire?, mettreAJour? }
 const panneaux = new Map();
 let dernierActif = null;
 
@@ -46,6 +48,7 @@ function onglet({ id, titre, visuel, actif, fermable }) {
 
 function visuelOutil(o) {
   if (o.genre === 'terminal') return icone(o.mode === 'claude' ? 'claude' : 'terminal');
+  if (o.genre === 'console') return icone('lecture');
   const projet = etat.obtenir().projets.find((p) => p.id === o.projetId);
   return projet && !o.outilLie ? iconeProjet(projet, 16) : icone('outil');
 }
@@ -95,7 +98,9 @@ function creerPanneauOutil(o) {
 }
 
 function creerPanneau(o) {
-  return o.genre === 'terminal' ? creerPanneauTerminal(o, zone) : creerPanneauOutil(o);
+  if (o.genre === 'terminal') return creerPanneauTerminal(o, zone);
+  if (o.genre === 'console') return creerPanneauConsole({ ...o }, zone);
+  return creerPanneauOutil(o);
 }
 
 // --- Rendu -----------------------------------------------------------------------------
@@ -114,6 +119,7 @@ export function rendre() {
   // Crée les panneaux des nouveaux onglets, supprime ceux des onglets fermés.
   for (const o of onglets) {
     if (!panneaux.has(o.id)) panneaux.set(o.id, creerPanneau(o));
+    else panneaux.get(o.id).mettreAJour?.(o);
   }
   for (const [id, panneau] of panneaux) {
     if (!onglets.some((o) => o.id === id)) {
