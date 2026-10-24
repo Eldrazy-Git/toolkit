@@ -37,7 +37,8 @@ conteneur.append(
   el('header', { classe: 'barre-outils' },
     titre,
     el('label', { classe: 'champ-filtre' }, icone('recherche'), champFiltre),
-    el('div', { classe: 'groupe-boutons' }, boutonGrille, boutonListe)),
+    el('div', { classe: 'groupe-boutons' }, boutonGrille, boutonListe),
+    el('button', { classe: 'bouton principal', title: 'Créer un nouvel outil avec Claude Code', onClick: actions.nouvelOutil }, icone('plus'), 'Nouvel outil')),
   contenu,
 );
 

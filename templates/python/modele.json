@@ -1,0 +1,18 @@
+{
+  "nom": "Script Python",
+  "description": "Script Python lancé par un bouton dans Toolkit, avec sa sortie dans une console.",
+  "ordre": 2,
+  "type": "script",
+  "point_entree": "main.py",
+  "ouvrir_avec": "vscode",
+  "actions": [
+    {
+      "nom": "Lancer",
+      "description": "Lance le script.",
+      "commande": "python main.py",
+      "parametres": []
+    }
+  ],
+  "technologies": "Script Python 3 (`main.py`). Utiliser la bibliothèque standard autant que possible ; si une bibliothèque externe est nécessaire, l'ajouter à `requirements.txt` et expliquer à l'utilisateur comment l'installer (`python -m pip install -r requirements.txt`). Les arguments se lisent avec `argparse`. Écrire les messages pour l'utilisateur en français ; les erreurs vont sur la sortie d'erreur (stderr) et le script se termine avec un code différent de 0 en cas d'échec.",
+  "lancer": "Depuis Toolkit : les boutons du projet viennent du champ `actions` de `projet.json`. Chaque action lance une commande dans une console ; elle peut demander des fichiers, un dossier, du texte ou une case à cocher via `parametres` (voir la documentation du format). En ligne de commande : `python main.py`."
+}

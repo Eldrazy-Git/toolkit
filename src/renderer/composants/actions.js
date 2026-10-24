@@ -2,7 +2,7 @@
 // processus principal via window.toolkit, et affiche les erreurs proprement.
 import * as etat from './etat.js';
 import { notifier } from './notifications.js';
-import { demanderTexte, confirmer } from './dialogue.js';
+import { demanderTexte, confirmer, choisir, formulaire } from './dialogue.js';
 
 const api = window.toolkit;
 
@@ -76,18 +76,30 @@ export async function ouvrirOutil(projetId, outilLie = null) {
   }
   const onglet = await essayer(() => api.outils.preparer(projetId, outilLie));
   if (!onglet) return;
-  etat.modifier({ onglets: [...etat.obtenir().onglets, onglet], ongletActif: onglet.id });
+  etat.modifier({ onglets: [...etat.obtenir().onglets, { ...onglet, genre: 'outil' }], ongletActif: onglet.id });
 }
 
 export function activerOnglet(id) {
   etat.modifier({ ongletActif: id });
 }
 
-export function fermerOnglet(id) {
+export async function fermerOnglet(id) {
   if (id === 'reglages') {
     const { ongletActif } = etat.obtenir();
     etat.modifier({ reglagesOuverts: false, ongletActif: ongletActif === 'reglages' ? 'bibliotheque' : ongletActif });
     return;
+  }
+  const aFermer = etat.obtenir().onglets.find((o) => o.id === id);
+  if (aFermer?.genre === 'terminal' && aFermer.enCours) {
+    const ok = await confirmer({
+      titre: 'Fermer le terminal',
+      message: aFermer.mode === 'claude'
+        ? 'Claude est encore en cours dans cet onglet. Le fermer l\'arrête (ce qu\'il a déjà modifié est conservé).'
+        : 'Un programme tourne encore dans ce terminal. Le fermer l\'arrête.',
+      bouton: 'Fermer',
+      danger: true,
+    });
+    if (!ok) return;
   }
   const { onglets, ongletActif } = etat.obtenir();
   const position = onglets.findIndex((o) => o.id === id);
@@ -249,7 +261,8 @@ async function ouvrirToolkitAvec(editeurId) {
 }
 
 // Construit les éléments du menu « Ouvrir avec… ».
-function elementsMenuEditeurs(editeurDefaut, ouvrir) {
+// cible / nomCible : dossier pour l'entrée « Terminal PowerShell ici ».
+function elementsMenuEditeurs(editeurDefaut, ouvrir, cible, nomCible) {
   return [
     ...etat.obtenir().editeurs.map((e) => ({
       libelle: e.nom,
@@ -259,17 +272,19 @@ function elementsMenuEditeurs(editeurDefaut, ouvrir) {
       infobulle: e.disponible ? e.chemin : 'Introuvable sur ce PC : indique son emplacement dans les Réglages.',
       action: () => ouvrir(e.id),
     })),
+    { libelle: 'Terminal PowerShell ici', icone: 'terminal', detail: 'dans Toolkit', action: () => ouvrirPowerShell(cible, nomCible) },
     'separateur',
     { libelle: 'Réglages des éditeurs…', icone: 'reglages', action: ouvrirReglages },
   ];
 }
 
 export function elementsMenuOuvrirAvec(projet) {
-  return elementsMenuEditeurs(editeurParDefaut(projet.fiche), (id) => ouvrirAvec(projet, id));
+  return elementsMenuEditeurs(editeurParDefaut(projet.fiche), (id) => ouvrirAvec(projet, id),
+    { type: 'projet', id: projet.id }, projet.fiche.nom);
 }
 
 export function elementsMenuOuvrirToolkit() {
-  return elementsMenuEditeurs('vscode', ouvrirToolkitAvec);
+  return elementsMenuEditeurs('vscode', ouvrirToolkitAvec, { type: 'toolkit' }, 'Toolkit');
 }
 
 // editeur = '' pour revenir au choix automatique selon le type.
@@ -286,12 +301,148 @@ export const redetecterEditeurs = () => chargerEditeurs(() => api.editeurs.redet
 export const definirCheminEditeur = (id, chemin) => chargerEditeurs(() => api.editeurs.definir(id, chemin));
 export const parcourirEditeur = (id) => chargerEditeurs(() => api.editeurs.parcourir(id));
 
+// --- Terminaux et Claude Code ---------------------------------------------------------------
+
+// Ouvre un onglet de terminal. cible : { type: 'projet', id } | { type: 'toolkit' } | { type: 'racine' }
+// nomCible : nom lisible du dossier (pour le titre de l'onglet).
+export function ouvrirTerminal({ mode, cible, nomCible, demande }) {
+  const onglet = {
+    id: `terminal-${crypto.randomUUID()}`,
+    genre: 'terminal',
+    mode,
+    cible,
+    nomCible,
+    demande,
+    nom: `${mode === 'claude' ? 'Claude' : 'PowerShell'} · ${nomCible}`,
+    enCours: true,
+  };
+  etat.modifier({ onglets: [...etat.obtenir().onglets, onglet], ongletActif: onglet.id });
+}
+
+// Appelé par le panneau du terminal quand son processus démarre ou s'arrête.
+export function marquerTerminal(id, enCours) {
+  const { onglets } = etat.obtenir();
+  if (!onglets.some((o) => o.id === id && o.enCours !== enCours)) return;
+  etat.modifier({ onglets: onglets.map((o) => (o.id === id ? { ...o, enCours } : o)) });
+}
+
+export function ouvrirPowerShell(cible, nomCible) {
+  ouvrirTerminal({ mode: 'powershell', cible, nomCible });
+}
+
+function memeCible(a, b) {
+  return a.type === b.type && a.id === b.id;
+}
+
+// Commit de sauvegarde avant de laisser Claude modifier un dossier.
+// Renvoie true pour continuer, false pour annuler.
+async function sauvegarderAvantClaude(cible, nomCible) {
+  const etatGit = await essayer(() => api.sauvegarde.etat(cible));
+  if (!etatGit) return false;
+  if (!etatGit.gitDisponible) {
+    return confirmer({
+      titre: 'Pas de sauvegarde possible',
+      message: 'Git est introuvable sur ce PC : Toolkit ne peut pas faire de sauvegarde avant que Claude modifie les fichiers.\n\nPour installer Git, dans PowerShell : winget install Git.Git\n\nContinuer quand même sans sauvegarde ?',
+      bouton: 'Continuer sans sauvegarde',
+      danger: true,
+    });
+  }
+  let initialiser = false;
+  if (!etatGit.estDepot) {
+    const choix = await choisir({
+      titre: 'Activer l\'historique Git ?',
+      message: `« ${nomCible} » n'a pas encore d'historique Git.\n\nL'activer permet de sauvegarder l'état actuel avant que Claude modifie les fichiers, et de revenir en arrière en cas de problème. Rien n'est envoyé sur Internet.`,
+      boutons: [
+        { libelle: 'Continuer sans sauvegarde', valeur: 'sans' },
+        { libelle: 'Activer Git et sauvegarder', valeur: 'activer', style: 'principal' },
+      ],
+    });
+    if (choix === null) return false;
+    if (choix === 'sans') return true;
+    initialiser = true;
+  }
+  try {
+    const { commite } = await api.sauvegarde.faire(cible, { initialiser });
+    notifier(commite
+      ? 'Sauvegarde Git faite : tu pourras revenir à cet état si besoin.'
+      : 'Rien à sauvegarder : tout était déjà enregistré dans Git.', 'succes');
+    return true;
+  } catch (erreur) {
+    return confirmer({
+      titre: 'La sauvegarde a échoué',
+      message: `${erreur.message}\n\nLancer Claude quand même, sans sauvegarde ?`,
+      bouton: 'Lancer sans sauvegarde',
+      danger: true,
+    });
+  }
+}
+
+// Lance Claude Code sur une cible (après sauvegarde). Si une session Claude tourne déjà
+// sur ce dossier, on y retourne simplement.
+async function lancerClaude(cible, nomCible) {
+  const existant = etat.obtenir().onglets.find((o) => o.genre === 'terminal' && o.mode === 'claude' && o.enCours && memeCible(o.cible, cible));
+  if (existant) {
+    etat.modifier({ ongletActif: existant.id });
+    return;
+  }
+  if (!(await sauvegarderAvantClaude(cible, nomCible))) return;
+  ouvrirTerminal({ mode: 'claude', cible, nomCible });
+}
+
+export function modifierAvecClaude(projet) {
+  return lancerClaude({ type: 'projet', id: projet.id }, projet.fiche.nom);
+}
+
+export function modifierToolkitAvecClaude() {
+  return lancerClaude({ type: 'toolkit' }, 'Toolkit');
+}
+
+export async function nouvelOutil() {
+  const modeles = await essayer(() => api.modeles.lister());
+  if (!modeles || modeles.length === 0) {
+    if (modeles) notifier('Aucun modèle trouvé dans app/templates.', 'erreur');
+    return;
+  }
+  const valeurs = await formulaire({
+    titre: 'Nouvel outil',
+    message: 'Toolkit crée le dossier du projet, puis Claude Code le construit d\'après ta description.',
+    champs: [
+      { id: 'nom', libelle: 'Nom', type: 'texte', obligatoire: true, exemple: 'Par exemple : Convertisseur d\'images' },
+      {
+        id: 'modeleId',
+        libelle: 'Type',
+        type: 'choix',
+        options: modeles.map((m) => ({ valeur: m.id, libelle: m.nom })),
+      },
+      { id: 'categorie', libelle: 'Catégorie', type: 'texte', suggestions: listeCategories().map(([c]) => c), exemple: 'Par exemple : Utilitaires' },
+      {
+        id: 'description',
+        libelle: 'Ce que l\'outil doit faire',
+        type: 'zone',
+        obligatoire: true,
+        exemple: 'Décris l\'outil avec tes mots : ce qu\'il reçoit, ce qu\'il produit, à quoi il ressemble…',
+        aide: 'Entrée pour aller à la ligne, Ctrl+Entrée pour valider.',
+      },
+    ],
+    bouton: 'Créer et lancer Claude',
+  });
+  if (!valeurs) return;
+  const cree = await essayer(() => api.modeles.creerProjet(valeurs));
+  if (!cree) return;
+  if (cree.avertissement) notifier(cree.avertissement, 'erreur');
+  await chargerProjets();
+  etat.modifier({ selection: cree.id });
+  ouvrirTerminal({ mode: 'claude', cible: { type: 'projet', id: cree.id }, nomCible: cree.nom, demande: cree.demande });
+}
+
 // --- Application ------------------------------------------------------------------------
 
 export async function redemarrerToolkit() {
+  const terminauxOuverts = etat.obtenir().onglets.some((o) => o.genre === 'terminal' && o.enCours);
   const ok = await confirmer({
     titre: 'Redémarrer Toolkit',
-    message: 'Toolkit va se fermer puis se rouvrir pour appliquer les modifications.',
+    message: 'Toolkit va se fermer puis se rouvrir pour appliquer les modifications.'
+      + (terminauxOuverts ? '\n\nLes terminaux en cours (Claude, PowerShell) seront fermés. Avec Claude, « Reprendre la conversation » permettra ensuite de continuer.' : ''),
     bouton: 'Redémarrer',
   });
   if (ok) await essayer(() => api.application.redemarrer());

@@ -1,0 +1,18 @@
+{
+  "nom": "Script Node.js",
+  "description": "Script JavaScript (Node.js) lancé par un bouton dans Toolkit, avec sa sortie dans une console.",
+  "ordre": 3,
+  "type": "script",
+  "point_entree": "index.js",
+  "ouvrir_avec": "vscode",
+  "actions": [
+    {
+      "nom": "Lancer",
+      "description": "Lance le script.",
+      "commande": "node index.js",
+      "parametres": []
+    }
+  ],
+  "technologies": "Script Node.js (`index.js`, modules ES). Préférer les modules intégrés à Node (`node:fs`, `node:path`…). Si une dépendance npm est nécessaire, l'ajouter à `package.json` et expliquer à l'utilisateur comment l'installer (`npm install` dans ce dossier). Messages pour l'utilisateur en français ; en cas d'échec, écrire sur la sortie d'erreur et terminer avec un code différent de 0.",
+  "lancer": "Depuis Toolkit : les boutons du projet viennent du champ `actions` de `projet.json` (commande, paramètres demandés à l'utilisateur, dossier à ouvrir à la fin). En ligne de commande : `node index.js`."
+}

@@ -1,0 +1,32 @@
+:root {
+  --fond: #1e1e1e;
+  --texte: #dddddd;
+  --accent: #0078d4;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+h1 { margin-top: 0; font-size: 22px; }
+
+.aide { color: #8b8b8b; }
+
+button {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}

@@ -263,6 +263,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .message-outil strong { font-size: 15px; color: var(--texte-fort); }
 .message-outil p { max-width: 520px; color: var(--texte-faible); overflow-wrap: anywhere; }
 
+/* Terminal (Claude Code, PowerShell) */
+.panneau-terminal { display: flex; flex-direction: column; background: #1e1e1e; }
+.conteneur-terminal { flex: 1; min-height: 0; padding: 6px 0 0 10px; }
+.conteneur-terminal .xterm { height: 100%; }
+.panneau-terminal .statut { margin-right: 4px; }
+.statut.termine { color: var(--texte-faible); }
+
 /* --- Bibliothèque ------------------------------------------------------------------- */
 
 .bibliotheque {
@@ -671,3 +678,20 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .dialogue input[type="text"]:focus { border-color: var(--accent); }
 .dialogue-boutons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.dialogue:has(.champ-formulaire) { width: 560px; }
+.champ-formulaire { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.champ-libelle { font-weight: 600; color: var(--texte-fort); }
+.champ-aide { font-size: 12px; color: var(--texte-faible); }
+.dialogue select, .dialogue textarea {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--rayon);
+  background: var(--fond-champ);
+  color: var(--texte-fort);
+  outline: none;
+}
+.dialogue select { height: 32px; padding: 0 8px; }
+.dialogue textarea { resize: vertical; min-height: 110px; line-height: 1.45; user-select: text; }
+.dialogue select:focus, .dialogue textarea:focus { border-color: var(--accent); }
+.dialogue-erreur { margin: 0; color: var(--erreur); }

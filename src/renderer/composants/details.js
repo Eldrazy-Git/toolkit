@@ -13,15 +13,6 @@ const EDITEURS_FICHE = ['vscode', 'android-studio', 'notepad++', 'explorateur'];
 
 const NOUVELLE_CATEGORIE = '\u0000nouvelle';
 
-// Bouton d'une fonction qui arrive dans une phase suivante.
-function bientot(libelle, nomIcone, phase, principal = false) {
-  return el('button', {
-    classe: `bouton${principal ? ' principal' : ''}`,
-    disabled: true,
-    title: `Disponible à l'étape ${phase} de la construction`,
-  }, icone(nomIcone), libelle);
-}
-
 // Bouton qui affiche un menu ; elements() est appelé au clic pour avoir l'état à jour.
 function boutonMenu(libelle, nomIcone, elements) {
   const bouton = el('button', { classe: 'bouton', onClick: () => ouvrirMenu(bouton, elements()) }, icone(nomIcone), libelle);
@@ -129,7 +120,12 @@ function rendreProjet(projet) {
             onClick: () => actions.ouvrirAvec(projet),
           }, icone('lecture'), `Ouvrir dans ${actions.nomEditeur(actions.editeurParDefaut(f))}`),
         boutonMenu('Ouvrir avec…', 'ouvrirAvec', () => actions.elementsMenuOuvrirAvec(projet)),
-        bientot('Modifier avec Claude', 'claude', 4)),
+        el('button', {
+          classe: 'bouton',
+          disabled: Boolean(projet.erreur),
+          title: 'Sauvegarde le projet avec Git puis ouvre Claude Code dans son dossier',
+          onClick: () => actions.modifierAvecClaude(projet),
+        }, icone('claude'), 'Modifier avec Claude')),
 
       section('Actions',
         f.actions.length === 0
@@ -171,7 +167,11 @@ function rendreToolkit(infos) {
     el('div', { classe: 'details-corps' },
       el('p', { classe: 'details-description' }, infos.description),
       el('div', { classe: 'details-boutons' },
-        bientot('Modifier Toolkit avec Claude', 'claude', 4, true),
+        el('button', {
+          classe: 'bouton principal',
+          title: 'Sauvegarde le code de Toolkit avec Git puis ouvre Claude Code dans le dossier app',
+          onClick: actions.modifierToolkitAvecClaude,
+        }, icone('claude'), 'Modifier Toolkit avec Claude'),
         boutonMenu('Ouvrir avec…', 'ouvrirAvec', actions.elementsMenuOuvrirToolkit),
         el('button', { classe: 'bouton', onClick: actions.redemarrerToolkit }, icone('redemarrer'), 'Redémarrer Toolkit')),
       section('Informations',

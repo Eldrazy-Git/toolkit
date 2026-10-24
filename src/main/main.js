@@ -11,6 +11,7 @@ const activite = require('./activite');
 const lanceur = require('./lanceur');
 const zoneNotification = require('./zone-notification');
 const outilsHtml = require('./outils-html');
+const terminal = require('./terminal');
 
 // Toujours avant « ready » : les données d'Electron (cache, stockage des outils…)
 // vont dans donnees/ pour suivre le dossier Toolkit s'il est déplacé.
@@ -162,6 +163,7 @@ async function demarrer() {
   require('./ipc/application').enregistrer({ quitter });
   require('./ipc/outils').enregistrer();
   require('./ipc/editeurs').enregistrer();
+  require('./ipc/claude').enregistrer();
 
   zoneNotification.creer({ afficher: afficherFenetre, quitter });
 
@@ -174,7 +176,10 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', afficherFenetre);
-  app.on('before-quit', () => { enTrainDeQuitter = true; });
+  app.on('before-quit', () => {
+    enTrainDeQuitter = true;
+    terminal.fermerTous();
+  });
   // Toutes les fenêtres fermées : Toolkit reste dans la zone de notification.
   app.on('window-all-closed', () => {});
   app.whenReady().then(demarrer).catch((erreur) => {

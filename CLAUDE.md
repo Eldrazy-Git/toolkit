@@ -70,12 +70,17 @@ app/
     │   ├── activite.js          compteur de tâches en cours (fenêtre cachée au lieu de détruite)
     │   ├── lanceur.js           (re)crée « Lancer Toolkit.vbs »
     │   ├── processus.js         lancer un programme (environnement nettoyé), lire une sortie
+    │   ├── terminal.js          terminaux node-pty (Claude Code, PowerShell)
+    │   ├── git.js               opérations Git locales (init, commit de sauvegarde)
+    │   ├── modeles.js           modèles de « Nouvel outil » et création du projet
+    │   ├── claude-md.js         génération du CLAUDE.md d'un projet
     │   ├── editeurs.js          détection des éditeurs + « Ouvrir avec… »
     │   ├── outils-html.js       protocole toolkit-outil://, partitions, sécurité des <webview>
     │   ├── outils-donnees.js    export / import localStorage + IndexedDB en JSON
     │   ├── zone-notification.js icône près de l'horloge
     │   └── ipc/
     │       ├── gerer.js         enregistre un canal et renvoie les erreurs proprement
+    │       │                    ({ avecEmetteur: true } : reçoit le webContents appelant)
     │       └── <domaine>.js     canaux IPC d'un domaine
     ├── preload/preload.js   expose `window.toolkit.<domaine>.<fonction>()` à l'interface
     └── renderer/            interface (modules ES, sans compilation)
@@ -90,6 +95,7 @@ app/
             ├── notifications.js notifier(message, type)
             ├── onglets.js       barre d'onglets + panneaux des outils (<webview>)
             ├── reglages.js      onglet « Réglages »
+            ├── terminal.js      panneau de terminal (xterm.js), copier/coller, relance
             ├── menu.js          ouvrirMenu(bouton, elements) : menu déroulant
             └── barre-laterale.js, bibliotheque.js, details.js, icone-projet.js
 ```
@@ -132,6 +138,26 @@ Voir `src/main/outils-html.js` (explications en tête du fichier) et
   IndexedDB), les données sont restaurées, puis l'outil est rechargé.
 
 Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
+
+### Terminal intégré et Claude Code
+
+- `src/main/terminal.js` (node-pty) + `composants/terminal.js` (xterm.js, chargé depuis
+  `node_modules` en module ES). Frappes et redimensionnement : `ipcRenderer.send` ;
+  sortie regroupée toutes les 8 ms (`terminal:donnees`), fin (`terminal:fin`).
+- L'interface ne transmet jamais de chemin : une « cible » (`{ type: 'projet', id }`,
+  `{ type: 'toolkit' }`, `{ type: 'racine' }`) est résolue dans `ipc/claude.js`.
+- Claude est lancé **directement** via `claude.exe` (trouvé à partir de `claude.cmd` ou de
+  `~/.local/bin`), jamais via `cmd.exe` : la demande initiale peut contenir guillemets et
+  symboles. Aucune clé API : c'est la CLI de l'utilisateur, avec sa connexion.
+- « Modifier avec Claude » / « Modifier Toolkit avec Claude » : commit de sauvegarde
+  (`sauvegarde:faire`, propose d'activer Git si besoin), puis onglet Claude. Une session
+  Claude déjà en cours sur le même dossier est réutilisée. « Reprendre la conversation »
+  relance avec `claude --continue`.
+- « Nouvel outil » : `modeles.js` copie un modèle (`app/templates/*/modele.json`),
+  génère `projet.json` + `CLAUDE.md` (`claude-md.js`), `git init` + premier commit, puis
+  Claude est lancé avec la description comme demande initiale.
+- Chaque terminal compte dans `activite.js` : tant qu'il tourne, fermer la fenêtre la cache
+  au lieu de la détruire. Tous les terminaux sont arrêtés quand Toolkit quitte.
 
 ### Éditeurs (« Ouvrir avec… »)
 
@@ -197,6 +223,14 @@ npm run icones     régénère assets/icone.png et assets/icone.ico
   `require('electron')` échoue. Pour tester depuis un tel environnement :
   `env -u ELECTRON_RUN_AS_NODE npm start`. Toolkit doit retirer cette variable de
   l'environnement des processus qu'il lance (terminaux, scripts).
+- **npm et les scripts d'installation** : npm 11 demande d'approuver les scripts
+  d'installation des dépendances (`allowScripts` dans package.json, via
+  `npm approve-scripts <paquet>`). node-pty en a besoin (il vérifie ses fichiers
+  précompilés). node-pty 1.1.0 fournit des binaires Windows précompilés (N-API) : pas de
+  compilation ni de Visual Studio Build Tools.
+- **Ne jamais modifier l'état pendant un rendu** : un composant créé pendant `rendre()`
+  (ex. panneau de terminal) qui appelle `etat.modifier()` relance le rendu en plein milieu
+  (création en double). Différer avec `queueMicrotask()`.
 - **Tester pendant que Toolkit de l'utilisateur est ouvert** : le verrou d'instance unique
   ferme aussitôt toute 2ᵉ copie. Pour un test automatique, utiliser un autre dossier
   `userData` et neutraliser `app.requestSingleInstanceLock` dans le script de test.
@@ -219,7 +253,7 @@ pour l'utilisateur, attente de sa validation.
 - [x] 1. Coquille (fenêtre, thème, bibliothèque, détails, zone de notification)
 - [x] 2. Outils HTML (protocole, onglets, stockage persistant, export/import)
 - [x] 3. Ouvrir avec… et réglages des éditeurs
-- [ ] 4. Terminal intégré et Claude Code
+- [x] 4. Terminal intégré et Claude Code
 - [ ] 5. Actions et scripts
 - [ ] 6. Assistant d'import
 - [ ] 7. Git et GitHub

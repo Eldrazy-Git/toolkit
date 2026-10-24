@@ -16,7 +16,8 @@ function ouvrir(construire) {
       if (evenement.key === 'Escape') {
         evenement.stopPropagation();
         fermer(null);
-      } else if (evenement.key === 'Enter') {
+      } else if (evenement.key === 'Enter' && (evenement.target.tagName !== 'TEXTAREA' || evenement.ctrlKey)) {
+        // Dans une zone de texte, Entrée va à la ligne ; Ctrl+Entrée valide.
         evenement.preventDefault();
         valider();
       }
@@ -44,6 +45,91 @@ export function demanderTexte({ titre, message, valeur = '', suggestions = [], b
         message ? el('p', {}, message) : null,
         champ,
         suggestions.length ? el('datalist', { id: idListe }, suggestions.map((s) => el('option', { value: s }))) : null,
+        el('div', { classe: 'dialogue-boutons' },
+          el('button', { classe: 'bouton', onClick: () => fermer(null) }, 'Annuler'),
+          el('button', { classe: 'bouton principal', onClick: valider }, bouton)),
+      ],
+    };
+  });
+}
+
+// Choix entre plusieurs boutons. boutons : [{ libelle, valeur, style?: 'principal' | 'danger' }]
+// Renvoie la valeur du bouton cliqué, ou null si annulé. Entrée = dernier bouton.
+export function choisir({ titre, message, boutons }) {
+  return ouvrir((fermer) => ({
+    valider: () => fermer(boutons[boutons.length - 1].valeur),
+    contenu: [
+      el('h2', {}, titre),
+      el('p', {}, message),
+      el('div', { classe: 'dialogue-boutons' },
+        el('button', { classe: 'bouton', onClick: () => fermer(null) }, 'Annuler'),
+        boutons.map((b) => el('button', { classe: `bouton ${b.style || ''}`, onClick: () => fermer(b.valeur) }, b.libelle))),
+    ],
+  }));
+}
+
+// Message d'information avec un seul bouton.
+export async function informer({ titre, message, bouton = 'Compris' }) {
+  await ouvrir((fermer) => ({
+    valider: () => fermer(true),
+    contenu: [
+      el('h2', {}, titre),
+      el('p', {}, message),
+      el('div', { classe: 'dialogue-boutons' }, el('button', { classe: 'bouton principal', onClick: () => fermer(true) }, bouton)),
+    ],
+  }));
+}
+
+// Formulaire. champs : [{ id, libelle, type: 'texte' | 'zone' | 'choix', valeur?, options?: [{ valeur, libelle }],
+// suggestions?: [textes], exemple?, aide?, obligatoire? }]
+// Renvoie { id: valeur } ou null si annulé.
+export function formulaire({ titre, message, champs, bouton = 'Valider' }) {
+  return ouvrir((fermer) => {
+    const controles = {};
+    const erreur = el('p', { classe: 'dialogue-erreur', hidden: true });
+    const lignes = champs.map((c) => {
+      let controle;
+      let suggestions = null;
+      if (c.type === 'zone') {
+        controle = el('textarea', { rows: 6, placeholder: c.exemple || '', spellcheck: 'true' });
+        controle.value = c.valeur || '';
+      } else if (c.type === 'choix') {
+        controle = el('select', {}, c.options.map((o) => el('option', { value: o.valeur }, o.libelle)));
+        if (c.valeur) controle.value = c.valeur;
+      } else {
+        const idListe = c.suggestions?.length ? `suggestions-${c.id}-${Date.now()}` : null;
+        controle = el('input', { type: 'text', value: c.valeur || '', placeholder: c.exemple || '', list: idListe, spellcheck: 'false' });
+        // Suggestions proposées pendant la saisie (ex. catégories existantes).
+        if (idListe) suggestions = el('datalist', { id: idListe }, c.suggestions.map((s) => el('option', { value: s })));
+      }
+      controles[c.id] = controle;
+      return el('label', { classe: 'champ-formulaire' },
+        el('span', { classe: 'champ-libelle' }, c.libelle, c.obligatoire ? ' *' : ''),
+        controle,
+        suggestions,
+        c.aide ? el('span', { classe: 'champ-aide' }, c.aide) : null);
+    });
+
+    const valider = () => {
+      const valeurs = Object.fromEntries(champs.map((c) => [c.id, controles[c.id].value.trim()]));
+      const manquant = champs.find((c) => c.obligatoire && !valeurs[c.id]);
+      if (manquant) {
+        erreur.textContent = `Le champ « ${manquant.libelle} » est obligatoire.`;
+        erreur.hidden = false;
+        controles[manquant.id].focus();
+        return;
+      }
+      fermer(valeurs);
+    };
+
+    return {
+      focus: controles[champs[0].id],
+      valider,
+      contenu: [
+        el('h2', {}, titre),
+        message ? el('p', {}, message) : null,
+        lignes,
+        erreur,
         el('div', { classe: 'dialogue-boutons' },
           el('button', { classe: 'bouton', onClick: () => fermer(null) }, 'Annuler'),
           el('button', { classe: 'bouton principal', onClick: valider }, bouton)),

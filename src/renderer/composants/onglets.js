@@ -1,6 +1,9 @@
 // Onglets : « Bibliothèque » puis un onglet par outil HTML ouvert.
-// Chaque outil est une <webview> créée une seule fois puis conservée tant que son
-// onglet est ouvert (changer d'onglet ne recharge pas l'outil).
+// Onglets ouverts (etat.onglets) de deux genres :
+// - 'outil' : outil HTML dans une <webview> ;
+// - 'terminal' : Claude Code ou PowerShell (voir terminal.js).
+// Chaque panneau est créé une seule fois puis conservé tant que son onglet est ouvert
+// (changer d'onglet ne recharge pas l'outil et n'interrompt pas le terminal).
 import { el } from './dom.js';
 import { icone } from './icones.js';
 import { iconeProjet } from './icone-projet.js';
@@ -8,6 +11,7 @@ import * as etat from './etat.js';
 import * as actions from './actions.js';
 import * as reglages from './reglages.js';
 import { ID_REGLAGES } from './reglages.js';
+import { creerPanneauTerminal } from './terminal.js';
 
 export const ID_BIBLIOTHEQUE = 'bibliotheque';
 
@@ -15,8 +19,9 @@ const barre = document.getElementById('onglets');
 const zone = document.getElementById('zone-contenu');
 const panneauBibliotheque = document.getElementById('bibliotheque');
 
-// id d'onglet -> { element, webview }
+// id d'onglet -> { element, focus?, detruire? }
 const panneaux = new Map();
+let dernierActif = null;
 
 // --- Barre d'onglets -----------------------------------------------------------------
 
@@ -40,13 +45,14 @@ function onglet({ id, titre, visuel, actif, fermable }) {
 }
 
 function visuelOutil(o) {
+  if (o.genre === 'terminal') return icone(o.mode === 'claude' ? 'claude' : 'terminal');
   const projet = etat.obtenir().projets.find((p) => p.id === o.projetId);
   return projet && !o.outilLie ? iconeProjet(projet, 16) : icone('outil');
 }
 
 // --- Panneau d'un outil ------------------------------------------------------------------
 
-function creerPanneau(o) {
+function creerPanneauOutil(o) {
   const webview = document.createElement('webview');
   webview.setAttribute('partition', o.partition);
   // Nécessaire pour que les liens « target=_blank » soient transmis à Toolkit
@@ -85,7 +91,11 @@ function creerPanneau(o) {
     el('div', { classe: 'conteneur-webview' }, webview, message));
 
   zone.append(element);
-  return { element, webview };
+  return { element };
+}
+
+function creerPanneau(o) {
+  return o.genre === 'terminal' ? creerPanneauTerminal(o, zone) : creerPanneauOutil(o);
 }
 
 // --- Rendu -----------------------------------------------------------------------------
@@ -107,7 +117,8 @@ export function rendre() {
   }
   for (const [id, panneau] of panneaux) {
     if (!onglets.some((o) => o.id === id)) {
-      panneau.element.remove();
+      if (panneau.detruire) panneau.detruire();
+      else panneau.element.remove();
       panneaux.delete(id);
     }
   }
@@ -115,4 +126,11 @@ export function rendre() {
   panneauBibliotheque.classList.toggle('inactif', ongletActif !== ID_BIBLIOTHEQUE);
   reglages.element().classList.toggle('inactif', ongletActif !== ID_REGLAGES);
   for (const [id, panneau] of panneaux) panneau.element.classList.toggle('inactif', id !== ongletActif);
+
+  // En arrivant sur un terminal, le clavier lui est donné directement.
+  if (ongletActif !== dernierActif) {
+    dernierActif = ongletActif;
+    const focus = panneaux.get(ongletActif)?.focus;
+    if (focus) requestAnimationFrame(focus);
+  }
 }

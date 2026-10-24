@@ -1,0 +1,11 @@
+{
+  "nom": "Outil HTML",
+  "description": "Page web autonome (HTML, CSS, JavaScript) qui s'ouvre dans un onglet de Toolkit.",
+  "ordre": 1,
+  "type": "html",
+  "point_entree": "index.html",
+  "ouvrir_avec": "vscode",
+  "actions": [],
+  "technologies": "Outil HTML autonome : `index.html`, `style.css` et `script.js` (JavaScript moderne, modules ES autorisés), sans étape de compilation. Les données à conserver vont dans `localStorage` ou `IndexedDB` : Toolkit les garde d'une ouverture à l'autre. Préférer du code sans dépendance externe ; si une bibliothèque est indispensable, la copier dans le dossier du projet plutôt que de la charger depuis Internet.",
+  "lancer": "Ouvrir l'outil dans Toolkit (double-clic ou bouton « Ouvrir ») : il est servi à l'adresse `toolkit-outil://…`, donc `fetch()` et les modules fonctionnent avec des chemins relatifs. F5 recharge l'outil après une modification, F12 ouvre les outils de développement. Aucune compilation."
+}

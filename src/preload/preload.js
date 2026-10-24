@@ -44,6 +44,27 @@ contextBridge.exposeInMainWorld('toolkit', {
     ouvrirProjet: (projetId, editeurId) => appeler('editeurs:ouvrir-projet', projetId, editeurId),
     ouvrirToolkit: (editeurId) => appeler('editeurs:ouvrir-toolkit', editeurId),
   },
+  // Terminal intégré. cible : { type: 'projet', id } | { type: 'toolkit' } | { type: 'racine' }
+  terminal: {
+    // options : { mode: 'claude' | 'powershell', cible, demande?, colonnes, lignes }
+    // Renvoie { ok, raison?, chemin }.
+    creer: (id, options) => appeler('terminal:creer', id, options),
+    ecrire: (id, donnees) => ipcRenderer.send('terminal:ecrire', id, donnees),
+    redimensionner: (id, colonnes, lignes) => ipcRenderer.send('terminal:redimensionner', id, colonnes, lignes),
+    fermer: (id) => appeler('terminal:fermer', id),
+    surDonnees: (rappel) => ecouter('terminal:donnees', rappel), // rappel(id, donnees)
+    surFin: (rappel) => ecouter('terminal:fin', rappel), // rappel(id, codeDeSortie)
+  },
+  // Commit de sauvegarde avant de lancer Claude.
+  sauvegarde: {
+    etat: (cible) => appeler('sauvegarde:etat', cible), // { gitDisponible, estDepot }
+    faire: (cible, options) => appeler('sauvegarde:faire', cible, options), // { commite }
+  },
+  modeles: {
+    lister: () => appeler('modeles:lister'),
+    // valeurs : { nom, modeleId, categorie, description } -> { id, nom, demande, avertissement }
+    creerProjet: (valeurs) => appeler('modeles:creer-projet', valeurs),
+  },
   reglages: {
     lire: () => appeler('reglages:lire'),
     modifier: (changements) => appeler('reglages:modifier', changements),

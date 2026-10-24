@@ -75,7 +75,25 @@ clic droit sur cette icône > **Quitter Toolkit**.
   **Réglages** (en bas à gauche) > **Choisir le programme…**, puis sélectionne son
   fichier `.exe`.
 
-## 6. Comment sont rangés les dossiers
+## 6. Claude Code dans Toolkit
+
+Tout passe par **ta** commande `claude` (ton abonnement Claude Pro), dans un terminal
+intégré à Toolkit. Aucune clé API n'est utilisée.
+
+- **Modifier avec Claude** (panneau d'un projet) : Toolkit fait d'abord une **sauvegarde
+  Git** du projet (pour pouvoir revenir en arrière), puis ouvre Claude dans son dossier.
+- **Nouvel outil** (bouton bleu en haut de la bibliothèque) : donne un nom, un type, une
+  catégorie et décris ce que l'outil doit faire. Toolkit crée le projet puis Claude le
+  construit.
+- **Modifier Toolkit avec Claude** (entrée « Toolkit » en bas à gauche) : même principe sur
+  le code de l'application. Ensuite, **Redémarrer Toolkit** applique les changements.
+- **Terminal PowerShell** (en bas à gauche, ou « Ouvrir avec… » > Terminal PowerShell ici).
+- La première fois que Claude ouvre un dossier, il demande s'il peut lui faire confiance :
+  choisis « Yes, I trust this folder » (flèche bas, puis Entrée).
+- Dans un terminal : sélectionner du texte puis **Ctrl+C** le copie, **Ctrl+V** colle,
+  clic droit copie la sélection ou colle.
+
+## 7. Comment sont rangés les dossiers
 
 ```
 Toolkit\
@@ -90,7 +108,7 @@ Chaque projet contient une **fiche** `projet.json` (nom, description, catégorie
 et un fichier `CLAUDE.md` qui explique le projet à Claude Code. Le format de la fiche est
 expliqué dans [docs/projet-json.md](docs/projet-json.md).
 
-## 7. Déplacer le dossier Toolkit
+## 8. Déplacer le dossier Toolkit
 
 Tu peux déplacer le dossier `Toolkit` entier où tu veux (autre disque, autre dossier) :
 
@@ -100,7 +118,7 @@ Tu peux déplacer le dossier `Toolkit` entier où tu veux (autre disque, autre d
 
 Tout suit automatiquement : projets, réglages, données des outils, démarrage avec Windows.
 
-## 8. Sauvegardes
+## 9. Sauvegardes
 
 - Chaque projet peut avoir son propre historique Git et son propre repo GitHub.
 - Le dossier `donnees\` contient tes réglages et les données de tes outils : il n'est
@@ -108,12 +126,13 @@ Tout suit automatiquement : projets, réglages, données des outils, démarrage 
 - Le code de l'application (`app\`) a son propre repo Git : en le récupérant ailleurs, on
   obtient un Toolkit vide, sans tes projets.
 
-## 9. En cas de problème
+## 10. En cas de problème
 
 | Problème | Solution |
 |---|---|
 | Rien ne se passe au double-clic sur `Lancer Toolkit.vbs` | Toolkit est peut-être déjà ouvert : regarde près de l'horloge (flèche ^ si l'icône est cachée). Sinon, lance `npm start` dans `Toolkit\app` pour voir le message d'erreur. |
 | Un projet affiche un triangle jaune | Sa fiche `projet.json` a un problème : clique dessus, le panneau de droite explique lequel. |
+| « Claude Code introuvable » | Suis les étapes affichées (installation puis `claude` une fois dans PowerShell pour te connecter), puis redémarre Toolkit. |
 | Une erreur s'est produite | Les détails techniques sont notés dans `donnees\journal.log`. |
 | `npm` n'est pas reconnu | Node.js n'est pas installé : lance `npm run verifier` pour obtenir la marche à suivre. |
 | Après une modification par Claude, Toolkit ne démarre plus | Dans `Toolkit\app`, tape `git log` pour voir les derniers changements, puis demande à Claude de les annuler. |
