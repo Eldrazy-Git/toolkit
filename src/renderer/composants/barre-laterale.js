@@ -94,6 +94,12 @@ export function rendre() {
     ),
     el('div', { classe: 'barre-pied' },
       elementNav({
+        libelle: 'Git et GitHub',
+        visuel: icone('git'),
+        actif: ongletActif === 'git',
+        auClic: actions.ouvrirGit,
+      }),
+      elementNav({
         libelle: 'Terminal PowerShell',
         visuel: icone('terminal'),
         auClic: () => actions.ouvrirPowerShell({ type: 'racine' }, 'Toolkit'),

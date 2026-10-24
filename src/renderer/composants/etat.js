@@ -16,6 +16,10 @@ const etat = {
   ongletActif: 'bibliotheque', // 'bibliotheque', 'reglages' ou l'id d'un outil ouvert
   reglagesOuverts: false, // onglet « Réglages » affiché
   importOuvert: false, // onglet « Importer un projet » affiché
+  gitOuvert: false, // onglet « Git et GitHub » affiché
+  git: {}, // état Git par cible (clé : 'toolkit:' ou 'projet:<id>'), voir actions-git.js
+  gitOccupe: {}, // clé -> texte de l'opération en cours (ex. « Envoi… »)
+  github: null, // { installe, connecte, compte }
   editeurs: [], // [{ id, nom, chemin, source, disponible }]
   programmes: null, // [{ nom, libelle, chemin, version, installation }] (chargé à l'ouverture des Réglages)
 };

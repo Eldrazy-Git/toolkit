@@ -1,35 +1,16 @@
 // Canaux IPC du terminal intégré et de l'intégration Claude Code :
 // « terminal:* », « sauvegarde:* » (commit avant Claude), « modeles:* » (Nouvel outil).
 //
-// Une « cible » désigne un dossier sans jamais transmettre de chemin depuis l'interface :
-// { type: 'projet', id } | { type: 'toolkit' } (dossier app/) | { type: 'racine' } (Toolkit/).
+// Les dossiers sont désignés par des « cibles » (voir cibles.js).
 'use strict';
 
 const { ipcMain } = require('electron');
-const path = require('node:path');
 const { gerer } = require('./gerer');
 const chemins = require('../chemins');
-const projets = require('../projets');
 const terminal = require('../terminal');
 const git = require('../git');
 const modeles = require('../modeles');
-const { existe } = require('../fichiers');
-
-async function dossierCible(cible) {
-  let dossier;
-  if (cible?.type === 'projet') {
-    if (!(await projets.chargerProjet(cible.id))) throw new Error('Ce projet n\'existe plus.');
-    dossier = path.join(chemins.projets(), cible.id);
-  } else if (cible?.type === 'toolkit') {
-    dossier = chemins.app;
-  } else if (cible?.type === 'racine') {
-    dossier = chemins.racine;
-  } else {
-    throw new Error('Dossier cible inconnu.');
-  }
-  if (!(await existe(dossier))) throw new Error('Ce dossier n\'existe plus.');
-  return dossier;
-}
+const { dossierCible } = require('../cibles');
 
 function enregistrer() {
   // --- Terminal ---

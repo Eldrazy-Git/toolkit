@@ -3,6 +3,7 @@
 import * as etat from './etat.js';
 import { notifier } from './notifications.js';
 import { demanderTexte, confirmer, choisir, formulaire } from './dialogue.js';
+import * as actionsGit from './actions-git.js';
 
 const api = window.toolkit;
 
@@ -58,6 +59,9 @@ export function choisirFiltre(filtre) {
 
 export function selectionner(id) {
   etat.modifier({ selection: id, ...(id ? { ongletActif: 'bibliotheque' } : {}) });
+  // L'état Git a pu changer depuis la dernière fois (commits de Claude…) : on le relit.
+  if (id === etat.ID_TOOLKIT) actionsGit.rafraichir({ type: 'toolkit' });
+  else if (id) actionsGit.rafraichir({ type: 'projet', id });
 }
 
 // --- Outils HTML et onglets ----------------------------------------------------------
@@ -93,6 +97,11 @@ export async function fermerOnglet(id) {
     assistant.abandonner();
     const { ongletActif } = etat.obtenir();
     etat.modifier({ importOuvert: false, ongletActif: ongletActif === 'import' ? 'bibliotheque' : ongletActif });
+    return;
+  }
+  if (id === 'git') {
+    const { ongletActif } = etat.obtenir();
+    etat.modifier({ gitOuvert: false, ongletActif: ongletActif === 'git' ? 'bibliotheque' : ongletActif });
     return;
   }
   if (id === 'reglages') {
@@ -132,8 +141,9 @@ export function fermerOngletActif() {
 }
 
 export function ongletSuivant(sens = 1) {
-  const { onglets, ongletActif, reglagesOuverts, importOuvert } = etat.obtenir();
-  const ids = ['bibliotheque', ...(reglagesOuverts ? ['reglages'] : []), ...(importOuvert ? ['import'] : []), ...onglets.map((o) => o.id)];
+  const { onglets, ongletActif, reglagesOuverts, importOuvert, gitOuvert } = etat.obtenir();
+  const ids = ['bibliotheque', ...(reglagesOuverts ? ['reglages'] : []), ...(gitOuvert ? ['git'] : []),
+    ...(importOuvert ? ['import'] : []), ...onglets.map((o) => o.id)];
   const position = ids.indexOf(ongletActif);
   etat.modifier({ ongletActif: ids[(position + sens + ids.length) % ids.length] });
 }
@@ -303,6 +313,11 @@ export function elementsMenuOuvrirToolkit() {
 // editeur = '' pour revenir au choix automatique selon le type.
 export async function changerEditeurParDefaut(projet, editeur) {
   remplacerProjet(await essayer(() => api.projets.modifier(projet.id, { ouvrir_avec: editeur || null })));
+}
+
+export function ouvrirGit() {
+  etat.modifier({ gitOuvert: true, ongletActif: 'git' });
+  actionsGit.chargerTout();
 }
 
 export function ouvrirImport() {

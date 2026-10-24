@@ -6,7 +6,27 @@ import { LIBELLES_TYPES } from './bibliotheque.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
 import { ouvrirMenu } from './menu.js';
+import * as actionsGit from './actions-git.js';
+import { pastillesGit, boutonsGit, dernierCommit } from './git.js';
 
+// Cibles dont l'état Git a déjà été demandé (pour ne le charger qu'une fois par affichage).
+const gitDemande = new Set();
+
+// Section « Git » : état du dépôt et boutons. L'état est chargé à la première ouverture,
+// en différé (on ne modifie jamais l'état pendant un rendu).
+function sectionGit(cible) {
+  const e = actionsGit.etatDe(cible);
+  const cle = actionsGit.cle(cible);
+  if (!e && !gitDemande.has(cle)) {
+    gitDemande.add(cle);
+    queueMicrotask(() => actionsGit.rafraichir(cible));
+  }
+  return section('Git',
+    el('div', { classe: 'liste-pastilles' }, pastillesGit(e)),
+    dernierCommit(e),
+    el('div', { classe: 'details-boutons boutons-git' }, boutonsGit(e),
+      el('button', { classe: 'bouton-icone', title: 'Ouvrir le panneau Git et GitHub', onClick: actions.ouvrirGit }, icone('git'))));
+}
 const conteneur = document.getElementById('details');
 
 const EDITEURS_FICHE = ['vscode', 'android-studio', 'notepad++', 'explorateur'];
@@ -157,7 +177,7 @@ function rendreProjet(projet) {
           el('dt', {}, 'Point d\'entrée'), el('dd', {}, f.point_entree ? el('code', {}, f.point_entree) : '—'),
           el('dt', {}, 'GitHub'), el('dd', {}, f.git.remote || 'Aucun repo distant'))),
 
-      section('Git', el('p', { classe: 'details-aide' }, 'L\'état Git s\'affichera ici (étape 7).'))),
+      sectionGit({ type: 'projet', id: projet.id })),
   ];
 }
 
@@ -180,6 +200,7 @@ function rendreToolkit(infos) {
           el('dt', {}, 'Code'), el('dd', {}, el('code', {}, infos.dossier)),
           el('dt', {}, 'Projets'), el('dd', {}, el('code', {}, infos.dossierProjets)),
           el('dt', {}, 'Electron'), el('dd', {}, infos.electron))),
+      sectionGit({ type: 'toolkit' }),
       section('Raccourcis',
         el('dl', { classe: 'infos' },
           el('dt', {}, 'Ctrl+F'), el('dd', {}, 'Filtrer les projets'),

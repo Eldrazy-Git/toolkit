@@ -120,7 +120,22 @@ Bouton **Importer** en haut de la bibliothèque.
 Avant d'importer, ferme les programmes qui utilisent le projet (Android Studio, VS Code…).
 Si un point est en rouge, règle-le puis clique sur **Analyser à nouveau**.
 
-## 9. Comment sont rangés les dossiers
+## 9. Git et GitHub
+
+**Git et GitHub** (en bas à gauche) montre l'état de Toolkit et de chaque projet :
+- **Commit** : enregistre une version des fichiers dans l'historique, sur ce PC ;
+- **Push** : envoie ces versions sur GitHub (les commits faits par Claude apparaissent
+  ici comme « commits à envoyer ») ;
+- **Pull** : récupère les versions présentes sur GitHub ;
+- **Vérifier en ligne** : demande à GitHub s'il y a des changements à récupérer ;
+- **Tout envoyer** : envoie chaque projet vers son propre dépôt, après confirmation ;
+- menu **⋯** : activer Git, créer un dépôt GitHub **privé**, ouvrir sur GitHub, protéger
+  les fichiers sensibles (clés, keystores, `.env`).
+
+Toolkit utilise ta connexion GitHub existante (commande `gh`) et ne stocke jamais de mot
+de passe. Si GitHub n'est pas connecté, le panneau explique comment faire.
+
+## 10. Comment sont rangés les dossiers
 
 ```
 Toolkit\
@@ -135,7 +150,7 @@ Chaque projet contient une **fiche** `projet.json` (nom, description, catégorie
 et un fichier `CLAUDE.md` qui explique le projet à Claude Code. Le format de la fiche est
 expliqué dans [docs/projet-json.md](docs/projet-json.md).
 
-## 10. Déplacer le dossier Toolkit
+## 11. Déplacer le dossier Toolkit
 
 Tu peux déplacer le dossier `Toolkit` entier où tu veux (autre disque, autre dossier) :
 
@@ -145,7 +160,7 @@ Tu peux déplacer le dossier `Toolkit` entier où tu veux (autre disque, autre d
 
 Tout suit automatiquement : projets, réglages, données des outils, démarrage avec Windows.
 
-## 11. Sauvegardes
+## 12. Sauvegardes
 
 - Chaque projet peut avoir son propre historique Git et son propre repo GitHub.
 - Le dossier `donnees\` contient tes réglages et les données de tes outils : il n'est
@@ -153,7 +168,7 @@ Tout suit automatiquement : projets, réglages, données des outils, démarrage 
 - Le code de l'application (`app\`) a son propre repo Git : en le récupérant ailleurs, on
   obtient un Toolkit vide, sans tes projets.
 
-## 12. En cas de problème
+## 13. En cas de problème
 
 | Problème | Solution |
 |---|---|

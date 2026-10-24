@@ -35,7 +35,7 @@ const EXTENSIONS_TEXTE = /\.(html?|css|m?js|cjs|ts|tsx|jsx|json|py|md|txt|bat|cm
 const TAILLE_MAX_ANALYSE_TEXTE = 1024 * 1024;
 const TAILLE_MAX_EMPREINTE = 20 * 1024 * 1024;
 const TAILLE_GROS_FICHIER = 100 * 1024 * 1024; // limite de GitHub
-const EXPRESSION_SECRETS = /(^|\/)(\.env(\..*)?|local\.properties|[^/]*\.(jks|keystore|p12|pfx|pem))$/i;
+const { EXPRESSION_SECRETS } = git;
 
 // Analyses en attente de confirmation : id -> { source, mode, ... }
 const analyses = new Map();

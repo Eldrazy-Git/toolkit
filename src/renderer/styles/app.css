@@ -703,6 +703,47 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .liste-etapes .ico { color: var(--succes); margin-top: 2px; }
 .boutons-import { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 
+/* --- Git et GitHub ---------------------------------------------------------------------------- */
+
+.page-git { max-width: 980px; }
+.entete-git { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.entete-git h1 { margin: 0; }
+.legende-git { margin: 10px 0 16px; }
+.liste-git { display: flex; flex-direction: column; gap: 8px; }
+.ligne-git {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--fond-panneau);
+}
+.ligne-git-infos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.ligne-git-nom { display: flex; align-items: center; gap: 8px; color: var(--texte-fort); }
+.ligne-git-boutons { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.liste-pastilles { display: flex; flex-wrap: wrap; gap: 6px; }
+.pastille-git {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 11px;
+  font-size: 12px;
+  border: 1px solid transparent;
+  cursor: default;
+}
+.pastille-git.neutre { background: var(--fond-element); border-color: var(--bordure-forte); color: var(--texte-faible); }
+.pastille-git.vert { background: rgba(76, 175, 80, 0.15); color: #7bd77f; }
+.pastille-git.jaune { background: rgba(204, 167, 0, 0.15); color: #e5c94a; }
+.pastille-git.bleu { background: rgba(0, 120, 212, 0.18); color: var(--accent-texte); }
+.pastille-git.violet { background: rgba(163, 113, 247, 0.18); color: #c4a5ff; }
+.pastille-git.orange { background: rgba(240, 163, 92, 0.18); color: #f0a35c; }
+.pastille-git.rouge { background: rgba(241, 76, 76, 0.15); color: #ff8080; }
+.dernier-commit { font-size: 12px; color: var(--texte-faible); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.details-section .dernier-commit { display: block; margin-top: 6px; }
+.boutons-git { margin-top: 10px; align-items: center; }
+
 /* --- Notifications ---------------------------------------------------------------------- */
 
 .notifications {

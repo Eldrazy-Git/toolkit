@@ -94,6 +94,19 @@ contextBridge.exposeInMainWorld('toolkit', {
   github: {
     etat: () => appeler('github:etat'), // { installe, connecte, compte }
   },
+  // Panneau Git. cible : { type: 'projet', id } | { type: 'toolkit' }
+  git: {
+    etats: () => appeler('git:etats'), // état de Toolkit et de chaque projet
+    etat: (cible) => appeler('git:etat', cible),
+    commit: (cible, message) => appeler('git:commit', cible, message),
+    push: (cible) => appeler('git:push', cible),
+    pull: (cible) => appeler('git:pull', cible), // { message }
+    verifierEnLigne: () => appeler('git:verifier-en-ligne'), // [erreurs]
+    initialiser: (cible) => appeler('git:initialiser', cible),
+    proteger: (cible) => appeler('git:proteger', cible), // lignes ajoutées au .gitignore
+    creerGithub: (cible) => appeler('git:creer-github', cible), // { url }
+    ouvrirGithub: (cible) => appeler('git:ouvrir-github', cible),
+  },
   reglages: {
     lire: () => appeler('reglages:lire'),
     modifier: (changements) => appeler('reglages:modifier', changements),

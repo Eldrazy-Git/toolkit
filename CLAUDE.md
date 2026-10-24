@@ -72,7 +72,8 @@ app/
     │   ├── processus.js         lancer un programme (environnement nettoyé), lire une sortie
     │   ├── terminal.js          terminaux node-pty (Claude Code, PowerShell)
     │   ├── executions.js        actions de projet.json : commande, programme, sortie, arrêt
-    │   ├── git.js               opérations Git locales (init, commits, .gitignore, clone)
+    │   ├── cibles.js            résout une « cible » ({ type: 'projet', id } / toolkit / racine) en dossier
+    │   ├── git.js               Git : état d'un dépôt, commit, push, pull, fetch, .gitignore, clone
     │   ├── github.js            GitHub via « gh » (état de connexion, dépôt privé)
     │   ├── import.js            assistant d'import : analyse, détection, copie vérifiée
     │   ├── modeles.js           modèles de « Nouvel outil » et création du projet
@@ -101,6 +102,8 @@ app/
             ├── terminal.js      panneau de terminal (xterm.js), copier/coller, relance
             ├── console.js       panneau d'exécution d'une action (sortie en direct)
             ├── import.js        onglet « Importer un projet » (assistant en étapes)
+            ├── git.js           onglet « Git et GitHub » + pastilles/boutons réutilisés dans les détails
+            ├── actions-git.js   actions Git (commit, push, pull, tout envoyer, dépôt GitHub privé)
             ├── menu.js          ouvrirMenu(bouton, elements) : menu déroulant
             └── barre-laterale.js, bibliotheque.js, details.js, icone-projet.js
 ```
@@ -193,6 +196,22 @@ dans `docs/projet-json.md`. Points clés :
   Windows bloque souvent un dossier juste cloné), supprimé si l'utilisateur annule.
 - Dossiers refusés : disque, dossier personnel, Bureau, Documents, Windows, Program Files,
   Toolkit lui-même ou un dossier qui le contient.
+
+### Git et GitHub
+
+`src/main/git.js` + `ipc/git.js` + `composants/git.js` / `actions-git.js`.
+- État d'un dépôt lu en une commande (`git status --porcelain=v2 --branch`) : branche,
+  modifications, commits en avance / en retard (le retard n'est à jour qu'après « Vérifier
+  en ligne » = `git fetch`), fichiers sensibles suivis ou non protégés.
+- Commandes réseau (`gitReseau`) : identification par `gh auth git-credential` passée en
+  `-c` pour CETTE commande seulement (rien n'est stocké, la config Git de l'utilisateur
+  n'est pas modifiée), `GIT_TERMINAL_PROMPT=0` (jamais de question bloquante), délai 2 min.
+- Pull = `--ff-only` : jamais de fusion automatique ; en cas de divergence, le message
+  oriente vers Claude.
+- « Tout envoyer » : chaque dépôt vers SON remote, après confirmation listant les projets.
+- Dépôt GitHub : toujours PRIVÉ (`gh repo create --private`), refusé si des secrets sont
+  suivis par Git ; l'adresse est notée dans `projet.json` (`git.remote`).
+- Le repo de l'application ne contient que `app/` : un clone donne un Toolkit vierge.
 
 ### Éditeurs (« Ouvrir avec… »)
 
@@ -295,7 +314,7 @@ pour l'utilisateur, attente de sa validation.
 - [x] 4. Terminal intégré et Claude Code
 - [x] 5. Actions et scripts
 - [x] 6. Assistant d'import
-- [ ] 7. Git et GitHub
+- [x] 7. Git et GitHub
 - [ ] 8. Recherche et Markdown
 - [ ] 9. Compilation des mods et de l'APK
 - [ ] 10. Finitions
@@ -310,6 +329,7 @@ pour l'utilisateur, attente de sa validation.
   notification reste), **sauf** si un script ou un terminal tourne : la fenêtre est alors
   seulement cachée.
 - Thème sombre uniquement.
-- Repo GitHub de l'application : pas encore (prévu en phase 7, avec confirmation).
+- Repo GitHub de l'application : à créer par l'utilisateur lui-même depuis le panneau Git
+  (ligne « Toolkit », menu ⋯ > Créer un dépôt GitHub privé), quand il le souhaite.
 - Electron 44 (et non 45, sorti trois jours avant le début du projet) : passage à une
   version plus récente prévu aux finitions.
