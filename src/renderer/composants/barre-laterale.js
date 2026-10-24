@@ -94,7 +94,7 @@ export function rendre() {
     ),
     el('div', { classe: 'barre-pied' },
       elementNav({
-        libelle: 'Terminal',
+        libelle: 'Terminal PowerShell',
         visuel: icone('terminal'),
         auClic: () => actions.ouvrirPowerShell({ type: 'racine' }, 'Toolkit'),
       }),
