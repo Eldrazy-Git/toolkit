@@ -9,6 +9,46 @@ import { ouvrirMenu } from './menu.js';
 import * as actionsGit from './actions-git.js';
 import { pastillesGit, boutonsGit, dernierCommit } from './git.js';
 
+// Notes d'un projet et rétroliens, gardés quelques secondes (le panneau se redessine souvent).
+const cacheNotes = new Map();
+const DUREE_CACHE_NOTES = 5000;
+
+function contenuNotes(donnees, projetId) {
+  return [
+    donnees.notes.length
+      ? el('div', { classe: 'liste-actions' }, donnees.notes.map((n) => el('button', {
+        classe: 'bouton bouton-note',
+        title: n.chemin,
+        onClick: () => actions.ouvrirNote(n.chemin),
+      }, icone('note'), el('span', {}, n.titre, el('small', {}, n.relatif)))))
+      : el('p', { classe: 'details-aide' }, 'Aucune note (.md) dans ce projet.'),
+    el('button', { classe: 'etiquette', onClick: () => actions.creerNote(projetId) }, icone('plus'), 'Nouvelle note'),
+    donnees.retroliens.length
+      ? el('div', { classe: 'retroliens-projet' },
+        el('h4', {}, `Cité dans (${donnees.retroliens.length})`),
+        donnees.retroliens.map((r) => el('a', { href: '#', onClick: (e) => { e.preventDefault(); actions.ouvrirNote(r.chemin); } },
+          icone('note'), r.titre)))
+      : null,
+  ];
+}
+
+// Section « Notes » : fichiers .md du projet (projetId null = Toolkit) et notes qui le citent.
+function sectionNotes(projetId) {
+  const cle = projetId || '__toolkit__';
+  const conteneur = el('div', { classe: 'notes-projet' });
+  const cache = cacheNotes.get(cle);
+  if (cache?.donnees) conteneur.append(...contenuNotes(cache.donnees, projetId));
+  else conteneur.append(el('p', { classe: 'details-aide' }, 'Chargement…'));
+  if (!cache || Date.now() - cache.temps > DUREE_CACHE_NOTES) {
+    cacheNotes.set(cle, { donnees: cache?.donnees, temps: Date.now() });
+    window.toolkit.notes.duProjet(projetId).then((donnees) => {
+      cacheNotes.set(cle, { donnees, temps: Date.now() });
+      if (conteneur.isConnected) conteneur.replaceChildren(...contenuNotes(donnees, projetId));
+    }).catch(() => {});
+  }
+  return section('Notes', conteneur);
+}
+
 // Cibles dont l'état Git a déjà été demandé (pour ne le charger qu'une fois par affichage).
 const gitDemande = new Set();
 
@@ -177,6 +217,7 @@ function rendreProjet(projet) {
           el('dt', {}, 'Point d\'entrée'), el('dd', {}, f.point_entree ? el('code', {}, f.point_entree) : '—'),
           el('dt', {}, 'GitHub'), el('dd', {}, f.git.remote || 'Aucun repo distant'))),
 
+      sectionNotes(projet.id),
       sectionGit({ type: 'projet', id: projet.id })),
   ];
 }
@@ -200,9 +241,11 @@ function rendreToolkit(infos) {
           el('dt', {}, 'Code'), el('dd', {}, el('code', {}, infos.dossier)),
           el('dt', {}, 'Projets'), el('dd', {}, el('code', {}, infos.dossierProjets)),
           el('dt', {}, 'Electron'), el('dd', {}, infos.electron))),
+      sectionNotes(null),
       sectionGit({ type: 'toolkit' }),
       section('Raccourcis',
         el('dl', { classe: 'infos' },
+          el('dt', {}, 'Ctrl+K'), el('dd', {}, 'Rechercher dans les projets et les notes'),
           el('dt', {}, 'Ctrl+F'), el('dd', {}, 'Filtrer les projets'),
           el('dt', {}, 'Échap'), el('dd', {}, 'Fermer ce panneau'),
           el('dt', {}, 'Double-clic'), el('dd', {}, 'Ouvrir un projet'),

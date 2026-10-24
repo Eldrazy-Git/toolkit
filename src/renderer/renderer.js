@@ -9,6 +9,7 @@ import * as reglages from './composants/reglages.js';
 import * as assistantImport from './composants/import.js';
 import * as panneauGit from './composants/git.js';
 import { notifier } from './composants/notifications.js';
+import { ouvrirRecherche } from './composants/recherche.js';
 
 etat.abonner(() => {
   barreLaterale.rendre();
@@ -22,7 +23,10 @@ etat.abonner(() => {
 
 document.addEventListener('keydown', (e) => {
   const touche = e.key.toLowerCase();
-  if (e.ctrlKey && touche === 'f') {
+  if (e.ctrlKey && touche === 'k') {
+    e.preventDefault();
+    ouvrirRecherche();
+  } else if (e.ctrlKey && touche === 'f') {
     e.preventDefault();
     actions.activerOnglet(onglets.ID_BIBLIOTHEQUE);
     bibliotheque.focaliserFiltre();
@@ -40,6 +44,7 @@ document.addEventListener('keydown', (e) => {
 // Ctrl+W pressé à l'intérieur d'un outil (les touches n'arrivent pas jusqu'ici).
 window.toolkit.outils.surRaccourci((raccourci) => {
   if (raccourci === 'fermer') actions.fermerOngletActif();
+  if (raccourci === 'recherche') ouvrirRecherche();
 });
 
 // Dernier filet de sécurité : une erreur imprévue s'affiche au lieu de passer inaperçue.

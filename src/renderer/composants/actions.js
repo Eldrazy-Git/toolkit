@@ -110,6 +110,15 @@ export async function fermerOnglet(id) {
     return;
   }
   const aFermer = etat.obtenir().onglets.find((o) => o.id === id);
+  if (aFermer?.genre === 'note' && aFermer.nonEnregistre) {
+    const ok = await confirmer({
+      titre: 'Note non enregistrée',
+      message: `Tes modifications de « ${aFermer.nom} » ne sont pas enregistrées. Fermer quand même ?`,
+      bouton: 'Fermer sans enregistrer',
+      danger: true,
+    });
+    if (!ok) return;
+  }
   if ((aFermer?.genre === 'terminal' || aFermer?.genre === 'console') && aFermer.enCours) {
     const ok = await confirmer({
       titre: aFermer.genre === 'console' ? 'Arrêter le script' : 'Fermer le terminal',
@@ -338,6 +347,68 @@ export async function chargerProgrammes() {
 export const redetecterEditeurs = () => chargerEditeurs(() => api.editeurs.redetecter());
 export const definirCheminEditeur = (id, chemin) => chargerEditeurs(() => api.editeurs.definir(id, chemin));
 export const parcourirEditeur = (id) => chargerEditeurs(() => api.editeurs.parcourir(id));
+
+// --- Notes et liens ------------------------------------------------------------------------
+
+// Affiche un projet dans la bibliothèque (depuis la recherche ou un lien [[…]]).
+export function allerAuProjet(id) {
+  etat.modifier({ filtre: { type: 'tous' } });
+  selectionner(id);
+}
+
+export function ouvrirNote(chemin, { modifier = false } = {}) {
+  const id = `note:${chemin}`;
+  const { onglets } = etat.obtenir();
+  if (onglets.some((o) => o.id === id)) {
+    etat.modifier({ ongletActif: id });
+    return;
+  }
+  const onglet = {
+    id,
+    genre: 'note',
+    chemin,
+    modeEdition: modifier,
+    nom: chemin.split('/').pop().replace(/\.md$/i, ''),
+    nonEnregistre: false,
+  };
+  etat.modifier({ onglets: [...onglets, onglet], ongletActif: id });
+}
+
+// Appelé par le panneau d'une note : { nonEnregistre?, titre? }
+export function marquerNote(id, { nonEnregistre, titre }) {
+  const { onglets } = etat.obtenir();
+  const onglet = onglets.find((o) => o.id === id);
+  if (!onglet) return;
+  const changements = {};
+  if (nonEnregistre !== undefined && onglet.nonEnregistre !== nonEnregistre) changements.nonEnregistre = nonEnregistre;
+  if (titre && onglet.nom !== titre) changements.nom = titre;
+  if (Object.keys(changements).length === 0) return;
+  etat.modifier({ onglets: onglets.map((o) => (o.id === id ? { ...o, ...changements } : o)) });
+}
+
+// projetId null = note de Toolkit (rangée dans app/docs/).
+export async function creerNote(projetId) {
+  const nom = await demanderTexte({
+    titre: 'Nouvelle note',
+    message: projetId ? 'Nom de la note (elle sera rangée dans le dossier « notes » du projet) :' : 'Nom de la note (elle sera rangée dans app/docs) :',
+    exemple: 'Par exemple : Idées',
+    bouton: 'Créer',
+  });
+  if (!nom) return;
+  const chemin = await essayer(() => api.notes.creer(projetId, nom));
+  if (chemin) ouvrirNote(chemin, { modifier: true });
+}
+
+// Clic sur un lien d'une note rendue (data-projet, data-note, data-externe).
+export function suivreLien(evenement) {
+  const lien = evenement.target.closest('a');
+  if (!lien) return;
+  evenement.preventDefault();
+  const { projet, note, externe } = lien.dataset;
+  if (projet) allerAuProjet(projet);
+  else if (note) ouvrirNote(note);
+  else if (externe) essayer(() => api.liens.ouvrirExterne(externe));
+}
 
 // --- Actions de projet.json (scripts) -----------------------------------------------------
 

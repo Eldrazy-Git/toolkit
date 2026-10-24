@@ -107,6 +107,22 @@ contextBridge.exposeInMainWorld('toolkit', {
     creerGithub: (cible) => appeler('git:creer-github', cible), // { url }
     ouvrirGithub: (cible) => appeler('git:ouvrir-github', cible),
   },
+  // Recherche globale (Ctrl+K) et notes Markdown.
+  recherche: {
+    preparer: () => appeler('recherche:preparer'),
+    // [{ type: 'projet' | 'note', titre, chemin, projetId, nomProjet, titreSegments, extrait: [{ t, m }] }]
+    chercher: (texte) => appeler('recherche:chercher', texte),
+  },
+  notes: {
+    lire: (chemin) => appeler('notes:lire', chemin), // { chemin, titre, contenu, html, mtime, retroliens }
+    // Renvoie la note relue, ou { modifieeAilleurs: true } si le fichier a changé depuis mtimeAttendu.
+    enregistrer: (chemin, contenu, mtimeAttendu, forcer) => appeler('notes:enregistrer', chemin, contenu, mtimeAttendu, forcer),
+    creer: (projetId, nom) => appeler('notes:creer', projetId, nom), // chemin de la nouvelle note
+    duProjet: (projetId) => appeler('notes:du-projet', projetId), // { notes, retroliens }
+  },
+  liens: {
+    ouvrirExterne: (url) => appeler('liens:ouvrir-externe', url),
+  },
   reglages: {
     lire: () => appeler('reglages:lire'),
     modifier: (changements) => appeler('reglages:modifier', changements),

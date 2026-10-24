@@ -4,6 +4,7 @@ import { icone } from './icones.js';
 import { couleurCategorie } from './icone-projet.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
+import { ouvrirRecherche } from './recherche.js';
 
 const conteneur = document.getElementById('barre-laterale');
 
@@ -47,6 +48,8 @@ export function rendre() {
     el('div', { classe: 'barre-entete' },
       infosApp ? el('img', { src: infosApp.icone, alt: '' }) : null,
       'Toolkit'),
+    el('button', { classe: 'bouton-recherche', title: 'Rechercher dans les projets et les notes', onClick: ouvrirRecherche },
+      icone('recherche'), el('span', {}, 'Rechercher…'), el('kbd', {}, 'Ctrl+K')),
     el('div', { classe: 'barre-defilante' },
       el('div', { classe: 'barre-section' }, 'Bibliothèque'),
       elementNav({

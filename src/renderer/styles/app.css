@@ -744,6 +744,151 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .details-section .dernier-commit { display: block; margin-top: 6px; }
 .boutons-git { margin-top: 10px; align-items: center; }
 
+/* --- Recherche (Ctrl+K) ----------------------------------------------------------------------- */
+
+.bouton-recherche {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 10px 6px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--rayon);
+  background: var(--fond-champ);
+  color: var(--texte-faible);
+  cursor: pointer;
+}
+.bouton-recherche:hover { border-color: var(--accent); color: var(--texte); }
+.bouton-recherche span { flex: 1; text-align: left; }
+kbd {
+  padding: 1px 5px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 4px;
+  background: var(--fond-element);
+  font-family: var(--police);
+  font-size: 11px;
+  color: var(--texte-faible);
+}
+
+.voile-recherche { padding-top: 10vh; }
+.palette {
+  display: flex;
+  flex-direction: column;
+  width: 680px;
+  max-width: calc(100vw - 32px);
+  max-height: 70vh;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 10px;
+  background: #252526;
+  box-shadow: var(--ombre);
+  overflow: hidden;
+  animation: apparition 0.12s ease-out;
+}
+.palette-champ {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  height: 50px;
+  border-bottom: 1px solid var(--bordure-forte);
+  color: var(--texte-faible);
+}
+.palette-champ input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--texte-fort);
+  font-size: 15px;
+}
+.recherche-resultats { overflow-y: auto; padding: 6px; }
+.recherche-aide { margin: 14px; color: var(--texte-faible); line-height: 1.5; }
+.resultat {
+  display: flex;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: var(--rayon);
+  cursor: pointer;
+}
+.resultat.choisi { background: var(--fond-actif); outline: 1px solid var(--accent); }
+.resultat .icone-projet { border-radius: 6px; font-size: 11px; }
+.icone-resultat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  background: var(--fond-element);
+  color: var(--accent-texte);
+}
+.resultat-texte { flex: 1; min-width: 0; }
+.resultat-titre { display: flex; align-items: baseline; gap: 8px; color: var(--texte-fort); font-weight: 600; }
+.resultat-lieu { margin-left: auto; font-size: 11px; font-weight: 400; color: var(--texte-faible); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.resultat-extrait { margin-top: 3px; font-size: 12px; line-height: 1.45; color: var(--texte-faible); }
+mark { background: rgba(229, 192, 73, 0.3); color: var(--texte-fort); border-radius: 2px; padding: 0 1px; }
+
+/* --- Notes Markdown ------------------------------------------------------------------------- */
+
+.panneau-note { display: flex; flex-direction: column; background: var(--fond); }
+.titre-note { color: var(--texte-fort); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%; }
+.groupe-boutons-note { display: flex; gap: 6px; }
+.corps-note { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; user-select: text; }
+.aide-edition { margin: 8px 16px 0; }
+.editeur-note {
+  flex: 1;
+  margin: 8px 16px 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--rayon);
+  background: #1a1a1a;
+  color: var(--texte-fort);
+  font-family: var(--police-code);
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+}
+.editeur-note:focus { border-color: var(--accent); }
+
+.markdown { max-width: 860px; padding: 24px 32px 16px; line-height: 1.65; font-size: 14px; }
+.markdown h1, .markdown h2, .markdown h3, .markdown h4 { color: var(--texte-fort); line-height: 1.3; margin: 1.4em 0 0.5em; }
+.markdown h1 { font-size: 24px; margin-top: 0; padding-bottom: 8px; border-bottom: 1px solid var(--bordure); }
+.markdown h2 { font-size: 19px; padding-bottom: 6px; border-bottom: 1px solid var(--bordure); }
+.markdown h3 { font-size: 16px; }
+.markdown p, .markdown ul, .markdown ol, .markdown table, .markdown pre, .markdown blockquote { margin: 0 0 1em; }
+.markdown ul, .markdown ol { padding-left: 1.6em; }
+.markdown li + li { margin-top: 0.25em; }
+.markdown a { color: var(--accent-texte); text-decoration: none; cursor: pointer; }
+.markdown a:hover { text-decoration: underline; }
+.markdown a.lien-interne { border-bottom: 1px dashed var(--accent-texte); }
+.lien-casse { color: var(--erreur); border-bottom: 1px dashed var(--erreur); cursor: help; }
+.markdown code { padding: 1px 5px; border-radius: 4px; background: var(--fond-element); font-family: var(--police-code); font-size: 0.9em; }
+.markdown pre { padding: 12px 14px; border-radius: var(--rayon); background: #161616; border: 1px solid var(--bordure); overflow-x: auto; }
+.markdown pre code { padding: 0; background: none; }
+.markdown blockquote { padding: 4px 14px; border-left: 3px solid var(--accent); color: var(--texte-faible); background: rgba(0, 120, 212, 0.06); }
+.markdown table { border-collapse: collapse; display: block; overflow-x: auto; }
+.markdown th, .markdown td { padding: 6px 10px; border: 1px solid var(--bordure-forte); text-align: left; }
+.markdown th { background: var(--fond-element); color: var(--texte-fort); }
+.markdown img { max-width: 100%; border-radius: var(--rayon); }
+.markdown hr { border: none; border-top: 1px solid var(--bordure); margin: 1.5em 0; }
+
+.retroliens { max-width: 860px; margin: 0 32px 32px; padding-top: 14px; border-top: 1px solid var(--bordure); }
+.retroliens h3 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--texte-faible); }
+.retroliens ul { margin: 0; padding: 0; list-style: none; }
+.retroliens li { margin-bottom: 4px; }
+.retroliens a, .retroliens-projet a { display: inline-flex; align-items: center; gap: 6px; color: var(--accent-texte); text-decoration: none; }
+.retroliens a:hover, .retroliens-projet a:hover { text-decoration: underline; }
+
+.notes-projet { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.notes-projet .liste-actions { width: 100%; }
+.bouton-note span { display: flex; flex-direction: column; min-width: 0; }
+.bouton-note small { color: var(--texte-faible); font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+.retroliens-projet { display: flex; flex-direction: column; gap: 4px; }
+.retroliens-projet h4 { margin: 6px 0 2px; font-size: 11px; color: var(--texte-faible); text-transform: uppercase; letter-spacing: 0.06em; }
+
 /* --- Notifications ---------------------------------------------------------------------- */
 
 .notifications {

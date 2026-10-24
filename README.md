@@ -135,7 +135,19 @@ Si un point est en rouge, règle-le puis clique sur **Analyser à nouveau**.
 Toolkit utilise ta connexion GitHub existante (commande `gh`) et ne stocke jamais de mot
 de passe. Si GitHub n'est pas connecté, le panneau explique comment faire.
 
-## 10. Comment sont rangés les dossiers
+## 10. Rechercher et prendre des notes
+
+- **Ctrl+K** (ou « Rechercher… » en haut à gauche) cherche dans tous tes projets et dans
+  toutes les notes `.md` (README, CLAUDE.md, tes notes…). Les accents et majuscules ne
+  comptent pas. ↑ ↓ pour choisir, Entrée pour ouvrir.
+- Une note s'ouvre dans un onglet, joliment mise en forme. **Modifier** permet de l'éditer
+  (Ctrl+S pour enregistrer).
+- Dans une note, `[[nom-du-projet]]` ou `[[nom-de-note]]` crée un lien cliquable. Un lien
+  rouge pointillé ne mène nulle part (nom mal écrit ?).
+- Le panneau d'un projet liste ses notes, propose **Nouvelle note**, et montre les notes
+  qui le citent (« Cité dans »).
+
+## 11. Comment sont rangés les dossiers
 
 ```
 Toolkit\
@@ -150,7 +162,7 @@ Chaque projet contient une **fiche** `projet.json` (nom, description, catégorie
 et un fichier `CLAUDE.md` qui explique le projet à Claude Code. Le format de la fiche est
 expliqué dans [docs/projet-json.md](docs/projet-json.md).
 
-## 11. Déplacer le dossier Toolkit
+## 12. Déplacer le dossier Toolkit
 
 Tu peux déplacer le dossier `Toolkit` entier où tu veux (autre disque, autre dossier) :
 
@@ -160,7 +172,7 @@ Tu peux déplacer le dossier `Toolkit` entier où tu veux (autre disque, autre d
 
 Tout suit automatiquement : projets, réglages, données des outils, démarrage avec Windows.
 
-## 12. Sauvegardes
+## 13. Sauvegardes
 
 - Chaque projet peut avoir son propre historique Git et son propre repo GitHub.
 - Le dossier `donnees\` contient tes réglages et les données de tes outils : il n'est
@@ -168,7 +180,7 @@ Tout suit automatiquement : projets, réglages, données des outils, démarrage 
 - Le code de l'application (`app\`) a son propre repo Git : en le récupérant ailleurs, on
   obtient un Toolkit vide, sans tes projets.
 
-## 13. En cas de problème
+## 14. En cas de problème
 
 | Problème | Solution |
 |---|---|

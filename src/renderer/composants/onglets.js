@@ -18,6 +18,7 @@ import * as panneauGit from './git.js';
 import { ID_GIT } from './git.js';
 import { creerPanneauTerminal } from './terminal.js';
 import { creerPanneauConsole } from './console.js';
+import { creerPanneauNote } from './note.js';
 
 export const ID_BIBLIOTHEQUE = 'bibliotheque';
 
@@ -53,6 +54,7 @@ function onglet({ id, titre, visuel, actif, fermable }) {
 function visuelOutil(o) {
   if (o.genre === 'terminal') return icone(o.mode === 'claude' ? 'claude' : 'terminal');
   if (o.genre === 'console') return icone('lecture');
+  if (o.genre === 'note') return icone('note');
   const projet = etat.obtenir().projets.find((p) => p.id === o.projetId);
   return projet && !o.outilLie ? iconeProjet(projet, 16) : icone('outil');
 }
@@ -104,6 +106,7 @@ function creerPanneauOutil(o) {
 function creerPanneau(o) {
   if (o.genre === 'terminal') return creerPanneauTerminal(o, zone);
   if (o.genre === 'console') return creerPanneauConsole({ ...o }, zone);
+  if (o.genre === 'note') return creerPanneauNote({ ...o }, zone);
   return creerPanneauOutil(o);
 }
 
@@ -123,7 +126,7 @@ export function rendre() {
     importOuvert
       ? onglet({ id: ID_IMPORT, titre: 'Importer un projet', visuel: icone('importer'), actif: ongletActif === ID_IMPORT, fermable: true })
       : '',
-    ...onglets.map((o) => onglet({ id: o.id, titre: o.nom, visuel: visuelOutil(o), actif: ongletActif === o.id, fermable: true })),
+    ...onglets.map((o) => onglet({ id: o.id, titre: o.nonEnregistre ? `● ${o.nom}` : o.nom, visuel: visuelOutil(o), actif: ongletActif === o.id, fermable: true })),
   );
 
   // Crée les panneaux des nouveaux onglets, supprime ceux des onglets fermés.

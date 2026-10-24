@@ -228,6 +228,8 @@ function attacher(contenuPrincipal) {
         invite.reloadIgnoringCache();
       } else if (touche.control && lettre === 'w') {
         contenuPrincipal.send('outils:raccourci', 'fermer');
+      } else if (touche.control && lettre === 'k') {
+        contenuPrincipal.send('outils:raccourci', 'recherche');
       } else {
         return;
       }

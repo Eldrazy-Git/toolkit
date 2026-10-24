@@ -76,6 +76,8 @@ app/
     │   ├── git.js               Git : état d'un dépôt, commit, push, pull, fetch, .gitignore, clone
     │   ├── github.js            GitHub via « gh » (état de connexion, dépôt privé)
     │   ├── import.js            assistant d'import : analyse, détection, copie vérifiée
+    │   ├── recherche.js         index MiniSearch (projets + .md), liens [[…]], rétroliens
+    │   ├── notes.js             notes .md : rendu markdown-it (HTML brut désactivé), lecture, écriture
     │   ├── modeles.js           modèles de « Nouvel outil » et création du projet
     │   ├── claude-md.js         génération du CLAUDE.md d'un projet
     │   ├── editeurs.js          détection des éditeurs + « Ouvrir avec… »
@@ -104,6 +106,8 @@ app/
             ├── import.js        onglet « Importer un projet » (assistant en étapes)
             ├── git.js           onglet « Git et GitHub » + pastilles/boutons réutilisés dans les détails
             ├── actions-git.js   actions Git (commit, push, pull, tout envoyer, dépôt GitHub privé)
+            ├── recherche.js     palette de recherche Ctrl+K
+            ├── note.js          onglet d'une note : lecture, liens, rétroliens, modification
             ├── menu.js          ouvrirMenu(bouton, elements) : menu déroulant
             └── barre-laterale.js, bibliotheque.js, details.js, icone-projet.js
 ```
@@ -118,8 +122,8 @@ concernés et conserve les autres.
 |---|---|
 | Application | electron |
 | Terminal | @xterm/xterm + @xterm/addon-fit, @lydell/node-pty (binaires précompilés, pas besoin de Visual Studio Build Tools) |
-| Recherche | minisearch |
-| Markdown | markdown-it (+ petit plugin maison pour `[[liens]]`) |
+| Recherche | minisearch (dans le processus principal) |
+| Markdown | markdown-it (dans le processus principal, + règle maison pour `[[liens]]`) |
 | Git / GitHub | commandes `git` et `gh` du système (child_process) |
 
 N'ajoute une dépendance que si elle est vraiment utile, et privilégie les bibliothèques
@@ -212,6 +216,21 @@ dans `docs/projet-json.md`. Points clés :
 - Dépôt GitHub : toujours PRIVÉ (`gh repo create --private`), refusé si des secrets sont
   suivis par Git ; l'adresse est notée dans `projet.json` (`git.remote`).
 - Le repo de l'application ne contient que `app/` : un clone donne un Toolkit vierge.
+
+### Recherche et notes
+
+`src/main/recherche.js` + `src/main/notes.js` + `composants/recherche.js` / `note.js`.
+- Index **paresseux** : construit à la première recherche (Ctrl+K), puis seuls les
+  fichiers dont la date a changé sont relus (au plus toutes les 2 s). Dossiers ignorés :
+  node_modules, .git, build… Accents et majuscules ignorés, recherche par début de mot et
+  approximative.
+- Liens `[[cible]]`, `[[cible|libellé]]` : cible = id ou nom d'un projet, nom ou chemin
+  d'une note. Les rétroliens (« Cité dans ») sont recalculés à chaque mise à jour.
+- Rendu Markdown dans le processus principal, HTML brut désactivé ; liens transformés en
+  `data-projet` / `data-note` / `data-externe` et gérés par `actions.suivreLien()`.
+- Lecture et écriture limitées aux `.md` de `projets/` et `app/`. L'enregistrement est
+  refusé si le fichier a changé depuis l'ouverture (sauf confirmation) ; les fins de ligne
+  Windows d'origine sont conservées.
 
 ### Éditeurs (« Ouvrir avec… »)
 
@@ -315,7 +334,7 @@ pour l'utilisateur, attente de sa validation.
 - [x] 5. Actions et scripts
 - [x] 6. Assistant d'import
 - [x] 7. Git et GitHub
-- [ ] 8. Recherche et Markdown
+- [x] 8. Recherche et Markdown
 - [ ] 9. Compilation des mods et de l'APK
 - [ ] 10. Finitions
 
