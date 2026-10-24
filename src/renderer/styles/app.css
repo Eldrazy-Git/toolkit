@@ -531,6 +531,76 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .alerte.attention { border-color: rgba(204, 167, 0, 0.5); background: rgba(204, 167, 0, 0.08); }
 .alerte.attention > .ico { color: var(--attention); }
 
+/* --- Menu déroulant ------------------------------------------------------------------------ */
+
+.menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 220px;
+  padding: 4px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--rayon);
+  background: #252526;
+  box-shadow: var(--ombre);
+  animation: apparition 0.1s ease-out;
+}
+.menu-element {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.menu-element:hover:not(:disabled), .menu-element:focus-visible { background: var(--accent); color: #fff; outline: none; }
+.menu-element:disabled { opacity: 0.45; cursor: default; }
+.menu-libelle { flex: 1; }
+.menu-detail { font-size: 11px; color: var(--texte-faible); }
+.menu-element:hover:not(:disabled) .menu-detail { color: #dfefff; }
+.menu-separateur { height: 1px; margin: 4px 6px; background: var(--bordure-forte); }
+
+/* --- Réglages ------------------------------------------------------------------------------- */
+
+.panneau-reglages { overflow-y: auto; user-select: text; }
+.page-reglages { max-width: 720px; padding: 28px 32px 48px; }
+.page-reglages h1 { margin: 0 0 20px; font-size: 20px; color: var(--texte-fort); }
+.section-reglages { margin-bottom: 32px; }
+.section-reglages h2 {
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--bordure);
+  font-size: 14px;
+  color: var(--texte-fort);
+}
+.section-reglages > .details-aide { margin: 8px 0 14px; line-height: 1.5; }
+
+.reglage-editeur {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--fond-panneau);
+}
+.reglage-editeur-entete { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.reglage-editeur strong { color: var(--texte-fort); }
+.reglage-chemin {
+  display: block;
+  margin-bottom: 10px;
+  font-family: var(--police-code);
+  font-size: 12px;
+  color: var(--texte-faible);
+  overflow-wrap: anywhere;
+}
+.statut { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; }
+.statut .ico { width: 14px; height: 14px; }
+.statut.ok { color: var(--succes); }
+.statut.erreur { color: var(--erreur); }
+
 /* --- Notifications ---------------------------------------------------------------------- */
 
 .notifications {

@@ -84,6 +84,11 @@ export function activerOnglet(id) {
 }
 
 export function fermerOnglet(id) {
+  if (id === 'reglages') {
+    const { ongletActif } = etat.obtenir();
+    etat.modifier({ reglagesOuverts: false, ongletActif: ongletActif === 'reglages' ? 'bibliotheque' : ongletActif });
+    return;
+  }
   const { onglets, ongletActif } = etat.obtenir();
   const position = onglets.findIndex((o) => o.id === id);
   if (position === -1) return;
@@ -102,8 +107,8 @@ export function fermerOngletActif() {
 }
 
 export function ongletSuivant(sens = 1) {
-  const { onglets, ongletActif } = etat.obtenir();
-  const ids = ['bibliotheque', ...onglets.map((o) => o.id)];
+  const { onglets, ongletActif, reglagesOuverts } = etat.obtenir();
+  const ids = ['bibliotheque', ...(reglagesOuverts ? ['reglages'] : []), ...onglets.map((o) => o.id)];
   const position = ids.indexOf(ongletActif);
   etat.modifier({ ongletActif: ids[(position + sens + ids.length) % ids.length] });
 }
@@ -214,6 +219,72 @@ export async function renommerTag(tag) {
   notifier(`${nombre} projet(s) mis à jour.`, 'succes');
   await chargerProjets();
 }
+
+// --- Ouvrir avec… et éditeurs -----------------------------------------------------------
+
+export async function chargerEditeurs(fonction = () => api.editeurs.etat()) {
+  const editeurs = await essayer(fonction);
+  if (editeurs) etat.modifier({ editeurs });
+}
+
+// Même règle que editeurs.js > editeurParDefaut (processus principal).
+export function editeurParDefaut(fiche) {
+  if (fiche.ouvrir_avec) return fiche.ouvrir_avec;
+  return fiche.type === 'android' ? 'android-studio' : 'vscode';
+}
+
+export function nomEditeur(id) {
+  return etat.obtenir().editeurs.find((e) => e.id === id)?.nom || id;
+}
+
+// editeurId absent : éditeur par défaut du projet.
+export async function ouvrirAvec(projet, editeurId) {
+  const nom = await essayer(() => api.editeurs.ouvrirProjet(projet.id, editeurId));
+  if (nom) notifier(`Ouverture de « ${projet.fiche.nom} » dans ${nom}…`);
+}
+
+async function ouvrirToolkitAvec(editeurId) {
+  const nom = await essayer(() => api.editeurs.ouvrirToolkit(editeurId));
+  if (nom) notifier(`Ouverture du code de Toolkit dans ${nom}…`);
+}
+
+// Construit les éléments du menu « Ouvrir avec… ».
+function elementsMenuEditeurs(editeurDefaut, ouvrir) {
+  return [
+    ...etat.obtenir().editeurs.map((e) => ({
+      libelle: e.nom,
+      icone: e.id === 'explorateur' ? 'dossier' : 'ouvrirAvec',
+      detail: e.id === editeurDefaut ? 'par défaut' : (e.disponible ? null : 'introuvable'),
+      desactive: !e.disponible,
+      infobulle: e.disponible ? e.chemin : 'Introuvable sur ce PC : indique son emplacement dans les Réglages.',
+      action: () => ouvrir(e.id),
+    })),
+    'separateur',
+    { libelle: 'Réglages des éditeurs…', icone: 'reglages', action: ouvrirReglages },
+  ];
+}
+
+export function elementsMenuOuvrirAvec(projet) {
+  return elementsMenuEditeurs(editeurParDefaut(projet.fiche), (id) => ouvrirAvec(projet, id));
+}
+
+export function elementsMenuOuvrirToolkit() {
+  return elementsMenuEditeurs('vscode', ouvrirToolkitAvec);
+}
+
+// editeur = '' pour revenir au choix automatique selon le type.
+export async function changerEditeurParDefaut(projet, editeur) {
+  remplacerProjet(await essayer(() => api.projets.modifier(projet.id, { ouvrir_avec: editeur || null })));
+}
+
+export function ouvrirReglages() {
+  etat.modifier({ reglagesOuverts: true, ongletActif: 'reglages' });
+  chargerEditeurs();
+}
+
+export const redetecterEditeurs = () => chargerEditeurs(() => api.editeurs.redetecter());
+export const definirCheminEditeur = (id, chemin) => chargerEditeurs(() => api.editeurs.definir(id, chemin));
+export const parcourirEditeur = (id) => chargerEditeurs(() => api.editeurs.parcourir(id));
 
 // --- Application ------------------------------------------------------------------------
 

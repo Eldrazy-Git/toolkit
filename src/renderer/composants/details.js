@@ -5,15 +5,11 @@ import { iconeProjet } from './icone-projet.js';
 import { LIBELLES_TYPES } from './bibliotheque.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
+import { ouvrirMenu } from './menu.js';
 
 const conteneur = document.getElementById('details');
 
-const NOMS_EDITEURS = {
-  vscode: 'VS Code',
-  'android-studio': 'Android Studio',
-  'notepad++': 'Notepad++',
-  explorateur: 'Explorateur Windows',
-};
+const EDITEURS_FICHE = ['vscode', 'android-studio', 'notepad++', 'explorateur'];
 
 const NOUVELLE_CATEGORIE = '\u0000nouvelle';
 
@@ -24,6 +20,26 @@ function bientot(libelle, nomIcone, phase, principal = false) {
     disabled: true,
     title: `Disponible à l'étape ${phase} de la construction`,
   }, icone(nomIcone), libelle);
+}
+
+// Bouton qui affiche un menu ; elements() est appelé au clic pour avoir l'état à jour.
+function boutonMenu(libelle, nomIcone, elements) {
+  const bouton = el('button', { classe: 'bouton', onClick: () => ouvrirMenu(bouton, elements()) }, icone(nomIcone), libelle);
+  return bouton;
+}
+
+function selecteurEditeur(projet) {
+  const automatique = projet.fiche.type === 'android' ? 'android-studio' : 'vscode';
+  const select = el('select', {
+    classe: 'champ-select',
+    disabled: Boolean(projet.erreur),
+    title: 'Éditeur utilisé par le bouton « Ouvrir » (enregistré dans projet.json)',
+    onChange: () => actions.changerEditeurParDefaut(projet, select.value),
+  },
+  el('option', { value: '' }, `Automatique (${actions.nomEditeur(automatique)})`),
+  EDITEURS_FICHE.map((id) => el('option', { value: id }, actions.nomEditeur(id))));
+  select.value = projet.fiche.ouvrir_avec || '';
+  return select;
 }
 
 function section(titre, ...contenu) {
@@ -107,8 +123,12 @@ function rendreProjet(projet) {
       el('div', { classe: 'details-boutons' },
         actions.estOuvrableCommeOutil(projet)
           ? el('button', { classe: 'bouton principal', title: 'Ouvrir l\'outil dans un onglet', onClick: () => actions.ouvrirOutil(projet.id) }, icone('lecture'), 'Ouvrir')
-          : bientot('Ouvrir', 'lecture', 3, true),
-        bientot('Ouvrir avec…', 'ouvrirAvec', 3),
+          : el('button', {
+            classe: 'bouton principal',
+            disabled: Boolean(projet.erreur),
+            onClick: () => actions.ouvrirAvec(projet),
+          }, icone('lecture'), `Ouvrir dans ${actions.nomEditeur(actions.editeurParDefaut(f))}`),
+        boutonMenu('Ouvrir avec…', 'ouvrirAvec', () => actions.elementsMenuOuvrirAvec(projet)),
         bientot('Modifier avec Claude', 'claude', 4)),
 
       section('Actions',
@@ -131,13 +151,13 @@ function rendreProjet(projet) {
         : null,
 
       section('Catégorie', selecteurCategorie(projet)),
+      section('Éditeur par défaut', selecteurEditeur(projet)),
       section('Tags', tags(projet)),
 
       section('Informations',
         el('dl', { classe: 'infos' },
           el('dt', {}, 'Dossier'), el('dd', {}, el('code', {}, projet.dossier)),
           el('dt', {}, 'Point d\'entrée'), el('dd', {}, f.point_entree ? el('code', {}, f.point_entree) : '—'),
-          el('dt', {}, 'Ouvrir avec'), el('dd', {}, NOMS_EDITEURS[f.ouvrir_avec] || '—'),
           el('dt', {}, 'GitHub'), el('dd', {}, f.git.remote || 'Aucun repo distant'))),
 
       section('Git', el('p', { classe: 'details-aide' }, 'L\'état Git s\'affichera ici (étape 7).'))),
@@ -152,6 +172,7 @@ function rendreToolkit(infos) {
       el('p', { classe: 'details-description' }, infos.description),
       el('div', { classe: 'details-boutons' },
         bientot('Modifier Toolkit avec Claude', 'claude', 4, true),
+        boutonMenu('Ouvrir avec…', 'ouvrirAvec', actions.elementsMenuOuvrirToolkit),
         el('button', { classe: 'bouton', onClick: actions.redemarrerToolkit }, icone('redemarrer'), 'Redémarrer Toolkit')),
       section('Informations',
         el('dl', { classe: 'infos' },
@@ -162,7 +183,7 @@ function rendreToolkit(infos) {
         el('dl', { classe: 'infos' },
           el('dt', {}, 'Ctrl+F'), el('dd', {}, 'Filtrer les projets'),
           el('dt', {}, 'Échap'), el('dd', {}, 'Fermer ce panneau'),
-          el('dt', {}, 'Double-clic'), el('dd', {}, 'Ouvrir un outil HTML'),
+          el('dt', {}, 'Double-clic'), el('dd', {}, 'Ouvrir un projet'),
           el('dt', {}, 'Ctrl+Tab'), el('dd', {}, 'Onglet suivant'),
           el('dt', {}, 'Ctrl+W'), el('dd', {}, 'Fermer l\'onglet de l\'outil'),
           el('dt', {}, 'F5'), el('dd', {}, 'Recharger l\'outil ou l\'interface'),

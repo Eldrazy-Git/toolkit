@@ -75,9 +75,11 @@ function marques(projet) {
   ];
 }
 
-// Double-clic : ouvre l'outil HTML (les autres types auront « Ouvrir avec » à l'étape 3).
+// Double-clic : ouvre l'outil HTML dans un onglet, sinon le projet dans son éditeur par défaut.
 function ouvrir(projet) {
+  if (projet.erreur) return;
   if (actions.estOuvrableCommeOutil(projet)) actions.ouvrirOutil(projet.id);
+  else actions.ouvrirAvec(projet);
 }
 
 function carte(projet, selection) {

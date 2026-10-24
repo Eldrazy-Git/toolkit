@@ -5,6 +5,7 @@ import * as barreLaterale from './composants/barre-laterale.js';
 import * as bibliotheque from './composants/bibliotheque.js';
 import * as details from './composants/details.js';
 import * as onglets from './composants/onglets.js';
+import * as reglages from './composants/reglages.js';
 import { notifier } from './composants/notifications.js';
 
 etat.abonner(() => {
@@ -12,6 +13,7 @@ etat.abonner(() => {
   onglets.rendre();
   bibliotheque.rendre();
   details.rendre();
+  reglages.rendre();
 });
 
 document.addEventListener('keydown', (e) => {
@@ -41,16 +43,17 @@ window.addEventListener('unhandledrejection', (e) => notifier(e.reason?.message 
 
 async function demarrer() {
   try {
-    const [reglages, infosApp] = await Promise.all([
+    const [reglagesSauves, infosApp] = await Promise.all([
       window.toolkit.reglages.lire(),
       window.toolkit.application.infos(),
     ]);
-    etat.modifier({ vue: reglages.interface?.vue === 'liste' ? 'liste' : 'grille', infosApp });
+    etat.modifier({ vue: reglagesSauves.interface?.vue === 'liste' ? 'liste' : 'grille', infosApp });
   } catch (erreur) {
     notifier(erreur.message, 'erreur');
   }
   window.toolkit.projets.surChangement(actions.chargerProjets);
   await actions.chargerProjets();
+  await actions.chargerEditeurs();
 }
 
 demarrer();

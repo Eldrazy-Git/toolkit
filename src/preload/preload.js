@@ -34,6 +34,16 @@ contextBridge.exposeInMainWorld('toolkit', {
     // Raccourcis clavier pressés dans un outil (ex. 'fermer' pour Ctrl+W).
     surRaccourci: (rappel) => ecouter('outils:raccourci', rappel),
   },
+  editeurs: {
+    // [{ id, nom, chemin, source: 'reglage' | 'auto' | 'systeme' | null, disponible }]
+    etat: () => appeler('editeurs:etat'),
+    redetecter: () => appeler('editeurs:redetecter'),
+    definir: (id, chemin) => appeler('editeurs:definir', id, chemin),
+    parcourir: (id) => appeler('editeurs:parcourir', id),
+    // editeurId absent : éditeur par défaut du projet. Renvoie le nom de l'éditeur utilisé.
+    ouvrirProjet: (projetId, editeurId) => appeler('editeurs:ouvrir-projet', projetId, editeurId),
+    ouvrirToolkit: (editeurId) => appeler('editeurs:ouvrir-toolkit', editeurId),
+  },
   reglages: {
     lire: () => appeler('reglages:lire'),
     modifier: (changements) => appeler('reglages:modifier', changements),

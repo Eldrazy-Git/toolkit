@@ -64,7 +64,18 @@ clic droit sur cette icône > **Quitter Toolkit**.
 - **Raccourcis :** F5 recharge l'outil, F12 ouvre les outils de développement,
   Ctrl+W ferme l'onglet, Ctrl+Tab passe à l'onglet suivant.
 
-## 5. Comment sont rangés les dossiers
+## 5. Ouvrir un projet dans un éditeur
+
+- **Ouvrir dans …** (panneau de droite, ou double-clic sur un projet qui n'est pas un
+  outil HTML) : ouvre le projet dans son éditeur par défaut.
+- **Ouvrir avec…** : choisir un autre éditeur (VS Code, Android Studio, Notepad++,
+  Explorateur Windows).
+- L'**éditeur par défaut** d'un projet se choisit dans le panneau de droite.
+- Toolkit trouve tout seul les éditeurs installés. Si l'un d'eux n'est pas trouvé :
+  **Réglages** (en bas à gauche) > **Choisir le programme…**, puis sélectionne son
+  fichier `.exe`.
+
+## 6. Comment sont rangés les dossiers
 
 ```
 Toolkit\
@@ -79,7 +90,7 @@ Chaque projet contient une **fiche** `projet.json` (nom, description, catégorie
 et un fichier `CLAUDE.md` qui explique le projet à Claude Code. Le format de la fiche est
 expliqué dans [docs/projet-json.md](docs/projet-json.md).
 
-## 6. Déplacer le dossier Toolkit
+## 7. Déplacer le dossier Toolkit
 
 Tu peux déplacer le dossier `Toolkit` entier où tu veux (autre disque, autre dossier) :
 
@@ -89,7 +100,7 @@ Tu peux déplacer le dossier `Toolkit` entier où tu veux (autre disque, autre d
 
 Tout suit automatiquement : projets, réglages, données des outils, démarrage avec Windows.
 
-## 7. Sauvegardes
+## 8. Sauvegardes
 
 - Chaque projet peut avoir son propre historique Git et son propre repo GitHub.
 - Le dossier `donnees\` contient tes réglages et les données de tes outils : il n'est
@@ -97,7 +108,7 @@ Tout suit automatiquement : projets, réglages, données des outils, démarrage 
 - Le code de l'application (`app\`) a son propre repo Git : en le récupérant ailleurs, on
   obtient un Toolkit vide, sans tes projets.
 
-## 8. En cas de problème
+## 9. En cas de problème
 
 | Problème | Solution |
 |---|---|

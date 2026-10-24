@@ -6,6 +6,8 @@ import { icone } from './icones.js';
 import { iconeProjet } from './icone-projet.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
+import * as reglages from './reglages.js';
+import { ID_REGLAGES } from './reglages.js';
 
 export const ID_BIBLIOTHEQUE = 'bibliotheque';
 
@@ -89,10 +91,13 @@ function creerPanneau(o) {
 // --- Rendu -----------------------------------------------------------------------------
 
 export function rendre() {
-  const { onglets, ongletActif } = etat.obtenir();
+  const { onglets, ongletActif, reglagesOuverts } = etat.obtenir();
 
   barre.replaceChildren(
     onglet({ id: ID_BIBLIOTHEQUE, titre: 'Bibliothèque', visuel: icone('grille'), actif: ongletActif === ID_BIBLIOTHEQUE, fermable: false }),
+    reglagesOuverts
+      ? onglet({ id: ID_REGLAGES, titre: 'Réglages', visuel: icone('reglages'), actif: ongletActif === ID_REGLAGES, fermable: true })
+      : '',
     ...onglets.map((o) => onglet({ id: o.id, titre: o.nom, visuel: visuelOutil(o), actif: ongletActif === o.id, fermable: true })),
   );
 
@@ -108,5 +113,6 @@ export function rendre() {
   }
 
   panneauBibliotheque.classList.toggle('inactif', ongletActif !== ID_BIBLIOTHEQUE);
+  reglages.element().classList.toggle('inactif', ongletActif !== ID_REGLAGES);
   for (const [id, panneau] of panneaux) panneau.element.classList.toggle('inactif', id !== ongletActif);
 }

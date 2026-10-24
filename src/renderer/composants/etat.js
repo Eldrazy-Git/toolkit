@@ -13,7 +13,9 @@ const etat = {
   vue: 'grille', // grille | liste
   selection: null, // id d'un projet, ID_TOOLKIT ou null
   onglets: [], // outils HTML ouverts : { id, nom, projetId, outilLie, url, partition, chemin }
-  ongletActif: 'bibliotheque', // 'bibliotheque' ou l'id d'un outil ouvert
+  ongletActif: 'bibliotheque', // 'bibliotheque', 'reglages' ou l'id d'un outil ouvert
+  reglagesOuverts: false, // onglet « Réglages » affiché
+  editeurs: [], // [{ id, nom, chemin, source, disponible }]
 };
 
 const abonnes = new Set();

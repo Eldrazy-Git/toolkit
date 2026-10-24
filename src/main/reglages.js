@@ -11,6 +11,9 @@ const DEFAUTS = {
   interface: {
     vue: 'grille', // 'grille' ou 'liste'
   },
+  // Chemins des éditeurs choisis à la main (null = détection automatique).
+  // Seule exception à la règle « pas de chemin absolu » : ces logiciels sont hors de Toolkit.
+  editeurs: {},
   fenetre: null, // { x, y, largeur, hauteur, maximisee }
   astuceZoneNotificationVue: false,
 };

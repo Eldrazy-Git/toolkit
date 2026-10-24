@@ -69,6 +69,8 @@ app/
     │   ├── projets.js           lecture, normalisation, modification, surveillance des fiches
     │   ├── activite.js          compteur de tâches en cours (fenêtre cachée au lieu de détruite)
     │   ├── lanceur.js           (re)crée « Lancer Toolkit.vbs »
+    │   ├── processus.js         lancer un programme (environnement nettoyé), lire une sortie
+    │   ├── editeurs.js          détection des éditeurs + « Ouvrir avec… »
     │   ├── outils-html.js       protocole toolkit-outil://, partitions, sécurité des <webview>
     │   ├── outils-donnees.js    export / import localStorage + IndexedDB en JSON
     │   ├── zone-notification.js icône près de l'horloge
@@ -87,6 +89,8 @@ app/
             ├── dialogue.js      demanderTexte(), confirmer()
             ├── notifications.js notifier(message, type)
             ├── onglets.js       barre d'onglets + panneaux des outils (<webview>)
+            ├── reglages.js      onglet « Réglages »
+            ├── menu.js          ouvrirMenu(bouton, elements) : menu déroulant
             └── barre-laterale.js, bibliotheque.js, details.js, icone-projet.js
 ```
 
@@ -128,6 +132,15 @@ Voir `src/main/outils-html.js` (explications en tête du fichier) et
   IndexedDB), les données sont restaurées, puis l'outil est rechargé.
 
 Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
+
+### Éditeurs (« Ouvrir avec… »)
+
+`src/main/editeurs.js`. Un chemin choisi dans les Réglages (`reglages.editeurs.<id>`) est
+prioritaire ; sinon détection automatique à chaque session (registre Windows, `where`,
+emplacements habituels), jamais enregistrée : elle se refait d'elle-même sur un autre PC.
+« Ouvrir » utilise `ouvrir_avec` de la fiche, sinon Android Studio pour un projet
+`android` et VS Code pour les autres. Tout programme externe se lance via
+`processus.js` (`lancerDetache`, `environnementPropre`).
 
 ## Comment ajouter une fonctionnalité
 
@@ -184,6 +197,9 @@ npm run icones     régénère assets/icone.png et assets/icone.ico
   `require('electron')` échoue. Pour tester depuis un tel environnement :
   `env -u ELECTRON_RUN_AS_NODE npm start`. Toolkit doit retirer cette variable de
   l'environnement des processus qu'il lance (terminaux, scripts).
+- **Tester pendant que Toolkit de l'utilisateur est ouvert** : le verrou d'instance unique
+  ferme aussitôt toute 2ᵉ copie. Pour un test automatique, utiliser un autre dossier
+  `userData` et neutraliser `app.requestSingleInstanceLock` dans le script de test.
 - `prompt()`, `alert()` et `confirm()` n'existent pas dans Electron : utiliser
   `composants/dialogue.js`.
 - La politique de sécurité (CSP) de `index.html` interdit les scripts en ligne. Les styles
@@ -202,7 +218,7 @@ pour l'utilisateur, attente de sa validation.
 - [x] 0. Mise en place (structure, prérequis, documentation)
 - [x] 1. Coquille (fenêtre, thème, bibliothèque, détails, zone de notification)
 - [x] 2. Outils HTML (protocole, onglets, stockage persistant, export/import)
-- [ ] 3. Ouvrir avec… et réglages des éditeurs
+- [x] 3. Ouvrir avec… et réglages des éditeurs
 - [ ] 4. Terminal intégré et Claude Code
 - [ ] 5. Actions et scripts
 - [ ] 6. Assistant d'import

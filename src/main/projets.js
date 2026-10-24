@@ -193,6 +193,10 @@ async function modifierFiche(id, changements) {
     else delete brut.categorie;
   }
   if ('tags' in changements) brut.tags = listeDeTextes(changements.tags);
+  if ('ouvrir_avec' in changements) {
+    if (EDITEURS.includes(changements.ouvrir_avec)) brut.ouvrir_avec = changements.ouvrir_avec;
+    else delete brut.ouvrir_avec;
+  }
 
   await ecrireJson(chemin, brut);
   return chargerProjet(id);

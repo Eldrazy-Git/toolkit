@@ -34,8 +34,10 @@ function elementNav({ libelle, visuel, compteur, actif, auClic, renommer }) {
 }
 
 export function rendre() {
-  const { projets, filtre, selection, infosApp } = etat.obtenir();
+  const { projets, selection, infosApp, ongletActif } = etat.obtenir();
   const enBibliotheque = selection !== etat.ID_TOOLKIT;
+  // Aucun filtre n'est surligné quand on regarde les Réglages ou un outil.
+  const filtre = ongletActif === 'bibliotheque' ? etat.obtenir().filtre : { type: 'aucun' };
   const choisir = (f) => () => actions.choisirFiltre(f);
 
   const categories = actions.listeCategories();
@@ -92,9 +94,15 @@ export function rendre() {
     ),
     el('div', { classe: 'barre-pied' },
       elementNav({
+        libelle: 'Réglages',
+        visuel: icone('reglages'),
+        actif: etat.obtenir().ongletActif === 'reglages',
+        auClic: actions.ouvrirReglages,
+      }),
+      elementNav({
         libelle: 'Toolkit (l\'application)',
         visuel: icone('outil'),
-        actif: !enBibliotheque,
+        actif: !enBibliotheque && ongletActif === 'bibliotheque',
         auClic: () => actions.selectionner(etat.ID_TOOLKIT),
       })),
   );
