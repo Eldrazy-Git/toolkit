@@ -107,7 +107,20 @@ intégré à Toolkit. Aucune clé API n'est utilisée.
 - Dans un terminal : sélectionner du texte puis **Ctrl+C** le copie, **Ctrl+V** colle,
   clic droit copie la sélection ou colle.
 
-## 8. Comment sont rangés les dossiers
+## 8. Importer un projet existant
+
+Bouton **Importer** en haut de la bibliothèque.
+1. Choisis le dossier du projet sur ton PC, ou colle l'adresse d'un dépôt GitHub.
+2. Toolkit analyse le projet **sans rien modifier** et affiche un rapport : type détecté,
+   points d'attention, dossiers inutiles à copier, outils HTML trouvés, Git / GitHub.
+3. Ajuste si besoin, puis clique sur **Importer**. Le projet est copié dans `projets\`, la
+   copie est vérifiée fichier par fichier, puis l'original part à la **Corbeille** (tu peux
+   cocher « Garder aussi l'original »).
+
+Avant d'importer, ferme les programmes qui utilisent le projet (Android Studio, VS Code…).
+Si un point est en rouge, règle-le puis clique sur **Analyser à nouveau**.
+
+## 9. Comment sont rangés les dossiers
 
 ```
 Toolkit\
@@ -122,7 +135,7 @@ Chaque projet contient une **fiche** `projet.json` (nom, description, catégorie
 et un fichier `CLAUDE.md` qui explique le projet à Claude Code. Le format de la fiche est
 expliqué dans [docs/projet-json.md](docs/projet-json.md).
 
-## 9. Déplacer le dossier Toolkit
+## 10. Déplacer le dossier Toolkit
 
 Tu peux déplacer le dossier `Toolkit` entier où tu veux (autre disque, autre dossier) :
 
@@ -132,7 +145,7 @@ Tu peux déplacer le dossier `Toolkit` entier où tu veux (autre disque, autre d
 
 Tout suit automatiquement : projets, réglages, données des outils, démarrage avec Windows.
 
-## 10. Sauvegardes
+## 11. Sauvegardes
 
 - Chaque projet peut avoir son propre historique Git et son propre repo GitHub.
 - Le dossier `donnees\` contient tes réglages et les données de tes outils : il n'est
@@ -140,7 +153,7 @@ Tout suit automatiquement : projets, réglages, données des outils, démarrage 
 - Le code de l'application (`app\`) a son propre repo Git : en le récupérant ailleurs, on
   obtient un Toolkit vide, sans tes projets.
 
-## 11. En cas de problème
+## 12. En cas de problème
 
 | Problème | Solution |
 |---|---|

@@ -15,6 +15,7 @@ const etat = {
   onglets: [], // outils HTML ouverts : { id, nom, projetId, outilLie, url, partition, chemin }
   ongletActif: 'bibliotheque', // 'bibliotheque', 'reglages' ou l'id d'un outil ouvert
   reglagesOuverts: false, // onglet « Réglages » affiché
+  importOuvert: false, // onglet « Importer un projet » affiché
   editeurs: [], // [{ id, nom, chemin, source, disponible }]
   programmes: null, // [{ nom, libelle, chemin, version, installation }] (chargé à l'ouverture des Réglages)
 };

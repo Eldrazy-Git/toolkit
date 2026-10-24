@@ -72,7 +72,9 @@ app/
     │   ├── processus.js         lancer un programme (environnement nettoyé), lire une sortie
     │   ├── terminal.js          terminaux node-pty (Claude Code, PowerShell)
     │   ├── executions.js        actions de projet.json : commande, programme, sortie, arrêt
-    │   ├── git.js               opérations Git locales (init, commit de sauvegarde)
+    │   ├── git.js               opérations Git locales (init, commits, .gitignore, clone)
+    │   ├── github.js            GitHub via « gh » (état de connexion, dépôt privé)
+    │   ├── import.js            assistant d'import : analyse, détection, copie vérifiée
     │   ├── modeles.js           modèles de « Nouvel outil » et création du projet
     │   ├── claude-md.js         génération du CLAUDE.md d'un projet
     │   ├── editeurs.js          détection des éditeurs + « Ouvrir avec… »
@@ -98,6 +100,7 @@ app/
             ├── reglages.js      onglet « Réglages »
             ├── terminal.js      panneau de terminal (xterm.js), copier/coller, relance
             ├── console.js       panneau d'exécution d'une action (sortie en direct)
+            ├── import.js        onglet « Importer un projet » (assistant en étapes)
             ├── menu.js          ouvrirMenu(bouton, elements) : menu déroulant
             └── barre-laterale.js, bibliotheque.js, details.js, icone-projet.js
 ```
@@ -174,6 +177,22 @@ dans `docs/projet-json.md`. Points clés :
 - « Arrêter » = `taskkill /T /F` (arbre de processus, ex. Java lancé par Gradle) ;
 - onglet de genre `console` ; recliquer l'action relance dans le même onglet
   (`onglet.lancement` incrémenté, lu par `mettreAJour()` du panneau).
+
+### Assistant d'import
+
+`src/main/import.js` (explications en tête du fichier) + `composants/import.js`.
+- `analyser()` ne modifie RIEN : type de projet (`detecter()`), dossiers régénérables
+  (exclus par défaut sauf s'ils sont suivis par Git), fichiers verrouillés (bloquant),
+  chemins absolus vers le projet, liens symboliques, fichiers > 100 Mo, secrets suivis par
+  Git, outils HTML des `assets` Android (proposés en `outils_lies`), boutons d'action.
+- `executer()` : copie -> vérification (taille + SHA-1 jusqu'à 20 Mo) -> projet.json
+  (jamais écrasé s'il existe) -> CLAUDE.md (section ajoutée s'il existe) -> .gitignore
+  complété -> Git -> **Corbeille** (`shell.trashItem`, jamais de suppression définitive)
+  -> GitHub privé (facultatif, via `gh`). Échec de copie = copie supprimée, original intact.
+- Clone : dans `donnees/import-temp/`, rangé dans `projets/` à la confirmation (réessais :
+  Windows bloque souvent un dossier juste cloné), supprimé si l'utilisateur annule.
+- Dossiers refusés : disque, dossier personnel, Bureau, Documents, Windows, Program Files,
+  Toolkit lui-même ou un dossier qui le contient.
 
 ### Éditeurs (« Ouvrir avec… »)
 
@@ -275,7 +294,7 @@ pour l'utilisateur, attente de sa validation.
 - [x] 3. Ouvrir avec… et réglages des éditeurs
 - [x] 4. Terminal intégré et Claude Code
 - [x] 5. Actions et scripts
-- [ ] 6. Assistant d'import
+- [x] 6. Assistant d'import
 - [ ] 7. Git et GitHub
 - [ ] 8. Recherche et Markdown
 - [ ] 9. Compilation des mods et de l'APK

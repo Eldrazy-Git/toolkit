@@ -38,6 +38,7 @@ conteneur.append(
     titre,
     el('label', { classe: 'champ-filtre' }, icone('recherche'), champFiltre),
     el('div', { classe: 'groupe-boutons' }, boutonGrille, boutonListe),
+    el('button', { classe: 'bouton', title: 'Importer un projet existant (dossier du PC ou dépôt GitHub)', onClick: actions.ouvrirImport }, icone('importer'), 'Importer'),
     el('button', { classe: 'bouton principal', title: 'Créer un nouvel outil avec Claude Code', onClick: actions.nouvelOutil }, icone('plus'), 'Nouvel outil')),
   contenu,
 );

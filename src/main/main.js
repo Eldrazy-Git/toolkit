@@ -166,6 +166,7 @@ async function demarrer() {
   require('./ipc/editeurs').enregistrer();
   require('./ipc/claude').enregistrer();
   require('./ipc/executions').enregistrer();
+  require('./ipc/import').enregistrer();
 
   zoneNotification.creer({ afficher: afficherFenetre, quitter });
 

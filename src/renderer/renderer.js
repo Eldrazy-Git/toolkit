@@ -6,6 +6,7 @@ import * as bibliotheque from './composants/bibliotheque.js';
 import * as details from './composants/details.js';
 import * as onglets from './composants/onglets.js';
 import * as reglages from './composants/reglages.js';
+import * as assistantImport from './composants/import.js';
 import { notifier } from './composants/notifications.js';
 
 etat.abonner(() => {
@@ -14,6 +15,7 @@ etat.abonner(() => {
   bibliotheque.rendre();
   details.rendre();
   reglages.rendre();
+  assistantImport.rendre();
 });
 
 document.addEventListener('keydown', (e) => {

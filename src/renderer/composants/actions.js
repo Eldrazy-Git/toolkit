@@ -84,6 +84,17 @@ export function activerOnglet(id) {
 }
 
 export async function fermerOnglet(id) {
+  if (id === 'import') {
+    const assistant = await import('./import.js');
+    if (assistant.estOccupe()) {
+      notifier('Un import est en cours : attends qu\'il soit terminé.', 'erreur');
+      return;
+    }
+    assistant.abandonner();
+    const { ongletActif } = etat.obtenir();
+    etat.modifier({ importOuvert: false, ongletActif: ongletActif === 'import' ? 'bibliotheque' : ongletActif });
+    return;
+  }
   if (id === 'reglages') {
     const { ongletActif } = etat.obtenir();
     etat.modifier({ reglagesOuverts: false, ongletActif: ongletActif === 'reglages' ? 'bibliotheque' : ongletActif });
@@ -121,8 +132,8 @@ export function fermerOngletActif() {
 }
 
 export function ongletSuivant(sens = 1) {
-  const { onglets, ongletActif, reglagesOuverts } = etat.obtenir();
-  const ids = ['bibliotheque', ...(reglagesOuverts ? ['reglages'] : []), ...onglets.map((o) => o.id)];
+  const { onglets, ongletActif, reglagesOuverts, importOuvert } = etat.obtenir();
+  const ids = ['bibliotheque', ...(reglagesOuverts ? ['reglages'] : []), ...(importOuvert ? ['import'] : []), ...onglets.map((o) => o.id)];
   const position = ids.indexOf(ongletActif);
   etat.modifier({ ongletActif: ids[(position + sens + ids.length) % ids.length] });
 }
@@ -292,6 +303,10 @@ export function elementsMenuOuvrirToolkit() {
 // editeur = '' pour revenir au choix automatique selon le type.
 export async function changerEditeurParDefaut(projet, editeur) {
   remplacerProjet(await essayer(() => api.projets.modifier(projet.id, { ouvrir_avec: editeur || null })));
+}
+
+export function ouvrirImport() {
+  etat.modifier({ importOuvert: true, ongletActif: 'import' });
 }
 
 export function ouvrirReglages() {

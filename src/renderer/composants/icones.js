@@ -24,6 +24,7 @@ const TRACES = {
   carre: '<rect x="6" y="6" width="12" height="12" rx="1"/>',
   effacer: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
   terminal: '<path d="m4 17 6-6-6-6M12 19h8"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
   coche: '<path d="M20 6 9 17l-5-5"/>',
   git: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><path d="M6 9v6M18 9a9 9 0 0 1-9 9"/>',
 };

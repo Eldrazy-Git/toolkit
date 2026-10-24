@@ -639,6 +639,70 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .statut.ok { color: var(--succes); }
 .statut.erreur { color: var(--erreur); }
 
+/* --- Formulaires dans une page (hors boîte de dialogue) -------------------------------------- */
+
+.page-formulaire input[type="text"], .page-formulaire select, .page-formulaire textarea {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--rayon);
+  background: var(--fond-champ);
+  color: var(--texte-fort);
+  outline: none;
+}
+.page-formulaire textarea { height: auto; min-height: 64px; padding: 6px 10px; resize: vertical; line-height: 1.45; }
+.page-formulaire input:focus, .page-formulaire select:focus, .page-formulaire textarea:focus { border-color: var(--accent); }
+.grille-formulaire { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0 16px; }
+.champ-case.desactive { opacity: 0.55; cursor: default; }
+.champ-aide.en-ligne { flex-basis: auto; }
+
+/* --- Assistant d'import ---------------------------------------------------------------------- */
+
+.page-import { max-width: 860px; }
+.cartes-import { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin: 16px 0; }
+.carte-import {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--fond-panneau);
+}
+.carte-import > .ico { width: 26px; height: 26px; color: var(--accent-texte); }
+.carte-import h3 { margin: 0; font-size: 15px; color: var(--texte-fort); }
+.carte-import p { flex: 1; margin: 0; color: var(--texte-faible); line-height: 1.5; }
+.carte-import .champ-chemin { width: 100%; }
+
+.source-import { display: flex; align-items: center; gap: 8px; color: var(--texte-faible); overflow-wrap: anywhere; }
+.source-import code { font-family: var(--police-code); color: var(--texte); }
+
+.bloc-progression { margin-top: 40px; }
+.bloc-progression h2 { font-size: 15px; color: var(--texte-fort); }
+.barre-progression { height: 6px; border-radius: 3px; background: var(--fond-element); overflow: hidden; }
+.barre-progression > div { height: 100%; width: 0; background: var(--accent); transition: width 0.2s; }
+.barre-progression.indeterminee > div { animation: aller-retour 1.2s ease-in-out infinite alternate; }
+@keyframes aller-retour { from { margin-left: 0; } to { margin-left: 70%; } }
+.texte-progression { color: var(--texte-faible); }
+
+.alerte p { margin: 4px 0 0; }
+.alerte details { margin-top: 6px; }
+.alerte summary { cursor: pointer; color: var(--accent-texte); }
+.alerte li code { font-family: var(--police-code); font-size: 12px; overflow-wrap: anywhere; }
+.alerte.risque-bloquant { border-color: rgba(241, 76, 76, 0.5); background: rgba(241, 76, 76, 0.1); }
+.alerte.risque-bloquant > .ico { color: var(--erreur); }
+.alerte.risque-attention { border-color: rgba(204, 167, 0, 0.5); background: rgba(204, 167, 0, 0.08); }
+.alerte.risque-attention > .ico { color: var(--attention); }
+.alerte.risque-info { border-color: rgba(0, 120, 212, 0.4); background: rgba(0, 120, 212, 0.08); }
+.alerte.risque-info > .ico { color: var(--accent-texte); }
+
+.liste-etapes { padding: 0; list-style: none; }
+.liste-etapes li { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 6px; line-height: 1.45; overflow-wrap: anywhere; }
+.liste-etapes .ico { color: var(--succes); margin-top: 2px; }
+.boutons-import { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+
 /* --- Notifications ---------------------------------------------------------------------- */
 
 .notifications {

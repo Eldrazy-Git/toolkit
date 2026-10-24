@@ -82,6 +82,18 @@ contextBridge.exposeInMainWorld('toolkit', {
   programmes: {
     etat: () => appeler('programmes:etat'), // [{ nom, libelle, chemin, version, installation }]
   },
+  // Assistant d'import de projets existants.
+  importation: {
+    choisirDossier: () => appeler('import:choisir-dossier'), // chemin ou null
+    analyser: (chemin) => appeler('import:analyser', chemin), // rapport d'analyse
+    cloner: (url) => appeler('import:cloner', url), // rapport d'analyse du clone
+    executer: (idAnalyse, choix) => appeler('import:executer', idAnalyse, choix), // { id, etapes, avertissements }
+    abandonner: (idAnalyse) => appeler('import:abandonner', idAnalyse),
+    surProgression: (rappel) => ecouter('import:progression', rappel), // rappel({ texte, faits, total })
+  },
+  github: {
+    etat: () => appeler('github:etat'), // { installe, connecte, compte }
+  },
   reglages: {
     lire: () => appeler('reglages:lire'),
     modifier: (changements) => appeler('reglages:modifier', changements),
