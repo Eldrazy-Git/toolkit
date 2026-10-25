@@ -11,10 +11,15 @@ function enregistrer() {
     executions.lancer(contenu, id, projetId, indexAction, valeurs), { avecEmetteur: true });
   gerer('executions:arreter', (id) => executions.arreter(id));
   gerer('executions:oublier', (id) => executions.oublier(id));
+  // Ouvre le dossier de sortie dans l'Explorateur, en sélectionnant le fichier produit s'il y en a un.
   gerer('executions:ouvrir-dossier', async (id) => {
-    const dossier = executions.dossierApres(id);
-    if (!dossier) throw new Error('Aucun dossier à ouvrir.');
-    const erreur = await shell.openPath(dossier);
+    const sortie = executions.dossierApres(id);
+    if (!sortie) throw new Error('Aucun dossier à ouvrir.');
+    if (sortie.fichier) {
+      shell.showItemInFolder(sortie.fichier);
+      return;
+    }
+    const erreur = await shell.openPath(sortie.dossier);
     if (erreur) throw new Error(`Impossible d'ouvrir le dossier : ${erreur}`);
   });
 

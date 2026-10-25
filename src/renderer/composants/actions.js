@@ -560,20 +560,40 @@ async function sauvegarderAvantClaude(cible, nomCible) {
   }
 }
 
-// Lance Claude Code sur une cible (après sauvegarde). Si une session Claude tourne déjà
-// sur ce dossier, on y retourne simplement.
-async function lancerClaude(cible, nomCible) {
+// Lance Claude Code sur une cible (après sauvegarde), avec éventuellement une demande
+// initiale. Si une session Claude tourne déjà sur ce dossier, on y retourne ; la demande
+// est alors copiée dans le presse-papiers (on ne peut pas l'écrire à la place de l'utilisateur).
+async function lancerClaude(cible, nomCible, demande) {
   const existant = etat.obtenir().onglets.find((o) => o.genre === 'terminal' && o.mode === 'claude' && o.enCours && memeCible(o.cible, cible));
   if (existant) {
     etat.modifier({ ongletActif: existant.id });
+    if (demande) {
+      await navigator.clipboard.writeText(demande).catch(() => {});
+      notifier('Claude est déjà ouvert sur ce projet : la description de l\'erreur est copiée, colle-la-lui (clic droit ou Ctrl+V).');
+    }
     return;
   }
   if (!(await sauvegarderAvantClaude(cible, nomCible))) return;
-  ouvrirTerminal({ mode: 'claude', cible, nomCible });
+  ouvrirTerminal({ mode: 'claude', cible, nomCible, demande });
 }
 
-export function modifierAvecClaude(projet) {
-  return lancerClaude({ type: 'projet', id: projet.id }, projet.fiche.nom);
+export function modifierAvecClaude(projet, demande) {
+  return lancerClaude({ type: 'projet', id: projet.id }, projet.fiche.nom, demande);
+}
+
+// Bouton « Demander à Claude de corriger » d'une console en échec.
+export function demanderCorrection(projetId, nomAction, commande, erreur) {
+  const projet = etat.obtenir().projets.find((p) => p.id === projetId);
+  if (!projet) {
+    notifier('Ce projet n\'existe plus.', 'erreur');
+    return undefined;
+  }
+  const demande = `L'action « ${nomAction.split(' · ')[0]} » de ce projet a échoué`
+    + `${commande ? ` (commande : ${commande})` : ''}. Voici l'erreur :\n\n${erreur}\n\n`
+    + 'Explique-moi simplement le problème, puis corrige-le s\'il vient du projet. '
+    + 'S\'il vient de l\'installation (Java, SDK, programme manquant…), dis-moi exactement quoi faire. '
+    + 'Ne touche jamais à une keystore ni à ses mots de passe.';
+  return modifierAvecClaude(projet, demande);
 }
 
 export function modifierToolkitAvecClaude() {

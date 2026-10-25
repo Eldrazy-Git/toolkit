@@ -7,7 +7,15 @@ const { spawn, execFile } = require('node:child_process');
 // ELECTRON_RUN_AS_NODE est retiré : s'il est présent (ex. Toolkit lancé depuis un
 // terminal de VS Code), les programmes basés sur Electron, comme VS Code, ne démarrent pas.
 function environnementPropre(supplement = {}) {
-  const env = { ...process.env, ...supplement };
+  const env = { ...process.env };
+  // Sous Windows, les noms de variables ignorent la casse (« Path » = « PATH ») : on retire
+  // l'ancienne version pour ne pas transmettre deux fois la même variable.
+  for (const cle of Object.keys(supplement)) {
+    for (const existante of Object.keys(env)) {
+      if (existante !== cle && existante.toLowerCase() === cle.toLowerCase()) delete env[existante];
+    }
+  }
+  Object.assign(env, supplement);
   delete env.ELECTRON_RUN_AS_NODE;
   return env;
 }

@@ -204,7 +204,9 @@ function premierParagrapheReadme(texte) {
   if (!texte) return '';
   const paragraphe = texte.split(/\r?\n\s*\r?\n/)
     .map((p) => p.trim())
-    .find((p) => p && !p.startsWith('#') && !p.startsWith('![') && !p.startsWith('<') && !p.startsWith('[!'));
+    .find((p) => p && !p.startsWith('#') && !p.startsWith('![') && !p.startsWith('<') && !p.startsWith('[!')
+      // Un paragraphe sans lettre (ex. « --- », un trait de séparation) n'est pas une description.
+      && /\p{L}{3,}/u.test(p));
   return paragraphe ? paragraphe.replace(/\s+/g, ' ').slice(0, 200) : '';
 }
 

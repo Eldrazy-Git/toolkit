@@ -138,6 +138,14 @@ application Android.
 | `point_entree` | Chemin de la page HTML, relatif au projet (obligatoire). |
 | `description` | Texte d'aide facultatif. |
 
+## Boutons de compilation automatiques
+
+Pour un projet de type `mod-minecraft` ou `android` qui contient `gradlew.bat`, Toolkit
+ajoute de lui-même l'action « Compiler le mod » (`gradlew build`) ou « Compiler l'APK de
+debug » (`gradlew assembleDebug`). Elle reste modifiable ; si tu la supprimes, elle n'est
+pas rajoutée. Pour toute action qui lance `gradlew`, Toolkit choisit automatiquement le
+Java adapté (version demandée par build.gradle) et le SDK Android.
+
 ## Données des outils HTML
 
 Un outil HTML (point d'entrée `.html`, ou outil lié) garde ses données (localStorage,

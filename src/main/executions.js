@@ -16,6 +16,7 @@ const projets = require('./projets');
 const activite = require('./activite');
 const journal = require('./journal');
 const { environnementPropre, sortieDe } = require('./processus');
+const java = require('./java');
 
 const DELAI_ENVOI = 30;
 const EXTENSIONS_EXECUTABLES = ['.exe', '.cmd', '.bat', '.com'];
@@ -183,11 +184,26 @@ async function detecterProgrammes() {
     return { nom, libelle, chemin, version, installation: INSTALLATION[nom] || null };
   };
   cacheProgrammes.clear();
-  return Promise.all([
-    verifier('python', 'Python', trouverPython),
-    verifier('node', 'Node.js', () => trouverSurLePc('node')),
-    verifier('java', 'Java', () => trouverSurLePc('java'), ['-version']),
+  const [base, jdks, sdk] = await Promise.all([
+    Promise.all([
+      verifier('python', 'Python', trouverPython),
+      verifier('node', 'Node.js', () => trouverSurLePc('node')),
+    ]),
+    java.trouverJdks(),
+    java.emplacementSdkAndroid(),
   ]);
+  // Java (pour compiler les mods et les applications Android) : chaque JDK trouvé.
+  const lignesJava = jdks.length
+    ? jdks.map((j) => ({ nom: 'java', libelle: `Java ${j.version}${j.source === 'JAVA_HOME' ? ' (JAVA_HOME)' : ''}`, chemin: j.chemin, version: j.source, installation: null }))
+    : [{ nom: 'java', libelle: 'Java', chemin: null, version: null, installation: `${INSTALLATION.java} (nécessaire seulement pour compiler les mods Minecraft et les applications Android)` }];
+  const ligneSdk = {
+    nom: 'android-sdk',
+    libelle: 'SDK Android',
+    chemin: sdk,
+    version: sdk ? 'Trouvé' : null,
+    installation: 'Installe Android Studio : il installe le SDK Android (nécessaire seulement pour compiler les applications Android).',
+  };
+  return [...base, ...lignesJava, ligneSdk];
 }
 
 // --- Lancement ----------------------------------------------------------------------------
@@ -264,7 +280,16 @@ async function lancer(contenu, id, projetId, indexAction, valeurs = {}) {
     if (brut) dossierApres = path.resolve(dossierProjet, brut);
   }
 
-  const env = environnementPropre({ PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' });
+  // Gradle (mods Minecraft, Android) : choix du Java et du SDK Android.
+  const infos = [];
+  let envGradle = {};
+  if (/^gradlew(\.bat)?$/i.test(path.basename(programme))) {
+    const gradle = await java.environnementGradle(dossierProjet, { android: projet.fiche.type === 'android' });
+    envGradle = gradle.env;
+    infos.push(...gradle.infos, 'La première compilation peut prendre plusieurs minutes : Gradle télécharge ce dont il a besoin.');
+  }
+
+  const env = environnementPropre({ PYTHONUNBUFFERED: '1', PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1', ...envGradle });
   const options = { cwd: dossier, env, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] };
   let processus;
   if (/\.(cmd|bat)$/i.test(programme)) {
@@ -299,14 +324,16 @@ async function lancer(contenu, id, projetId, indexAction, valeurs = {}) {
     clearTimeout(execution.minuteur);
     viderTampons(id);
     let dossierExiste = false;
-    if (dossierApres) dossiersApres.set(id, dossierApres);
+    let produits = [];
     const finir = () => {
+      if (dossierApres) dossiersApres.set(id, { dossier: dossierApres, fichier: produits[0] ? path.join(dossierApres, produits[0]) : null });
       envoyer(id, 'execution:fin', {
         code,
         erreur: erreur || null,
         arrete: execution.arrete,
         duree: Date.now() - debut,
         dossierApres: dossierExiste ? cheminLisible(dossierApres) : null,
+        produits,
       });
       enCours.delete(id);
       activite.fin();
@@ -315,7 +342,12 @@ async function lancer(contenu, id, projetId, indexAction, valeurs = {}) {
       finir();
       return;
     }
-    fs.stat(dossierApres).then((s) => { dossierExiste = s.isDirectory(); }, () => {}).finally(finir);
+    fs.stat(dossierApres)
+      .then(async (s) => {
+        dossierExiste = s.isDirectory();
+        if (dossierExiste && code === 0) produits = await fichiersProduits(dossierApres, debut);
+      }, () => {})
+      .finally(finir);
   };
   processus.on('error', (erreur) => {
     journal.erreur('Exécution :', erreur);
@@ -323,7 +355,31 @@ async function lancer(contenu, id, projetId, indexAction, valeurs = {}) {
   });
   processus.on('close', (code) => terminer(code));
 
-  return { commande: commandeLisible(nomProgramme, args), dossier: cheminLisible(dossier) };
+  return { commande: commandeLisible(nomProgramme, args), dossier: cheminLisible(dossier), infos };
+}
+
+// Fichiers créés ou modifiés pendant l'exécution dans le dossier de sortie (ex. le .jar du
+// mod, l'.apk), le fichier principal en premier (pas les « -sources », « -dev »…).
+async function fichiersProduits(dossier, depuis) {
+  let entrees;
+  try {
+    entrees = await fs.readdir(dossier, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const recents = [];
+  for (const e of entrees.filter((x) => x.isFile())) {
+    try {
+      const infos = await fs.stat(path.join(dossier, e.name));
+      if (infos.mtimeMs >= depuis - 2000) recents.push({ nom: e.name, taille: infos.size });
+    } catch {
+      // Fichier disparu.
+    }
+  }
+  const secondaire = (nom) => /-(sources|dev|javadoc|slim|shadow|all)\.jar$|\.(json|txt|idsig)$/i.test(nom);
+  return recents
+    .sort((a, b) => secondaire(a.nom) - secondaire(b.nom) || b.taille - a.taille)
+    .map((f) => f.nom);
 }
 
 // Arrête le programme ET ses sous-programmes (ex. Java lancé par Gradle).
@@ -340,6 +396,7 @@ function arreterTout() {
   for (const id of enCours.keys()) arreter(id);
 }
 
+// { dossier, fichier } : dossier de sortie et fichier principal produit (ou null).
 function dossierApres(id) {
   return dossiersApres.get(id) || null;
 }

@@ -72,6 +72,8 @@ app/
     │   ├── processus.js         lancer un programme (environnement nettoyé), lire une sortie
     │   ├── terminal.js          terminaux node-pty (Claude Code, PowerShell)
     │   ├── executions.js        actions de projet.json : commande, programme, sortie, arrêt
+    │   ├── java.js              JDK et SDK Android pour Gradle (choix automatique)
+    │   ├── actions-auto.js      boutons de compilation ajoutés selon le type (mod, Android)
     │   ├── cibles.js            résout une « cible » ({ type: 'projet', id } / toolkit / racine) en dossier
     │   ├── git.js               Git : état d'un dépôt, commit, push, pull, fetch, .gitignore, clone
     │   ├── github.js            GitHub via « gh » (état de connexion, dépôt privé)
@@ -232,6 +234,23 @@ dans `docs/projet-json.md`. Points clés :
   refusé si le fichier a changé depuis l'ouverture (sauf confirmation) ; les fins de ligne
   Windows d'origine sont conservées.
 
+### Compilation (mods Minecraft, APK de debug)
+
+- Les boutons sont des **actions** de projet.json (`gradlew build` -> `build/libs`,
+  `gradlew assembleDebug` -> `<module>/build/outputs/apk/debug`), ajoutées à l'import, à la
+  création, et au démarrage par `actions-auto.js` pour les projets qui ont un `gradlew`.
+  Ce qui a déjà été proposé est noté dans `reglages.actionsAuto` : un bouton supprimé par
+  l'utilisateur n'est pas rajouté.
+- Lancement d'un `gradlew` (`executions.js`) : `java.environnementGradle()` lit la version
+  minimale de Java dans build.gradle, garde `JAVA_HOME` s'il convient, sinon prend le plus
+  petit JDK installé qui convient ; ajoute `ANDROID_HOME` si le SDK n'est configuré nulle
+  part ; démon Gradle limité à 10 min d'inactivité.
+- Fin : fichiers produits dans le dossier de sortie (le .jar / .apk principal d'abord),
+  « Afficher dans l'Explorateur » sélectionne le fichier. Échec : résumé (section « What
+  went wrong » + erreurs du compilateur), conseil pour les cas courants, et bouton
+  « Demander à Claude de corriger » (Claude reçoit l'erreur comme demande initiale).
+- Jamais de compilation release ni de keystore : cela reste dans Android Studio.
+
 ### Éditeurs (« Ouvrir avec… »)
 
 `src/main/editeurs.js`. Un chemin choisi dans les Réglages (`reglages.editeurs.<id>`) est
@@ -335,7 +354,7 @@ pour l'utilisateur, attente de sa validation.
 - [x] 6. Assistant d'import
 - [x] 7. Git et GitHub
 - [x] 8. Recherche et Markdown
-- [ ] 9. Compilation des mods et de l'APK
+- [x] 9. Compilation des mods et de l'APK
 - [ ] 10. Finitions
 
 ### Décisions prises avec l'utilisateur

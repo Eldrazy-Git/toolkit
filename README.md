@@ -89,6 +89,18 @@ Les boutons de la rubrique **Actions** (panneau de droite) lancent les scripts d
 - Si Python, Node.js ou Java manquent, Toolkit explique comment les installer
   (**Réglages** > Programmes pour les scripts).
 
+### Compiler un mod Minecraft ou l'APK de debug d'une appli Android
+
+- Les projets de type mod ou Android ont un bouton **Compiler le mod** ou **Compiler l'APK
+  de debug** (ajouté automatiquement s'ils contiennent `gradlew.bat`).
+- Toolkit choisit tout seul la bonne version de Java. La première compilation peut prendre
+  plusieurs minutes.
+- À la fin : **Afficher dans l'Explorateur** montre le `.jar` ou l'`.apk` produit.
+- En cas d'erreur, un résumé s'affiche ; **Demander à Claude de corriger** lui transmet
+  l'erreur.
+- La version **signée** (release) d'une appli Android se fait toujours dans Android Studio :
+  Toolkit ne touche jamais à ta keystore.
+
 ## 7. Claude Code dans Toolkit
 
 Tout passe par **ta** commande `claude` (ton abonnement Claude Pro), dans un terminal
