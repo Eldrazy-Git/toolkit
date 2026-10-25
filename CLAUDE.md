@@ -104,6 +104,7 @@ app/
             ├── dialogue.js      demanderTexte(), confirmer()
             ├── notifications.js notifier(message, type)
             ├── onglets.js       barre d'onglets + panneaux des outils (<webview>)
+            ├── apercu-appareil.js aperçu ordinateur / smartphone / tablette d'un outil
             ├── reglages.js      onglet « Réglages »
             ├── terminal.js      panneau de terminal (xterm.js), copier/coller, relance
             ├── console.js       panneau d'exécution d'une action (sortie en direct)
@@ -159,6 +160,12 @@ Voir `src/main/outils-html.js` (explications en tête du fichier) et
 - Liens vers Internet : ouverts dans le navigateur par défaut.
 - Import : l'outil est remplacé par une page vide de même origine (pour fermer ses bases
   IndexedDB), les données sont restaurées, puis l'outil est rechargé.
+- Aperçu smartphone / tablette (`composants/apercu-appareil.js`) : la webview est dans un
+  cadre de la taille de l'appareil, réduit par `transform: scale()` si la place manque
+  (les clics restent justes : vérifié) ; `outils:emulation` active
+  `enableDeviceEmulation({ screenPosition: 'mobile' })` (viewport respecté, `screen` à la
+  taille de l'appareil), réappliqué à chaque `dom-ready`. Mode retenu par outil dans le
+  localStorage de l'interface (`toolkit:apercu:<id>`).
 
 Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
 
@@ -325,6 +332,9 @@ temporaire, fait `require('src/main/main.js')`, puis pilote l'interface avec
 `capturePage()` (captures d'écran à regarder). Les boîtes de dialogue système se
 remplacent par des fonctions (`dialog.showOpenDialog = async () => …`). Lancer avec
 `env -u ELECTRON_RUN_AS_NODE node_modules/electron/dist/electron.exe test.js`.
+Pour simuler de vrais clics souris (y compris dans une `<webview>`) : donner le focus
+(`w.show(); w.focus(); w.webContents.focus()`) puis passer par le protocole de débogage
+(`w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', …)`).
 Règles : ne jamais modifier les vrais projets de l'utilisateur (créer un projet `zz-…`
 temporaire et le supprimer), ne jamais envoyer de demande à Claude (quota de
 l'utilisateur), ne jamais créer de dépôt GitHub ni pousser (tester avec un dépôt distant

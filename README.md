@@ -104,6 +104,11 @@ le dossier `Toolkit`.
   (elles remplacent les données actuelles). À faire avant de renommer le dossier d'un outil.
 - **Outils liés :** les pages HTML rangées à l'intérieur d'un autre projet (par exemple dans
   les `assets` d'une appli Android) s'ouvrent aussi dans Toolkit, sans être copiées.
+- **Vue smartphone / tablette :** les boutons 🖥 📱 au-dessus de l'outil l'affichent comme
+  sur un ordinateur, un smartphone (390 × 844) ou une tablette (820 × 1180) ; le bouton
+  ⟳ à côté pivote en paysage. L'outil se comporte comme sur un vrai téléphone (largeur
+  d'écran, adaptation aux petits écrans) et reste utilisable à la souris. Changer de vue ne
+  recharge pas l'outil, et la vue choisie est retenue pour chaque outil.
 - **Raccourcis :** F5 recharge l'outil, F12 ouvre les outils de développement.
 
 ## 5. Ouvrir un projet dans un éditeur

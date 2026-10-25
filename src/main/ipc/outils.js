@@ -9,6 +9,25 @@ function enregistrer() {
   gerer('outils:preparer', (projetId, outilLie) => outilsHtml.preparer(projetId, outilLie));
   gerer('outils:exporter', (idContenu, nom) => outilsDonnees.exporter(idContenu, nom));
   gerer('outils:importer', (idContenu, nom) => outilsDonnees.importer(idContenu, nom));
+
+  // Aperçu smartphone / tablette : simulation mobile de Chromium (viewport, taille d'écran,
+  // barres de défilement fines). appareil : { largeur, hauteur } ou null pour l'ordinateur.
+  gerer('outils:emulation', (idContenu, appareil) => {
+    const contenu = outilsHtml.contenuOutil(idContenu);
+    if (!appareil) {
+      contenu.disableDeviceEmulation();
+      return;
+    }
+    const taille = { width: Math.round(appareil.largeur), height: Math.round(appareil.hauteur) };
+    contenu.enableDeviceEmulation({
+      screenPosition: 'mobile',
+      screenSize: taille,
+      viewSize: taille,
+      deviceScaleFactor: 0, // 0 = garder celui de l'écran
+      scale: 1,
+      viewPosition: { x: 0, y: 0 },
+    });
+  });
 }
 
 module.exports = { enregistrer };

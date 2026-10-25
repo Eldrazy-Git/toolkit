@@ -19,6 +19,7 @@ import { ID_GIT } from './git.js';
 import { creerPanneauTerminal } from './terminal.js';
 import { creerPanneauConsole } from './console.js';
 import { creerPanneauNote } from './note.js';
+import { creerApercuAppareil } from './apercu-appareil.js';
 
 export const ID_BIBLIOTHEQUE = 'bibliotheque';
 
@@ -90,14 +91,19 @@ function creerPanneauOutil(o) {
   });
 
   const idContenu = () => webview.getWebContentsId();
+  const conteneur = el('div', { classe: 'conteneur-webview' });
+  // Aperçu ordinateur / smartphone / tablette (la webview est placée dans un cadre).
+  const apercu = creerApercuAppareil(webview, conteneur, o.id);
+  conteneur.append(apercu.cadre, message);
   const element = el('section', { classe: 'panneau panneau-outil' },
     el('div', { classe: 'barre-outil' },
       el('button', { classe: 'bouton-icone', title: 'Recharger (F5)', onClick: () => webview.reloadIgnoringCache() }, icone('redemarrer')),
-      el('button', { classe: 'bouton petit', onClick: () => actions.exporterDonnees(o, idContenu()) }, icone('exporter'), 'Exporter les données'),
-      el('button', { classe: 'bouton petit', onClick: () => actions.importerDonnees(o, idContenu()) }, icone('importer'), 'Importer les données'),
+      apercu.boutons,
+      el('button', { classe: 'bouton petit', onClick: () => actions.exporterDonnees(o, idContenu()) }, icone('exporter'), el('span', { classe: 'texte-bouton' }, 'Exporter les données')),
+      el('button', { classe: 'bouton petit', onClick: () => actions.importerDonnees(o, idContenu()) }, icone('importer'), el('span', { classe: 'texte-bouton' }, 'Importer les données')),
       el('button', { classe: 'bouton petit', title: 'Outils de développement (F12)', onClick: () => webview.openDevTools() }, icone('code'), 'F12'),
       el('code', { classe: 'chemin-outil', title: o.chemin }, o.chemin)),
-    el('div', { classe: 'conteneur-webview' }, webview, message));
+    conteneur);
 
   zone.append(element);
   return { element };
