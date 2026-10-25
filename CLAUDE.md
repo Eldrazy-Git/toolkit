@@ -475,6 +475,13 @@ local `git init --bare`).
   notre code, préférer les classes CSS ou `element.style.setProperty()`.
 - `new URL('toolkit-outil://x/').origin` vaut `"null"` dans Node (protocole non standard
   pour Node) : reconstruire l'origine avec `${SCHEMA}://${url.host}`.
+- **`npm audit` signale DOMPurify (critique) via monaco-editor 0.57** : Monaco embarque sa
+  propre copie de DOMPurify dans `min/vs/editor-*.js` (le paquet npm `dompurify` n'est pas
+  celui qui s'exécute) et ne l'utilise qu'en mode `RETURN_DOM_FRAGMENT`, pas dans les modes
+  touchés (IN_PLACE, SAFE_FOR_TEMPLATES, XHTML). Ne PAS lancer `npm audit fix --force` (il
+  rétrograde Monaco) ni ajouter d'« overrides » (cela masquerait l'alerte sans changer le code
+  exécuté). Corriger en passant à une version de monaco-editor qui embarque DOMPurify ≥ 3.4.17,
+  puis tester l'onglet « Code ».
 - `element.replaceChildren(...)` et `append(...)` ne déplient pas les tableaux : utiliser
   `...liste` (sinon on obtient « [object HTMLDivElement] »). `el()` les déplie, lui.
 
