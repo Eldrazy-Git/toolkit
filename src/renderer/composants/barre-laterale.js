@@ -1,4 +1,4 @@
-// Barre latérale : tous les projets, favoris, projets épinglés, groupes, catégories, tags et l'entrée « Toolkit ».
+// Barre latérale : récents, tous les projets, favoris, projets épinglés, groupes, catégories, tags et l'entrée « Toolkit ».
 import { el } from './dom.js';
 import { icone } from './icones.js';
 import { couleurCategorie, iconeProjet } from './icone-projet.js';
@@ -7,6 +7,7 @@ import * as etat from './etat.js';
 import * as actions from './actions.js';
 import { ouvrirRecherche } from './recherche.js';
 import * as groupes from './groupes.js';
+import * as recents from './recents.js';
 
 const conteneur = document.getElementById('barre-laterale');
 
@@ -164,6 +165,90 @@ function sectionGroupes(projets, filtre, selection, ongletActif) {
   ];
 }
 
+// --- Récents ------------------------------------------------------------------------------------
+// Dernières ouvertures (voir recents.js) : un clic rouvre de la même façon.
+// 5 visibles, « Plus… » pour les 15 ; section repliable (choix gardé dans ce navigateur).
+
+const RECENTS_VISIBLES = 5;
+let recentsTous = false;
+let recentsReplies = false;
+try { recentsReplies = localStorage.getItem('toolkit:recents:replies') === '1'; } catch { /* par défaut : déplié */ }
+
+function descriptionRecent(e) {
+  switch (e.type) {
+    case 'outil': return { detail: 'outil', titre: `Rouvrir l'outil « ${e.nom} »` };
+    case 'editeur': return { detail: e.detail || 'éditeur', titre: `Rouvrir « ${e.nom} » dans ${e.detail || 'son éditeur'}` };
+    case 'fichier': return { detail: e.detail || '', titre: `Rouvrir ${e.chemin} (${e.detail}) dans l'éditeur de Toolkit` };
+    case 'note': return { detail: 'note', titre: `Rouvrir la note ${e.chemin}` };
+    case 'claude': return { detail: 'Claude', titre: `Reprendre la conversation avec Claude sur « ${e.nom} » (sauvegarde Git avant)` };
+    default: return { detail: '', titre: e.nom };
+  }
+}
+
+function rouvrir(e, projets) {
+  const projet = projets.find((p) => p.id === e.projetId);
+  if (e.type === 'outil') actions.ouvrirOutil(e.projetId, e.outilLie || null);
+  else if (e.type === 'editeur' && projet) actions.ouvrirAvec(projet, e.editeurId || undefined);
+  else if (e.type === 'fichier') actions.ouvrirCode(e.cible, e.detail || e.nom, e.chemin);
+  else if (e.type === 'note') actions.ouvrirNote(e.chemin);
+  else if (e.type === 'claude') actions.reprendreClaude(e.cible, e.nom);
+}
+
+function visuelRecent(e, projets) {
+  const projet = projets.find((p) => p.id === (e.projetId || (e.cible?.type === 'projet' ? e.cible.id : null)));
+  if (e.type === 'outil' && projet && !e.outilLie) return iconeProjet(projet, 18);
+  return icone({ outil: 'outil', editeur: 'ouvrirAvec', fichier: 'code', note: 'note', claude: 'claude' }[e.type]);
+}
+
+function sectionRecents(projets) {
+  const liste = recents.liste();
+  if (liste.length === 0) return null;
+  const visibles = recentsTous ? liste : liste.slice(0, RECENTS_VISIBLES);
+  return [
+    el('div', {
+      classe: 'barre-section avec-bouton titre-repliable',
+      title: recentsReplies ? 'Afficher les récents' : 'Masquer les récents',
+      onClick: () => {
+        recentsReplies = !recentsReplies;
+        try { localStorage.setItem('toolkit:recents:replies', recentsReplies ? '1' : '0'); } catch { /* sans importance */ }
+        rendre();
+      },
+    },
+    el('span', {}, el('span', { classe: `bouton-replier${recentsReplies ? '' : ' ouvert'}` }, icone('chevron')), 'Récents')),
+    recentsReplies ? null : visibles.map((e) => {
+      const { detail, titre } = descriptionRecent(e);
+      return el('div', {
+        classe: 'element-nav element-recent',
+        role: 'button',
+        tabindex: '0',
+        title: titre,
+        onClick: () => rouvrir(e, projets),
+        onKeydown: (k) => { if (k.key === 'Enter') rouvrir(e, projets); },
+        onContextmenu: (k) => {
+          k.preventDefault();
+          ouvrirMenu({ x: k.clientX, y: k.clientY }, [
+            { libelle: 'Rouvrir', icone: 'lecture', action: () => rouvrir(e, projets) },
+            { libelle: 'Retirer de la liste', icone: 'croix', action: () => recents.retirer(e) },
+            'separateur',
+            { libelle: 'Vider la liste des récents', icone: 'effacer', action: recents.vider },
+          ]);
+        },
+      },
+      visuelRecent(e, projets),
+      el('span', { classe: 'libelle' }, e.nom, detail ? el('span', { classe: 'detail-recent' }, detail) : null),
+      el('button', {
+        classe: 'bouton-icone',
+        title: 'Retirer de la liste',
+        onClick: (k) => { k.stopPropagation(); recents.retirer(e); },
+      }, icone('croix')));
+    }),
+    !recentsReplies && liste.length > RECENTS_VISIBLES
+      ? el('button', { classe: 'lien-plus', onClick: () => { recentsTous = !recentsTous; rendre(); } },
+        recentsTous ? 'Moins' : `Plus… (${liste.length - RECENTS_VISIBLES})`)
+      : null,
+  ];
+}
+
 export function rendre() {
   const { projets, selection, infosApp, ongletActif } = etat.obtenir();
   const enBibliotheque = selection !== etat.ID_TOOLKIT;
@@ -181,6 +266,7 @@ export function rendre() {
     el('button', { classe: 'bouton-recherche', title: 'Rechercher dans les projets et les notes', onClick: ouvrirRecherche },
       icone('recherche'), el('span', {}, 'Rechercher…'), el('kbd', {}, 'Ctrl+K')),
     el('div', { classe: 'barre-defilante' },
+      sectionRecents(projets),
       el('div', { classe: 'barre-section' }, 'Bibliothèque'),
       elementNav({
         libelle: 'Tous les projets',

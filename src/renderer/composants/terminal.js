@@ -158,7 +158,7 @@ export function creerPanneauTerminal(onglet, parent) {
     }
   }
 
-  demarrer();
+  demarrer({ continuer: Boolean(onglet.continuer) });
 
   return {
     element,

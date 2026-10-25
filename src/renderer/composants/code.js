@@ -15,6 +15,7 @@ import * as etat from './etat.js';
 import { chargerMonaco, langageDe, nomLangage, OPTIONS_EDITEUR } from './monaco.js';
 import * as lsp from './lsp-python.js';
 import { afficherHistorique } from './historique.js';
+import * as recents from './recents.js';
 
 const api = window.toolkit.code;
 const panneaux = new Map(); // cle -> panneau ouvert (ouvreur de Monaco, surveillance)
@@ -565,6 +566,7 @@ export function creerPanneauCode(o, zone) {
       ouverts.splice(index >= 0 ? index + 1 : ouverts.length, 0, chemin);
     }
     await activer(chemin);
+    recents.noter({ type: 'fichier', cible, chemin, nom: nomDe(chemin), detail: o.nomCible });
     if (selectionMonaco && doc.modele) {
       const zoneChoisie = monaco.Range.isIRange(selectionMonaco)
         ? selectionMonaco

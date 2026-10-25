@@ -76,6 +76,10 @@ le dossier `Toolkit`.
 
 ## 3. Tour rapide
 
+- Tout en haut à gauche, **Récents** : tes dernières ouvertures (outils, projets ouverts dans
+  un éditeur, fichiers de l'onglet « Code », notes, sessions Claude). Un clic rouvre la même
+  chose ; pour Claude, la dernière conversation reprend (après une sauvegarde Git). Clic sur
+  le titre « Récents » pour replier ; × ou clic droit pour retirer une ligne.
 - À gauche : **Rechercher** (Ctrl+K), tes projets par **catégorie**, **favori** ou **tag**,
   tes **projets épinglés** (juste sous « Favoris »), puis en bas **Git et GitHub**,
   **Terminal PowerShell**, **Réglages** et **Toolkit** (l'application elle-même).

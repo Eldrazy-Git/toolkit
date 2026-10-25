@@ -1519,3 +1519,23 @@ mark { background: rgba(229, 192, 73, 0.3); color: var(--texte-fort); border-rad
 }
 .resultat-ligne:hover { background: var(--fond-survol); color: var(--texte); }
 .resultat-ligne mark { background: rgba(234, 92, 0, 0.33); color: var(--texte-fort); border-radius: 2px; }
+
+/* Récents (barre latérale) */
+.titre-repliable { cursor: pointer; }
+.titre-repliable > span { display: inline-flex; align-items: center; gap: 4px; }
+.titre-repliable .bouton-replier { margin: 0 0 0 -4px; }
+.titre-repliable:hover { color: var(--texte-fort); }
+.element-recent > .ico { color: var(--texte-faible); flex-shrink: 0; }
+.element-recent .icone-projet { border-radius: 4px; font-size: 8px; }
+.detail-recent { margin-left: 6px; font-size: 11px; color: var(--texte-faible); }
+.lien-plus {
+  margin: 0 6px 0 34px;
+  padding: 2px 0;
+  border: none;
+  background: none;
+  color: var(--accent-texte);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.lien-plus:hover { text-decoration: underline; }

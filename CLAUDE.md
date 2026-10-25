@@ -120,6 +120,7 @@ app/
             ├── monaco.js        chargement de Monaco (AMD « min »), langages, options
             ├── lsp-python.js    client LSP minimal (Pyright -> complétion, survol, définition…)
             ├── groupes.js       groupes de projets de la barre latérale
+            ├── recents.js       « Récents » : dernières ouvertures (réglages interface.recents)
             ├── note.js          onglet d'une note : lecture, liens, rétroliens, modification
             ├── menu.js          ouvrirMenu(bouton, elements) : menu déroulant
             └── barre-laterale.js, bibliotheque.js, details.js, icone-projet.js
@@ -132,7 +133,10 @@ concernés et conserve les autres.
 Bibliothèque : chaque projet chargé porte aussi `dateAjout` (création du dossier) et
 `dateModification` (fichier le plus récent sur 2 niveaux, dossiers générés ignorés) pour
 le tri. Préférences d'affichage dans `reglages.interface` : `vue`, `tri`, `epingles`
-(ids des projets épinglés, dans l'ordre ; pas dans projet.json), `groupes` (voir
+(ids des projets épinglés, dans l'ordre ; pas dans projet.json), `recents` (voir
+`composants/recents.js` : 15 dernières ouvertures, notées par `recents.noter()` dans
+`ouvrirOutil`, `ouvrirAvec`, `ouvrirNote`, `lancerClaude` et `code.js > ouvrirFichier`),
+`groupes` (voir
 `composants/groupes.js` : `{ id, nom, parent, projets, replie }`, imbricables, un projet
 peut être dans plusieurs groupes ; nettoyés au chargement par `groupes.nettoyer()` ; filtre
 de bibliothèque `{ type: 'groupe', valeur: id }` = projets du groupe et de ses sous-groupes ;

@@ -6,6 +6,7 @@ import { demanderTexte, confirmer, choisir, formulaire } from './dialogue.js';
 import * as actionsGit from './actions-git.js';
 import { ouvrirMenu } from './menu.js';
 import * as groupes from './groupes.js';
+import * as recents from './recents.js';
 
 const api = window.toolkit;
 
@@ -83,6 +84,7 @@ export async function ouvrirOutil(projetId, outilLie = null) {
   const onglet = await essayer(() => api.outils.preparer(projetId, outilLie));
   if (!onglet) return;
   etat.modifier({ onglets: [...etat.obtenir().onglets, { ...onglet, genre: 'outil' }], ongletActif: onglet.id });
+  recents.noter({ type: 'outil', projetId, outilLie, nom: onglet.nom });
 }
 
 export function activerOnglet(id) {
@@ -391,7 +393,9 @@ export async function ouvrirAvec(projet, editeurId) {
     return;
   }
   const nom = await essayer(() => api.editeurs.ouvrirProjet(projet.id, editeurId));
-  if (nom) notifier(`Ouverture de « ${projet.fiche.nom} » dans ${nom}…`);
+  if (!nom) return;
+  notifier(`Ouverture de « ${projet.fiche.nom} » dans ${nom}…`);
+  recents.noter({ type: 'editeur', projetId: projet.id, editeurId: editeurId || null, nom: projet.fiche.nom, detail: nom });
 }
 
 async function ouvrirToolkitAvec(editeurId) {
@@ -481,6 +485,7 @@ export function ouvrirNote(chemin, { modifier = false } = {}) {
     nonEnregistre: false,
   };
   etat.modifier({ onglets: [...onglets, onglet], ongletActif: id });
+  recents.noter({ type: 'note', chemin, nom: onglet.nom });
 }
 
 // Appelé par le panneau d'une note : { nonEnregistre?, titre? }
@@ -597,7 +602,8 @@ export async function lancerAction(projet, index) {
 
 // Ouvre un onglet de terminal. cible : { type: 'projet', id } | { type: 'toolkit' } | { type: 'racine' }
 // nomCible : nom lisible du dossier (pour le titre de l'onglet).
-export function ouvrirTerminal({ mode, cible, nomCible, demande }) {
+// continuer : Claude reprend la dernière conversation (claude --continue).
+export function ouvrirTerminal({ mode, cible, nomCible, demande, continuer = false }) {
   const onglet = {
     id: `terminal-${crypto.randomUUID()}`,
     genre: 'terminal',
@@ -605,6 +611,7 @@ export function ouvrirTerminal({ mode, cible, nomCible, demande }) {
     cible,
     nomCible,
     demande,
+    continuer,
     nom: `${mode === 'claude' ? 'Claude' : 'PowerShell'} · ${nomCible}`,
     enCours: true,
   };
@@ -672,7 +679,7 @@ async function sauvegarderAvantClaude(cible, nomCible) {
 // Lance Claude Code sur une cible (après sauvegarde), avec éventuellement une demande
 // initiale. Si une session Claude tourne déjà sur ce dossier, on y retourne ; la demande
 // est alors copiée dans le presse-papiers (on ne peut pas l'écrire à la place de l'utilisateur).
-async function lancerClaude(cible, nomCible, demande) {
+async function lancerClaude(cible, nomCible, demande, { continuer = false } = {}) {
   const existant = etat.obtenir().onglets.find((o) => o.genre === 'terminal' && o.mode === 'claude' && o.enCours && memeCible(o.cible, cible));
   if (existant) {
     etat.modifier({ ongletActif: existant.id });
@@ -683,7 +690,13 @@ async function lancerClaude(cible, nomCible, demande) {
     return;
   }
   if (!(await sauvegarderAvantClaude(cible, nomCible))) return;
-  ouvrirTerminal({ mode: 'claude', cible, nomCible, demande });
+  ouvrirTerminal({ mode: 'claude', cible, nomCible, demande, continuer });
+  recents.noter({ type: 'claude', cible, nom: nomCible });
+}
+
+// Depuis « Récents » : rouvre Claude sur ce dossier en reprenant la dernière conversation.
+export function reprendreClaude(cible, nomCible) {
+  return lancerClaude(cible, nomCible, undefined, { continuer: true });
 }
 
 export function modifierAvecClaude(projet, demande) {

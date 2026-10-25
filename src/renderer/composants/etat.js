@@ -14,6 +14,7 @@ const etat = {
   tri: 'nom', // nom | modification | ajout | type | categorie (voir bibliotheque.js > TRIS)
   epingles: [], // ids des projets épinglés dans la barre latérale, dans l'ordre
   groupes: [], // groupes de projets de la barre latérale (voir groupes.js)
+  recents: [], // dernières ouvertures (voir recents.js)
   selection: null, // id d'un projet, ID_TOOLKIT ou null
   onglets: [], // outils HTML ouverts : { id, nom, projetId, outilLie, url, partition, chemin }
   ongletActif: 'bibliotheque', // 'bibliotheque', 'reglages' ou l'id d'un outil ouvert
