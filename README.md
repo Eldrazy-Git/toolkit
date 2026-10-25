@@ -145,6 +145,11 @@ Il marche aussi pour Toolkit lui-même (bouton **Code** de l'entrée « Toolkit 
   définitivement), copier le chemin.
 - **Ctrl+S** enregistre, **Ctrl+W** ferme le fichier, **Ctrl+P** va à un fichier par son
   nom, **Ctrl+F** / **Ctrl+H** cherche / remplace, **F1** affiche toutes les commandes.
+- **Rechercher dans tous les fichiers** : onglet **Rechercher** en haut à gauche, ou
+  **Ctrl+Maj+F**. Options : **Aa** (majuscules), **ab|** (mot entier), **.\*** (expression
+  régulière). Clic sur un résultat : le fichier s'ouvre à cet endroit. **Tout remplacer**
+  remplace dans tous les fichiers trouvés, après confirmation et une sauvegarde Git (annulable
+  avec l'historique). Les dossiers de compilation (node_modules, build…) sont ignorés.
 - Un point ● signale un fichier pas encore enregistré. Fermer un fichier, l'onglet ou
   quitter Toolkit demande confirmation s'il reste des modifications.
 - **L'éditeur comprend le code :**

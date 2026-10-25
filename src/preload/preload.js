@@ -131,6 +131,10 @@ contextBridge.exposeInMainWorld('toolkit', {
     creer: (cible, parent, nom, type) => appeler('code:creer', cible, parent, nom, type), // chemin créé
     renommer: (cible, relatif, nom) => appeler('code:renommer', cible, relatif, nom), // nouveau chemin
     corbeille: (cible, relatif) => appeler('code:corbeille', cible, relatif),
+    // options : { texte, casse, motEntier, regex } -> { fichiers: [{ chemin, resultats }], total, tronque }
+    rechercher: (cible, options) => appeler('code:rechercher', cible, options),
+    // chemins : fichiers où remplacer -> { fichiers, remplacements, sauvegarde, git }
+    remplacer: (cible, options, remplacement, chemins) => appeler('code:remplacer', cible, options, remplacement, chemins),
     surveiller: (cle, cible) => appeler('code:surveiller', cle, cible),
     arreterSurveillance: (cle) => appeler('code:arreter-surveillance', cle),
     surChangements: (rappel) => ecouter('code:changements', rappel), // rappel(cle, [chemins])

@@ -8,6 +8,7 @@ const { gerer } = require('./gerer');
 const explorateur = require('../explorateur');
 const lspPython = require('../lsp-python');
 const { dossierCible } = require('../cibles');
+const git = require('../git');
 
 // Arrêts liés à la fermeture d'une interface, enregistrés une seule fois par interface.
 const suivis = new WeakMap(); // webContents -> Set de clés
@@ -26,6 +27,16 @@ function enregistrer() {
   gerer('code:ecrire', async (cible, relatif, texte, options) => explorateur.ecrire(await dossierCible(cible), relatif, texte, options));
   gerer('code:creer', async (cible, parent, nom, type) => explorateur.creer(await dossierCible(cible), parent, nom, type));
   gerer('code:renommer', async (cible, relatif, nom) => explorateur.renommer(await dossierCible(cible), relatif, nom));
+  gerer('code:rechercher', async (cible, options) => explorateur.rechercher(await dossierCible(cible), options || {}));
+  // Avant de remplacer : sauvegarde Git des modifications en cours (si le dossier a Git).
+  gerer('code:remplacer', async (cible, options, remplacement, chemins) => {
+    const dossier = await dossierCible(cible);
+    let sauvegarde = false;
+    if (await git.estDepot(dossier)) {
+      sauvegarde = (await git.commiterTout(dossier, `Sauvegarde automatique avant « Remplacer partout » (${new Date().toLocaleString('fr-FR')})`)).commite;
+    }
+    return { ...(await explorateur.remplacer(dossier, options || {}, String(remplacement ?? ''), chemins)), sauvegarde, git: await git.estDepot(dossier) };
+  });
   gerer('code:corbeille', async (cible, relatif) => explorateur.mettreALaCorbeille(await dossierCible(cible), relatif));
 
   // Surveillance tant que l'onglet est ouvert : « code:changements » (cle, [chemins relatifs]).

@@ -1458,3 +1458,64 @@ mark { background: rgba(229, 192, 73, 0.3); color: var(--texte-fort); border-rad
 .ligne-fichier-version:hover > .bouton, .ligne-fichier-version:has(.choisi) > .bouton { visibility: visible; }
 .detail-version .liste-fichiers-git { max-height: 22vh; }
 @media (max-width: 760px) { .historique { grid-template-columns: 1fr; } .liste-versions { max-height: 24vh; } }
+
+/* Onglet « Code » : choix Fichiers / Rechercher, et recherche dans tous les fichiers */
+.code-vues { display: flex; gap: 2px; padding: 6px 6px 0; }
+.onglet-vue {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+  height: 28px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--texte-faible);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.onglet-vue .ico { width: 14px; height: 14px; }
+.onglet-vue:hover { color: var(--texte-fort); }
+.onglet-vue.actif { color: var(--texte-fort); border-bottom-color: var(--accent); }
+.code-vue-fichiers, .code-panneau-recherche { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.code-vue-fichiers[hidden], .code-panneau-recherche[hidden], .code-entete[hidden] { display: none; }
+.code-panneau-recherche { padding-top: 8px; }
+.ligne-recherche { display: flex; align-items: center; gap: 2px; margin: 0 8px 6px; }
+.ligne-recherche .code-recherche { flex: 1; min-width: 0; margin: 0 4px 0 0; }
+.ligne-recherche .bouton { flex-shrink: 0; }
+.bascule-recherche {
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: var(--texte-faible);
+  font: 600 12px var(--police-code);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.bascule-recherche:hover { background: var(--fond-survol); color: var(--texte-fort); }
+.bascule-recherche.actif { border-color: var(--accent); background: rgba(0, 120, 212, 0.25); color: var(--texte-fort); }
+.resume-recherche { padding: 2px 12px 6px; font-size: 12px; color: var(--texte-faible); }
+.resultats-recherche { flex: 1; overflow: auto; padding-bottom: 12px; }
+.entete-resultat { display: flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px 0 6px; cursor: pointer; white-space: nowrap; }
+.entete-resultat:hover { background: var(--fond-survol); }
+.compte-resultat { margin-left: auto; padding: 0 6px; border-radius: 8px; background: var(--fond-element); font-size: 11px; color: var(--texte-faible); }
+.fichier-resultat.replie .lignes-resultat { display: none; }
+.fichier-resultat.replie .chevron-code .ico { transform: none; }
+.resultat-ligne {
+  height: 22px;
+  line-height: 22px;
+  padding: 0 8px 0 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--texte-faible);
+}
+.resultat-ligne:hover { background: var(--fond-survol); color: var(--texte); }
+.resultat-ligne mark { background: rgba(234, 92, 0, 0.33); color: var(--texte-fort); border-radius: 2px; }

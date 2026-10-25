@@ -251,7 +251,105 @@ function arreterToutesSurveillances() {
   [...surveillances.keys()].forEach(arreterSurveillance);
 }
 
+// --- Rechercher / remplacer dans tous les fichiers -------------------------------------------
+
+const MAX_RESULTATS = 2000;
+const TAILLE_MAX_RECHERCHE = 2 * 1024 * 1024;
+
+// options : { texte, casse, motEntier, regex }. Lance une erreur claire si l'expression est invalide.
+function expression({ texte, casse = false, motEntier = false, regex = false }) {
+  if (!texte) throw new Error('Tape le texte à chercher.');
+  let source = regex ? texte : texte.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (motEntier) source = `(?<![\\p{L}\\p{N}_])(?:${source})(?![\\p{L}\\p{N}_])`;
+  try {
+    const exp = new RegExp(source, `gu${casse ? '' : 'i'}`);
+    if (exp.test('')) throw new Error('vide');
+    return exp;
+  } catch {
+    throw new Error('Expression de recherche invalide (ou qui correspond à un texte vide).');
+  }
+}
+
+// Fichiers texte du dossier (dossiers de compilation exclus) : { chemin, texte, encodage }.
+async function* fichiersTexte(dossier, chemins = null) {
+  const liste = chemins || (await listerTout(dossier)).fichiers;
+  for (const relatif of liste) {
+    let chemin;
+    try {
+      chemin = absolu(dossier, relatif);
+      const infos = await fsp.stat(chemin);
+      if (!infos.isFile() || infos.size > TAILLE_MAX_RECHERCHE) continue;
+      const octets = await fsp.readFile(chemin);
+      if (octets.subarray(0, 8000).includes(0)) continue;
+      yield { chemin: relatif, absolu: chemin, ...decoder(octets) };
+    } catch {
+      // fichier disparu ou illisible : ignoré
+    }
+  }
+}
+
+// Renvoie { fichiers: [{ chemin, resultats: [{ ligne, debut, fin, avant, trouve, apres }] }], total, tronque }.
+// debut / fin : colonnes (à partir de 0) dans la ligne complète.
+async function rechercher(dossier, options) {
+  const exp = expression(options);
+  const fichiers = [];
+  let total = 0;
+  for await (const f of fichiersTexte(dossier)) {
+    const resultats = [];
+    const lignes = f.texte.split('\n');
+    for (let i = 0; i < lignes.length && total < MAX_RESULTATS; i += 1) {
+      const ligne = lignes[i].replace(/\r$/, '');
+      exp.lastIndex = 0;
+      for (const m of ligne.matchAll(exp)) {
+        const debut = m.index;
+        const fin = debut + m[0].length;
+        const depart = Math.max(0, debut - 50);
+        resultats.push({
+          ligne: i + 1,
+          debut,
+          fin,
+          avant: (depart > 0 ? '…' : '') + ligne.slice(depart, debut).trimStart(),
+          trouve: m[0].slice(0, 200),
+          apres: ligne.slice(fin, fin + 120),
+        });
+        total += 1;
+        if (total >= MAX_RESULTATS) break;
+      }
+    }
+    if (resultats.length) fichiers.push({ chemin: f.chemin, resultats });
+    if (total >= MAX_RESULTATS) return { fichiers, total, tronque: true };
+  }
+  return { fichiers, total, tronque: false };
+}
+
+// Remplace dans les fichiers indiqués (chemins relatifs). Encodage et fins de ligne conservés.
+// Renvoie { fichiers, remplacements }.
+async function remplacer(dossier, options, remplacement, chemins) {
+  const exp = expression(options);
+  let fichiers = 0;
+  let remplacements = 0;
+  for await (const f of fichiersTexte(dossier, chemins)) {
+    let nombre = 0;
+    const texte = f.texte.split('\n').map((ligne) => {
+      const fin = ligne.endsWith('\r') ? '\r' : '';
+      const corps = fin ? ligne.slice(0, -1) : ligne;
+      return corps.replace(exp, (...args) => {
+        nombre += 1;
+        // Avec une expression régulière, $1, $2… reprennent les groupes ; sinon texte tel quel.
+        if (!options.regex) return remplacement;
+        const groupes = args.slice(1, args.findIndex((a) => typeof a === 'number'));
+        return remplacement.replace(/\$(\d)/g, (_, n) => groupes[Number(n) - 1] ?? '');
+      }) + fin;
+    }).join('\n');
+    if (!nombre) continue;
+    await fsp.writeFile(f.absolu, encoder(texte, f.encodage));
+    fichiers += 1;
+    remplacements += nombre;
+  }
+  return { fichiers, remplacements };
+}
+
 module.exports = {
   lister, listerTout, lire, ecrire, creer, renommer, mettreALaCorbeille,
-  surveiller, arreterSurveillance, arreterToutesSurveillances,
+  surveiller, arreterSurveillance, arreterToutesSurveillances, rechercher, remplacer,
 };

@@ -106,16 +106,157 @@ export function creerPanneauCode(o, zone) {
   const statut = el('div', { classe: 'code-statut' });
   const boutonEnregistrer = el('button', { classe: 'bouton petit', title: 'Enregistrer le fichier (Ctrl+S)', disabled: true, onClick: () => enregistrer(actif) }, 'Enregistrer');
 
+  // Panneau « Rechercher dans tous les fichiers » (Ctrl+Maj+F), à la place de l'arborescence.
+  const optionsRecherche = { casse: false, motEntier: false, regex: false };
+  let minuterieRecherche = null;
+  const champCherche = el('input', {
+    type: 'text',
+    classe: 'code-recherche',
+    placeholder: 'Rechercher dans tous les fichiers',
+    spellcheck: 'false',
+    onInput: () => { clearTimeout(minuterieRecherche); minuterieRecherche = setTimeout(lancerRecherche, 350); },
+    onKeydown: (e) => { if (e.key === 'Enter') lancerRecherche(); },
+  });
+  const bascule = (cle, libelle, titre) => {
+    const bouton = el('button', {
+      classe: 'bascule-recherche',
+      title: titre,
+      onClick: () => {
+        optionsRecherche[cle] = !optionsRecherche[cle];
+        bouton.classList.toggle('actif', optionsRecherche[cle]);
+        lancerRecherche();
+      },
+    }, libelle);
+    return bouton;
+  };
+  const champRemplacer = el('input', { type: 'text', classe: 'code-recherche', placeholder: 'Remplacer par (facultatif)', spellcheck: 'false' });
+  const resumeRecherche = el('div', { classe: 'resume-recherche' });
+  const resultatsRecherche = el('div', { classe: 'resultats-recherche' });
+  const panneauRecherche = el('div', { classe: 'code-panneau-recherche', hidden: true },
+    el('div', { classe: 'ligne-recherche' }, champCherche,
+      bascule('casse', 'Aa', 'Respecter les majuscules'),
+      bascule('motEntier', 'ab|', 'Mot entier seulement'),
+      bascule('regex', '.*', 'Expression régulière (pour les connaisseurs)')),
+    el('div', { classe: 'ligne-recherche' }, champRemplacer,
+      el('button', { classe: 'bouton petit', title: 'Remplacer dans tous les fichiers trouvés (sauvegarde Git avant)', onClick: remplacerTout }, 'Tout remplacer')),
+    resumeRecherche,
+    resultatsRecherche);
+  const vueFichiers = el('div', { classe: 'code-vue-fichiers' }, champRecherche, resultats, arbre);
+  const ongletVue = (vue, nom, libelle, titre) => el('button', { classe: 'onglet-vue', 'data-vue': vue, title: titre, onClick: () => changerVue(vue) }, icone(nom), libelle);
+
   const explorateur = el('div', { classe: 'code-explorateur' },
+    el('div', { classe: 'code-vues' },
+      ongletVue('fichiers', 'dossier', 'Fichiers', 'Arborescence des fichiers'),
+      ongletVue('recherche', 'recherche', 'Rechercher', 'Rechercher dans tous les fichiers (Ctrl+Maj+F)')),
     el('div', { classe: 'code-entete' },
       el('span', { classe: 'code-titre', title: o.nomCible }, o.nomCible),
       el('button', { classe: 'bouton-icone', title: 'Nouveau fichier', onClick: () => creerElement(dossierDeSelection(), 'fichier') }, icone('plus')),
       el('button', { classe: 'bouton-icone', title: 'Nouveau dossier', onClick: () => creerElement(dossierDeSelection(), 'dossier') }, icone('nouveauDossier')),
       el('button', { classe: 'bouton-icone', title: 'Actualiser', onClick: actualiser }, icone('redemarrer')),
       el('button', { classe: 'bouton-icone', title: 'Tout replier', onClick: () => { deplies.clear(); deplies.add(''); rendreArbre(); } }, icone('liste'))),
-    champRecherche,
-    resultats,
-    arbre);
+    vueFichiers,
+    panneauRecherche);
+
+  function changerVue(vue) {
+    vueFichiers.hidden = vue !== 'fichiers';
+    panneauRecherche.hidden = vue !== 'recherche';
+    explorateur.querySelector('.code-entete').hidden = vue !== 'fichiers';
+    explorateur.querySelectorAll('.onglet-vue').forEach((b) => b.classList.toggle('actif', b.dataset.vue === vue));
+    if (vue === 'recherche') {
+      champCherche.focus();
+      champCherche.select();
+    }
+  }
+
+  function ouvrirRechercheGlobale() {
+    // Texte sélectionné dans l'éditeur (une ligne) : cherché directement.
+    const choisi = editeur && documents.get(actif)?.modele ? editeur.getModel().getValueInRange(editeur.getSelection()) : '';
+    if (choisi && !choisi.includes('\n')) champCherche.value = choisi;
+    changerVue('recherche');
+    if (champCherche.value) lancerRecherche();
+  }
+
+  let numeroRecherche = 0;
+  let derniersResultats = null;
+  async function lancerRecherche() {
+    clearTimeout(minuterieRecherche);
+    const texte = champCherche.value;
+    const numero = ++numeroRecherche;
+    if (!texte) {
+      derniersResultats = null;
+      resumeRecherche.replaceChildren();
+      resultatsRecherche.replaceChildren();
+      return;
+    }
+    resumeRecherche.textContent = 'Recherche…';
+    let r;
+    try {
+      r = await api.rechercher(cible, { texte, ...optionsRecherche });
+    } catch (erreur) {
+      if (numero === numeroRecherche) resumeRecherche.replaceChildren(el('span', { classe: 'dialogue-erreur' }, erreur.message));
+      return;
+    }
+    if (numero !== numeroRecherche) return;
+    derniersResultats = { ...r, texte, options: { ...optionsRecherche } };
+    resumeRecherche.textContent = r.total
+      ? `${r.total} résultat(s) dans ${r.fichiers.length} fichier(s)${r.tronque ? ' (seuls les 2000 premiers sont affichés)' : ''}`
+      : 'Aucun résultat.';
+    resultatsRecherche.replaceChildren(...r.fichiers.map((f) => {
+      const lignes = el('div', { classe: 'lignes-resultat' }, f.resultats.map((res) => el('div', {
+        classe: 'resultat-ligne',
+        title: `Ligne ${res.ligne}`,
+        onClick: () => ouvrirFichier(f.chemin, new monaco.Range(res.ligne, res.debut + 1, res.ligne, res.fin + 1)),
+      }, el('span', {}, res.avant), el('mark', {}, res.trouve), el('span', {}, res.apres))));
+      return el('div', { classe: 'fichier-resultat' },
+        el('div', {
+          classe: 'entete-resultat',
+          title: f.chemin,
+          onClick: (e) => e.currentTarget.parentElement.classList.toggle('replie'),
+        },
+        el('span', { classe: 'chevron-code ouvert' }, icone('chevron')),
+        iconeFichier({ nom: nomDe(f.chemin), dossier: false }),
+        el('span', { classe: 'nom-noeud' }, nomDe(f.chemin)),
+        el('span', { classe: 'dossier-resultat' }, parent(f.chemin)),
+        el('span', { classe: 'compte-resultat' }, f.resultats.length)),
+        lignes);
+    }));
+  }
+
+  async function remplacerTout() {
+    const r = derniersResultats;
+    if (!r || r.texte !== champCherche.value || !r.total) {
+      notifier('Lance d\'abord une recherche qui trouve quelque chose.', 'erreur');
+      return;
+    }
+    const chemins = r.fichiers.map((f) => f.chemin);
+    const nonEnregistres = chemins.filter((c) => estModifie(documents.get(c)));
+    if (nonEnregistres.length) {
+      notifier(`Enregistre d'abord : ${nonEnregistres.join(', ')}.`, 'erreur');
+      return;
+    }
+    let aGit = false;
+    try {
+      aGit = (await window.toolkit.git.etat(cible)).estDepot;
+    } catch { /* sans Git */ }
+    const ok = await confirmer({
+      titre: 'Tout remplacer',
+      message: `Remplacer ${r.total}${r.tronque ? '+' : ''} occurrence(s) de « ${r.texte} » par « ${champRemplacer.value} » dans ${chemins.length} fichier(s) ?\n\n`
+        + (aGit
+          ? 'Une sauvegarde Git est faite juste avant : tu pourras tout annuler avec l\'historique des versions.'
+          : 'Attention : ce projet n\'a pas d\'historique Git, ce remplacement ne pourra pas être annulé automatiquement.'),
+      bouton: 'Tout remplacer',
+      danger: !aGit,
+    });
+    if (!ok) return;
+    try {
+      const resultat = await api.remplacer(cible, { texte: r.texte, ...r.options }, champRemplacer.value, chemins);
+      notifier(`${resultat.remplacements} remplacement(s) dans ${resultat.fichiers} fichier(s).`, 'succes');
+    } catch (erreur) {
+      notifier(erreur.message, 'erreur');
+      return;
+    }
+    lancerRecherche();
+  }
 
   const element = el('section', { classe: 'panneau panneau-code', onKeydown: touchesPanneau },
     explorateur,
@@ -129,6 +270,9 @@ export function creerPanneauCode(o, zone) {
     if (largeur >= 160 && largeur <= 700) element.style.setProperty('--largeur-explorateur', `${largeur}px`);
   } catch { /* stockage indisponible : largeur par défaut */ }
   zone.append(element);
+  changerVue('fichiers');
+  // Ctrl+Maj+F pressé hors du panneau (voir renderer.js).
+  element.addEventListener('rechercher', ouvrirRechercheGlobale);
 
   // --- Arbre des fichiers ----------------------------------------------------------------------
 
@@ -755,7 +899,11 @@ export function creerPanneauCode(o, zone) {
   function touchesPanneau(e) {
     if (!e.ctrlKey || e.altKey) return;
     const touche = e.key.toLowerCase();
-    if (touche === 's') {
+    if (touche === 'f' && e.shiftKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      ouvrirRechercheGlobale();
+    } else if (touche === 's') {
       e.preventDefault();
       e.stopPropagation();
       if (actif) enregistrer(actif);

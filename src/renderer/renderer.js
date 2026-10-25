@@ -33,6 +33,9 @@ document.addEventListener('keydown', (e) => {
   if (e.ctrlKey && touche === 'k') {
     e.preventDefault();
     ouvrirRecherche();
+  } else if (e.ctrlKey && e.shiftKey && touche === 'f' && document.querySelector('.panneau-code:not(.inactif)')) {
+    e.preventDefault();
+    document.querySelector('.panneau-code:not(.inactif)').dispatchEvent(new CustomEvent('rechercher'));
   } else if (e.ctrlKey && touche === 'f') {
     e.preventDefault();
     actions.activerOnglet(onglets.ID_BIBLIOTHEQUE);

@@ -300,6 +300,10 @@ dans `docs/projet-json.md`. Points clés :
   si Toolkit disparaît). Le processus principal traduit les adresses virtuelles <-> vrais
   chemins et répond lui-même aux questions de Pyright (`workspace/configuration` :
   `pythonPath` = vrai python.exe, pas `py.exe`).
+- Recherche dans tous les fichiers : `explorateur.rechercher()` / `remplacer()` (fichiers
+  de `listerTout`, 2 Mo et texte seulement, 2000 résultats au plus, encodage et fins de
+  ligne conservés) ; `code:remplacer` fait d'abord un commit de sauvegarde si Git. Refusé
+  dans l'interface si un fichier concerné a des modifications non enregistrées.
 - Modifications non enregistrées (onglets `nonEnregistre`) signalées au processus
   principal (`application:non-enregistre`) : la fenêtre est alors cachée au lieu d'être
   détruite, et « Quitter » demande confirmation.
