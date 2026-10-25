@@ -77,13 +77,19 @@ le dossier `Toolkit`.
 ## 3. Tour rapide
 
 - À gauche : **Rechercher** (Ctrl+K), tes projets par **catégorie**, **favori** ou **tag**,
-  puis en bas **Git et GitHub**, **Terminal PowerShell**, **Réglages** et **Toolkit**
-  (l'application elle-même).
-- Au centre : tes projets, en grille ou en liste. **Importer** ramène un projet existant ;
+  tes **projets épinglés** (juste sous « Favoris »), puis en bas **Git et GitHub**,
+  **Terminal PowerShell**, **Réglages** et **Toolkit** (l'application elle-même).
+- Au centre : tes projets, en grille ou en liste. **Trier par** les classe par nom, date de
+  modification, date d'ajout, type ou catégorie. **Importer** ramène un projet existant ;
   **Nouvel outil** en crée un avec Claude.
 - Clique sur un projet : le panneau de droite montre sa description, ses boutons
   (Ouvrir, Ouvrir avec…, Modifier avec Claude, actions), sa catégorie, ses tags, ses notes
-  et son état Git. L'étoile ☆ le met en favori.
+  et son état Git. L'étoile ☆ le met en favori, l'épingle 📌 l'ajoute à la barre latérale.
+- **Changer l'icône d'un projet** : clique sur son icône en haut du panneau de droite,
+  puis « Choisir une image… » (une image prise ailleurs est copiée dans le projet ; une
+  image déjà dans le projet est simplement utilisée).
+- **Clic droit** sur un projet (bibliothèque ou barre latérale) : ouvrir, Claude, favori,
+  épingler, icône.
 - Double-clic sur un projet : l'ouvre (outil HTML dans un onglet, sinon dans son éditeur).
 - Les outils, terminaux, consoles et notes s'ouvrent en **onglets** en haut. **Ctrl+Tab**
   passe à l'onglet suivant, **Ctrl+W** ferme l'onglet d'un outil.

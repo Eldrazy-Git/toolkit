@@ -1,7 +1,8 @@
-// Barre latérale : tous les projets, favoris, catégories, tags et l'entrée « Toolkit ».
+// Barre latérale : tous les projets, favoris, projets épinglés, catégories, tags et l'entrée « Toolkit ».
 import { el } from './dom.js';
 import { icone } from './icones.js';
-import { couleurCategorie } from './icone-projet.js';
+import { couleurCategorie, iconeProjet } from './icone-projet.js';
+import { ouvrirMenu } from './menu.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
 import { ouvrirRecherche } from './recherche.js';
@@ -32,6 +33,38 @@ function elementNav({ libelle, visuel, compteur, actif, auClic, renommer }) {
       }, icone('crayon'))
       : null,
   );
+}
+
+// Projets épinglés : accès direct sous « Favoris » (clic = afficher, double-clic = ouvrir,
+// clic droit = menu, × = désépingler). Un projet supprimé disparaît simplement de la liste.
+function projetsEpingles(projets, selection, ongletActif) {
+  return etat.obtenir().epingles
+    .map((id) => projets.find((p) => p.id === id))
+    .filter(Boolean)
+    .map((projet) => el('div', {
+      classe: `element-nav element-epingle${selection === projet.id && ongletActif === 'bibliotheque' ? ' actif' : ''}`,
+      role: 'button',
+      tabindex: '0',
+      title: projet.fiche.description || projet.fiche.nom,
+      onClick: () => actions.allerAuProjet(projet.id),
+      onDblclick: () => {
+        if (projet.erreur) return;
+        if (actions.estOuvrableCommeOutil(projet)) actions.ouvrirOutil(projet.id);
+        else actions.ouvrirAvec(projet);
+      },
+      onKeydown: (e) => { if (e.key === 'Enter') actions.allerAuProjet(projet.id); },
+      onContextmenu: (e) => {
+        e.preventDefault();
+        ouvrirMenu({ x: e.clientX, y: e.clientY }, actions.elementsMenuProjet(projet));
+      },
+    },
+    iconeProjet(projet, 18),
+    el('span', { classe: 'libelle' }, projet.fiche.nom),
+    el('button', {
+      classe: 'bouton-icone',
+      title: 'Désépingler',
+      onClick: (e) => { e.stopPropagation(); actions.basculerEpingle(projet); },
+    }, icone('croix'))));
 }
 
 export function rendre() {
@@ -66,6 +99,7 @@ export function rendre() {
         actif: filtre.type === 'favoris',
         auClic: choisir({ type: 'favoris' }),
       }),
+      projetsEpingles(projets, selection, ongletActif),
 
       el('div', { classe: 'barre-section' }, 'Catégories'),
       categories.length === 0 ? el('div', { classe: 'barre-vide' }, 'Aucune') : null,

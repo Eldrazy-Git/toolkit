@@ -1,7 +1,9 @@
-// Zone centrale : barre d'outils (titre, filtre, choix de la vue) et projets en grille ou en liste.
-import { el, normaliser } from './dom.js';
+// Zone centrale : barre d'outils (titre, filtre, tri, choix de la vue) et projets en grille ou
+// en liste. Clic droit sur un projet : menu rapide (ouvrir, favori, épingler, icône…).
+import { el, normaliser, ilYA } from './dom.js';
 import { icone } from './icones.js';
 import { iconeProjet } from './icone-projet.js';
+import { ouvrirMenu } from './menu.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
 
@@ -11,6 +13,15 @@ export const LIBELLES_TYPES = {
   'mod-minecraft': 'Mod Minecraft',
   android: 'Android',
   autre: 'Autre',
+};
+
+// Tris proposés. « type » et « categorie » regroupent les projets sous des titres.
+export const TRIS = {
+  nom: 'Nom (A → Z)',
+  modification: 'Modifié récemment',
+  ajout: 'Ajouté récemment',
+  type: 'Type de projet',
+  categorie: 'Catégorie',
 };
 
 const conteneur = document.getElementById('bibliotheque');
@@ -29,6 +40,11 @@ const champFiltre = el('input', {
     }
   },
 });
+const choixTri = el('select', {
+  classe: 'choix-tri',
+  title: 'Trier les projets',
+  onChange: () => actions.changerTri(choixTri.value),
+}, Object.entries(TRIS).map(([valeur, libelle]) => el('option', { value: valeur }, libelle)));
 const boutonGrille = el('button', { classe: 'bouton-icone', title: 'Vue en grille', onClick: () => actions.changerVue('grille') }, icone('grille'));
 const boutonListe = el('button', { classe: 'bouton-icone', title: 'Vue en liste', onClick: () => actions.changerVue('liste') }, icone('liste'));
 const contenu = el('div', { classe: 'contenu-bibliotheque' });
@@ -37,6 +53,7 @@ conteneur.append(
   el('header', { classe: 'barre-outils' },
     titre,
     el('label', { classe: 'champ-filtre' }, icone('recherche'), champFiltre),
+    el('label', { classe: 'champ-tri', title: 'Trier les projets' }, icone('tri'), choixTri),
     el('div', { classe: 'groupe-boutons' }, boutonGrille, boutonListe),
     el('button', { classe: 'bouton', title: 'Importer un projet existant (dossier du PC ou dépôt GitHub)', onClick: actions.ouvrirImport }, icone('importer'), 'Importer'),
     el('button', { classe: 'bouton principal', title: 'Créer un nouvel outil avec Claude Code', onClick: actions.nouvelOutil }, icone('plus'), 'Nouvel outil')),
@@ -69,9 +86,40 @@ function projetsVisibles({ projets, filtre, texteFiltre }) {
   });
 }
 
+// --- Tri et groupes --------------------------------------------------------------------------
+
+const parNom = (a, b) => a.fiche.nom.localeCompare(b.fiche.nom, 'fr', { sensitivity: 'base' });
+const ORDRE_TYPES = Object.keys(LIBELLES_TYPES);
+
+function trier(projets, tri) {
+  const liste = [...projets];
+  if (tri === 'modification') return liste.sort((a, b) => (b.dateModification || 0) - (a.dateModification || 0) || parNom(a, b));
+  if (tri === 'ajout') return liste.sort((a, b) => (b.dateAjout || 0) - (a.dateAjout || 0) || parNom(a, b));
+  return liste.sort(parNom);
+}
+
+// Renvoie [{ titre, projets }] ; un seul groupe sans titre si le tri ne regroupe pas.
+function grouper(projets, tri) {
+  const tries = trier(projets, tri);
+  if (tri !== 'type' && tri !== 'categorie') return [{ titre: null, projets: tries }];
+  const groupes = new Map();
+  for (const p of tries) {
+    const cle = tri === 'type' ? p.fiche.type : p.fiche.categorie;
+    if (!groupes.has(cle)) groupes.set(cle, []);
+    groupes.get(cle).push(p);
+  }
+  const cles = [...groupes.keys()].sort((a, b) => (tri === 'type'
+    ? ORDRE_TYPES.indexOf(a) - ORDRE_TYPES.indexOf(b)
+    : a.localeCompare(b, 'fr', { sensitivity: 'base' })));
+  return cles.map((cle) => ({ titre: tri === 'type' ? LIBELLES_TYPES[cle] : cle, projets: groupes.get(cle) }));
+}
+
+// --- Éléments ---------------------------------------------------------------------------------
+
 function marques(projet) {
   const aProbleme = projet.erreur || projet.problemes.length > 0;
   return [
+    actions.estEpingle(projet.id) ? el('span', { classe: 'marque-epingle', title: 'Épinglé dans la barre latérale' }, icone('epingle')) : null,
     projet.fiche.favori ? el('span', { classe: 'marque-favori', title: 'Favori' }, icone('etoile')) : null,
     aProbleme ? el('span', { classe: 'marque-erreur', title: 'La fiche projet.json a un problème' }, icone('attention')) : null,
   ];
@@ -84,12 +132,21 @@ function ouvrir(projet) {
   else actions.ouvrirAvec(projet);
 }
 
+function menuContextuel(projet) {
+  return (e) => {
+    e.preventDefault();
+    actions.selectionner(projet.id);
+    ouvrirMenu({ x: e.clientX, y: e.clientY }, actions.elementsMenuProjet(projet));
+  };
+}
+
 function carte(projet, selection) {
   return el('div', {
     classe: `carte${projet.id === selection ? ' selectionne' : ''}`,
     title: projet.fiche.description || projet.fiche.nom,
     onClick: () => actions.selectionner(projet.id),
     onDblclick: () => ouvrir(projet),
+    onContextmenu: menuContextuel(projet),
   },
   el('div', { classe: 'carte-marques' }, marques(projet)),
   iconeProjet(projet, 56),
@@ -103,13 +160,18 @@ function ligne(projet, selection) {
     classe: `ligne${projet.id === selection ? ' selectionne' : ''}`,
     onClick: () => actions.selectionner(projet.id),
     onDblclick: () => ouvrir(projet),
+    onContextmenu: menuContextuel(projet),
   },
   iconeProjet(projet, 32),
   el('div', { classe: 'ligne-texte' },
     el('div', { classe: 'ligne-nom' }, f.nom, marques(projet)),
     el('div', { classe: 'ligne-description' }, f.description || '—')),
   el('div', { classe: 'ligne-colonne' }, f.categorie),
-  el('div', { classe: 'ligne-colonne' }, LIBELLES_TYPES[f.type]));
+  el('div', { classe: 'ligne-colonne' }, LIBELLES_TYPES[f.type]),
+  el('div', {
+    classe: 'ligne-colonne ligne-date',
+    title: projet.dateModification ? `Modifié le ${new Date(projet.dateModification).toLocaleString('fr-FR')}` : '',
+  }, projet.dateModification ? ilYA(projet.dateModification) : '—'));
 }
 
 function messageVide(etatCourant) {
@@ -136,12 +198,16 @@ export function rendre() {
     el('span', { classe: 'sous-titre' }, `${visibles.length} projet${visibles.length > 1 ? 's' : ''}`));
   boutonGrille.classList.toggle('actif', e.vue === 'grille');
   boutonListe.classList.toggle('actif', e.vue === 'liste');
+  choixTri.value = TRIS[e.tri] ? e.tri : 'nom';
 
   if (visibles.length === 0) {
     contenu.replaceChildren(messageVide(e));
-  } else if (e.vue === 'liste') {
-    contenu.replaceChildren(el('div', { classe: 'liste' }, visibles.map((p) => ligne(p, e.selection))));
-  } else {
-    contenu.replaceChildren(el('div', { classe: 'grille' }, visibles.map((p) => carte(p, e.selection))));
+    return;
   }
+  const groupes = grouper(visibles, e.tri);
+  contenu.replaceChildren(...groupes.map((g) => el('section', { classe: 'groupe-projets' },
+    g.titre ? el('h2', { classe: 'titre-groupe' }, g.titre, el('span', {}, g.projets.length)) : null,
+    e.vue === 'liste'
+      ? el('div', { classe: 'liste' }, g.projets.map((p) => ligne(p, e.selection)))
+      : el('div', { classe: 'grille' }, g.projets.map((p) => carte(p, e.selection))))));
 }

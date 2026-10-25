@@ -61,7 +61,13 @@ async function demarrer() {
       window.toolkit.reglages.lire(),
       window.toolkit.application.infos(),
     ]);
-    etat.modifier({ vue: reglagesSauves.interface?.vue === 'liste' ? 'liste' : 'grille', infosApp });
+    const preferences = reglagesSauves.interface || {};
+    etat.modifier({
+      vue: preferences.vue === 'liste' ? 'liste' : 'grille',
+      tri: typeof preferences.tri === 'string' ? preferences.tri : 'nom',
+      epingles: Array.isArray(preferences.epingles) ? preferences.epingles : [],
+      infosApp,
+    });
   } catch (erreur) {
     notifier(erreur.message, 'erreur');
   }

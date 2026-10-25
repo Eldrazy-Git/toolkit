@@ -45,7 +45,10 @@ export function ouvrirMenu(ancre, elements) {
   document.body.append(menu);
 
   // Positionné sous le bouton, sans dépasser de la fenêtre.
-  const r = ancre.getBoundingClientRect();
+  // ancre : un élément (menu sous le bouton) ou un point { x, y } (clic droit).
+  const r = ancre instanceof Element
+    ? ancre.getBoundingClientRect()
+    : { left: ancre.x, right: ancre.x, top: ancre.y, bottom: ancre.y };
   const largeur = menu.offsetWidth;
   const hauteur = menu.offsetHeight;
   const gauche = Math.min(r.left, window.innerWidth - largeur - 8);

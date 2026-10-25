@@ -120,6 +120,13 @@ Les fiches `projet.json` : format dans `docs/projet-json.md`. `projets.js` norma
 fiche pour l'interface sans jamais la réécrire ; une modification ne touche que les champs
 concernés et conserve les autres.
 
+Bibliothèque : chaque projet chargé porte aussi `dateAjout` (création du dossier) et
+`dateModification` (fichier le plus récent sur 2 niveaux, dossiers générés ignorés) pour
+le tri. Préférences d'affichage dans `reglages.interface` : `vue`, `tri`, `epingles`
+(ids des projets épinglés, dans l'ordre ; pas dans projet.json). Icône : `changerIcone()`
+référence une image déjà dans le projet, sinon la copie en `icone.<ext>` (ou
+`icone-toolkit.<ext>` si ce nom est déjà pris) ; une image n'est jamais supprimée.
+
 ### Bibliothèques
 
 | Besoin | Bibliothèque |

@@ -77,6 +77,71 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .bouton-icone.actif { background: var(--fond-actif); color: var(--texte-fort); }
 .bouton-icone.favori { color: var(--favori); }
 .bouton-icone.favori .ico { fill: currentColor; }
+.bouton-icone.epingle { color: var(--accent-texte); }
+.bouton-icone.epingle .ico { fill: currentColor; }
+
+/* Icône cliquable du panneau de détails (changer l'icône) */
+.bouton-icone-projet {
+  position: relative;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  cursor: pointer;
+}
+.bouton-icone-projet:disabled { cursor: default; }
+.crayon-icone {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+}
+.crayon-icone .ico { width: 11px; height: 11px; }
+.bouton-icone-projet:hover:not(:disabled) .crayon-icone,
+.bouton-icone-projet:focus-visible .crayon-icone { display: flex; }
+
+/* Projets épinglés dans la barre latérale */
+.element-epingle { padding-left: 22px; }
+.element-epingle .icone-projet { border-radius: 4px; font-size: 8px; }
+.marque-epingle { color: var(--accent-texte); }
+.marque-epingle .ico { fill: currentColor; }
+
+/* Tri et groupes de la bibliothèque */
+.champ-tri {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 4px 0 8px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--rayon);
+  background: var(--fond-champ);
+  color: var(--texte-faible);
+}
+.choix-tri { border: none; outline: none; background: transparent; color: var(--texte); cursor: pointer; }
+.choix-tri option { background: #252526; }
+.groupe-projets + .groupe-projets { margin-top: 22px; }
+.titre-groupe {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-faible);
+}
+.titre-groupe span { font-weight: 400; }
+.ligne-date { width: 110px; text-align: right; }
 .bouton-icone:disabled { opacity: 0.4; cursor: default; }
 
 /* --- Barre latérale --------------------------------------------------------------- */

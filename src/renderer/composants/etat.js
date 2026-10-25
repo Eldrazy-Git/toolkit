@@ -11,6 +11,8 @@ const etat = {
   filtre: { type: 'tous' }, // tous | favoris | categorie (valeur) | tag (valeur)
   texteFiltre: '',
   vue: 'grille', // grille | liste
+  tri: 'nom', // nom | modification | ajout | type | categorie (voir bibliotheque.js > TRIS)
+  epingles: [], // ids des projets épinglés dans la barre latérale, dans l'ordre
   selection: null, // id d'un projet, ID_TOOLKIT ou null
   onglets: [], // outils HTML ouverts : { id, nom, projetId, outilLie, url, partition, chemin }
   ongletActif: 'bibliotheque', // 'bibliotheque', 'reglages' ou l'id d'un outil ouvert

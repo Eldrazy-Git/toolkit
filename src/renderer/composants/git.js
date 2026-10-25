@@ -1,7 +1,7 @@
 // Onglet « Git et GitHub » : état de Toolkit et de chaque projet, Commit / Push / Pull,
 // « Tout envoyer », création de dépôts GitHub privés.
 // pastillesGit() et boutonsGit() servent aussi au panneau de détails.
-import { el } from './dom.js';
+import { el, ilYA } from './dom.js';
 import { icone } from './icones.js';
 import { ouvrirMenu } from './menu.js';
 import * as etat from './etat.js';
@@ -14,17 +14,6 @@ document.getElementById('zone-contenu').append(panneau);
 
 export function element() {
   return panneau;
-}
-
-const relatif = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' });
-
-function ilYA(date) {
-  const secondes = Math.round((date - Date.now()) / 1000);
-  const unites = [['year', 31536000], ['month', 2592000], ['week', 604800], ['day', 86400], ['hour', 3600], ['minute', 60]];
-  for (const [unite, duree] of unites) {
-    if (Math.abs(secondes) >= duree) return relatif.format(Math.round(secondes / duree), unite);
-  }
-  return 'à l\'instant';
 }
 
 function pastille(texte, classe, titre) {

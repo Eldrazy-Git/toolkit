@@ -29,7 +29,7 @@ function contenuNotes(donnees, projetId) {
         donnees.retroliens.map((r) => el('a', { href: '#', onClick: (e) => { e.preventDefault(); actions.ouvrirNote(r.chemin); } },
           icone('note'), r.titre)))
       : null,
-  ];
+  ].filter(Boolean); // (replaceChildren / append écriraient « null » pour un élément absent)
 }
 
 // Section « Notes » : fichiers .md du projet (projetId null = Toolkit) et notes qui le citent.
@@ -163,11 +163,25 @@ function rendreProjet(projet) {
     disabled: Boolean(projet.erreur),
     onClick: () => actions.basculerFavori(projet),
   }, icone('etoile'));
+  const epingle = actions.estEpingle(projet.id);
+  const boutonEpingle = el('button', {
+    classe: `bouton-icone${epingle ? ' epingle' : ''}`,
+    title: epingle ? 'Désépingler de la barre latérale' : 'Épingler dans la barre latérale',
+    onClick: () => actions.basculerEpingle(projet),
+  }, icone('epingle'));
+
+  // Icône cliquable : menu pour la changer.
+  const boutonIcone = el('button', {
+    classe: 'bouton-icone-projet',
+    title: 'Changer l\'icône du projet',
+    disabled: Boolean(projet.erreur),
+    onClick: () => ouvrirMenu(boutonIcone, actions.elementsMenuIcone(projet)),
+  }, iconeProjet(projet, 48), el('span', { classe: 'crayon-icone' }, icone('crayon')));
 
   return [
-    entete(iconeProjet(projet, 48), f.nom,
+    entete(boutonIcone, f.nom,
       el('span', { classe: 'etiquette type' }, LIBELLES_TYPES[f.type]),
-      boutonFavori),
+      [boutonEpingle, boutonFavori]),
     el('div', { classe: 'details-corps' },
       alertes(projet),
       el('p', { classe: `details-description${f.description ? '' : ' vide'}` }, f.description || 'Aucune description.'),

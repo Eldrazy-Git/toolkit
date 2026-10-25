@@ -54,7 +54,7 @@ est conservé tel quel par Toolkit (on peut donc y ranger ses propres notes).
 | `categorie` | texte | `Sans catégorie` | Catégorie dans la barre latérale ; décide aussi de la couleur de l'icône par défaut. |
 | `tags` | liste de textes | `[]` | Mots-clés libres. |
 | `favori` | `true` / `false` | `false` | Affiché dans « Favoris ». |
-| `icone` | chemin | aucune | Image (png, jpg, svg, ico…). Sans icône : initiales sur fond coloré. |
+| `icone` | chemin | aucune | Image (png, jpg, svg, ico…). Sans icône : initiales sur fond coloré. Se change depuis Toolkit (clic sur l'icône du projet). |
 | `point_entree` | chemin | aucun | Fichier principal : la page HTML d'un outil, le script principal, etc. |
 | `ouvrir_avec` | `vscode`, `android-studio`, `notepad++`, `explorateur` | aucun | Éditeur proposé par défaut pour « Ouvrir avec… ». |
 | `actions` | liste | `[]` | Boutons qui lancent une commande (voir ci-dessous). |

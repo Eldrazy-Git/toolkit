@@ -181,6 +181,59 @@ export async function changerVue(vue) {
   await essayer(() => api.reglages.modifier({ interface: { vue } }));
 }
 
+export async function changerTri(tri) {
+  etat.modifier({ tri });
+  await essayer(() => api.reglages.modifier({ interface: { tri } }));
+}
+
+// --- Projets épinglés (barre latérale) -------------------------------------------------------
+// Rangés dans les réglages (donnees/), dans l'ordre d'épinglage : projet.json n'est pas touché.
+
+export function estEpingle(id) {
+  return etat.obtenir().epingles.includes(id);
+}
+
+export async function basculerEpingle(projet) {
+  const { epingles } = etat.obtenir();
+  const nouveaux = epingles.includes(projet.id) ? epingles.filter((id) => id !== projet.id) : [...epingles, projet.id];
+  etat.modifier({ epingles: nouveaux });
+  await essayer(() => api.reglages.modifier({ interface: { epingles: nouveaux } }));
+}
+
+// --- Icône d'un projet --------------------------------------------------------------------------
+
+export async function changerIcone(projet) {
+  const nouveau = await essayer(() => api.projets.choisirIcone(projet.id));
+  if (!nouveau) return;
+  remplacerProjet(nouveau);
+  notifier('Icône du projet changée.', 'succes');
+}
+
+export async function iconeAutomatique(projet) {
+  remplacerProjet(await essayer(() => api.projets.modifier(projet.id, { icone: null })));
+}
+
+export function elementsMenuIcone(projet) {
+  return [
+    { libelle: 'Choisir une image…', icone: 'image', action: () => changerIcone(projet) },
+    { libelle: 'Icône automatique (initiales)', icone: 'redemarrer', desactive: !projet.fiche.icone, action: () => iconeAutomatique(projet) },
+  ];
+}
+
+// Menu du clic droit sur un projet de la bibliothèque.
+export function elementsMenuProjet(projet) {
+  const bloque = Boolean(projet.erreur);
+  return [
+    { libelle: 'Ouvrir', icone: 'lecture', desactive: bloque, action: () => (estOuvrableCommeOutil(projet) ? ouvrirOutil(projet.id) : ouvrirAvec(projet)) },
+    { libelle: 'Modifier avec Claude', icone: 'claude', desactive: bloque, action: () => modifierAvecClaude(projet) },
+    'separateur',
+    { libelle: projet.fiche.favori ? 'Retirer des favoris' : 'Ajouter aux favoris', icone: 'etoile', desactive: bloque, action: () => basculerFavori(projet) },
+    { libelle: estEpingle(projet.id) ? 'Désépingler de la barre latérale' : 'Épingler dans la barre latérale', icone: 'epingle', action: () => basculerEpingle(projet) },
+    'separateur',
+    ...elementsMenuIcone(projet).map((e) => ({ ...e, desactive: e.desactive || bloque })),
+  ];
+}
+
 // --- Modification des fiches ----------------------------------------------------------
 
 export async function basculerFavori(projet) {

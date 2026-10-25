@@ -153,7 +153,81 @@ async function chargerProjet(id) {
     };
   }
   const { fiche, problemes } = normaliserFiche(brut, id);
-  return { ...base, fiche, problemes, icone: await urlIcone(dossier, fiche.icone) };
+  return { ...base, fiche, problemes, icone: await urlIcone(dossier, fiche.icone), ...(await datesProjet(dossier)) };
+}
+
+// --- Dates (pour trier la bibliothèque) ----------------------------------------------------
+
+const DOSSIERS_SANS_DATE = new Set(['.git', 'node_modules', 'build', '.gradle', '.idea', 'dist', 'out', '__pycache__', '.venv', 'venv']);
+const ELEMENTS_MAX_DATE = 400;
+
+// dateAjout : création du dossier du projet (= date d'import ou de création dans Toolkit).
+// dateModification : fichier le plus récent parmi la racine et le niveau suivant (sans
+// descendre plus bas, pour rester rapide ; dossiers générés ignorés).
+async function datesProjet(dossier) {
+  let dateAjout = null;
+  let dateModification = 0;
+  try {
+    const infos = await fsp.stat(dossier);
+    dateAjout = infos.birthtimeMs || infos.ctimeMs;
+  } catch {
+    return { dateAjout: null, dateModification: null };
+  }
+  let vus = 0;
+  const parcourir = async (d, profondeur) => {
+    let entrees;
+    try {
+      entrees = await fsp.readdir(d, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entrees) {
+      if (vus++ > ELEMENTS_MAX_DATE) return;
+      if (e.isDirectory() && DOSSIERS_SANS_DATE.has(e.name)) continue;
+      const chemin = path.join(d, e.name);
+      if (e.isDirectory()) {
+        if (profondeur > 0) await parcourir(chemin, profondeur - 1);
+      } else {
+        try {
+          dateModification = Math.max(dateModification, (await fsp.stat(chemin)).mtimeMs);
+        } catch {
+          // Fichier disparu.
+        }
+      }
+    }
+  };
+  await parcourir(dossier, 1);
+  return { dateAjout, dateModification: dateModification || dateAjout };
+}
+
+// --- Icône ----------------------------------------------------------------------------------
+
+const EXTENSIONS_IMAGES = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico'];
+
+// Utilise une image comme icône du projet. Une image déjà dans le projet est simplement
+// référencée ; une image prise ailleurs est copiée à la racine du projet (icone.<ext>),
+// sans jamais écraser un fichier existant du projet.
+async function changerIcone(id, cheminImage) {
+  const dossier = dossierDuProjet(id);
+  const extension = path.extname(cheminImage).slice(1).toLowerCase();
+  if (!EXTENSIONS_IMAGES.includes(extension)) {
+    throw new Error(`Ce fichier n'est pas une image reconnue (${EXTENSIONS_IMAGES.join(', ')}).`);
+  }
+  const image = path.resolve(cheminImage);
+  let relatif;
+  if (image.startsWith(dossier + path.sep)) {
+    relatif = path.relative(dossier, image).split(path.sep).join('/');
+  } else {
+    const actuelle = (await chargerProjet(id))?.fiche.icone;
+    let nom = `icone.${extension}`;
+    // « icone.png » existe déjà et n'est pas l'icône actuelle : c'est un fichier du projet.
+    if (await fsp.access(path.join(dossier, nom)).then(() => true, () => false) && actuelle !== nom) {
+      nom = `icone-toolkit.${extension}`;
+    }
+    await fsp.copyFile(image, path.join(dossier, nom));
+    relatif = nom;
+  }
+  return modifierFiche(id, { icone: relatif });
 }
 
 async function listerProjets() {
@@ -196,6 +270,12 @@ async function modifierFiche(id, changements) {
     else delete brut.categorie;
   }
   if ('tags' in changements) brut.tags = listeDeTextes(changements.tags);
+  // icone : chemin relatif au projet, ou null pour revenir à l'icône automatique (initiales).
+  // (Le fichier image lui-même n'est jamais supprimé.)
+  if ('icone' in changements) {
+    if (texte(changements.icone)) brut.icone = texte(changements.icone);
+    else delete brut.icone;
+  }
   if ('ouvrir_avec' in changements) {
     if (EDITEURS.includes(changements.ouvrir_avec)) brut.ouvrir_avec = changements.ouvrir_avec;
     else delete brut.ouvrir_avec;
@@ -304,6 +384,8 @@ module.exports = {
   chargerProjet,
   listerProjets,
   modifierFiche,
+  changerIcone,
+  EXTENSIONS_IMAGES,
   renommerCategorie,
   renommerTag,
   demarrerSurveillance,
