@@ -1,4 +1,4 @@
-// Barre latérale : tous les projets, favoris, projets épinglés, catégories, tags et l'entrée « Toolkit ».
+// Barre latérale : tous les projets, favoris, projets épinglés, groupes, catégories, tags et l'entrée « Toolkit ».
 import { el } from './dom.js';
 import { icone } from './icones.js';
 import { couleurCategorie, iconeProjet } from './icone-projet.js';
@@ -6,6 +6,7 @@ import { ouvrirMenu } from './menu.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
 import { ouvrirRecherche } from './recherche.js';
+import * as groupes from './groupes.js';
 
 const conteneur = document.getElementById('barre-laterale');
 
@@ -47,16 +48,10 @@ function projetsEpingles(projets, selection, ongletActif) {
       tabindex: '0',
       title: projet.fiche.description || projet.fiche.nom,
       onClick: () => actions.allerAuProjet(projet.id),
-      onDblclick: () => {
-        if (projet.erreur) return;
-        if (actions.estOuvrableCommeOutil(projet)) actions.ouvrirOutil(projet.id);
-        else actions.ouvrirAvec(projet);
-      },
+      onDblclick: () => actions.ouvrirProjet(projet),
       onKeydown: (e) => { if (e.key === 'Enter') actions.allerAuProjet(projet.id); },
-      onContextmenu: (e) => {
-        e.preventDefault();
-        ouvrirMenu({ x: e.clientX, y: e.clientY }, actions.elementsMenuProjet(projet, { x: e.clientX, y: e.clientY }));
-      },
+      onContextmenu: menuProjet(projet),
+      ...groupes.glissable({ type: 'projet', id: projet.id }),
     },
     iconeProjet(projet, 18),
     el('span', { classe: 'libelle' }, projet.fiche.nom),
@@ -65,6 +60,108 @@ function projetsEpingles(projets, selection, ongletActif) {
       title: 'Désépingler',
       onClick: (e) => { e.stopPropagation(); actions.basculerEpingle(projet); },
     }, icone('croix'))));
+}
+
+function menuProjet(projet) {
+  return (e) => {
+    e.preventDefault();
+    ouvrirMenu({ x: e.clientX, y: e.clientY }, actions.elementsMenuProjet(projet, { x: e.clientX, y: e.clientY }));
+  };
+}
+
+// --- Groupes ------------------------------------------------------------------------------------
+// Arbre dépliable (voir groupes.js). Clic sur un groupe = ses projets (sous-groupes compris)
+// dans la bibliothèque ; flèche = déplier/replier ; clic droit ou ⋯ = menu.
+
+function ligneGroupe(groupe, niveau, filtre) {
+  const actif = filtre.type === 'groupe' && filtre.valeur === groupe.id;
+  const menu = (position) => ouvrirMenu(position, groupes.elementsMenu(groupe, position));
+  return el('div', {
+    classe: `element-nav element-groupe${actif ? ' actif' : ''}`,
+    style: { '--niveau': niveau },
+    role: 'button',
+    tabindex: '0',
+    title: groupes.chemin(groupe.id),
+    onClick: () => groupes.afficher(groupe.id),
+    onKeydown: (e) => {
+      if (e.key === 'Enter') groupes.afficher(groupe.id);
+      if ((e.key === 'ArrowRight' && groupe.replie) || (e.key === 'ArrowLeft' && !groupe.replie)) groupes.basculerRepli(groupe.id);
+    },
+    onContextmenu: (e) => {
+      e.preventDefault();
+      menu({ x: e.clientX, y: e.clientY });
+    },
+    ...groupes.glissable({ type: 'groupe', id: groupe.id }),
+    ...groupes.deposable(groupe.id),
+  },
+  el('button', {
+    classe: `bouton-replier${groupe.replie ? '' : ' ouvert'}`,
+    title: groupe.replie ? 'Déplier' : 'Replier',
+    onClick: (e) => { e.stopPropagation(); groupes.basculerRepli(groupe.id); },
+  }, icone('chevron')),
+  icone('dossier'),
+  el('span', { classe: 'libelle' }, groupe.nom),
+  el('span', { classe: 'compteur' }, groupes.projetsDe(groupe.id).size),
+  el('button', {
+    classe: 'bouton-icone',
+    title: 'Menu du groupe',
+    onClick: (e) => {
+      e.stopPropagation();
+      const r = e.currentTarget.getBoundingClientRect();
+      menu({ x: r.left, y: r.bottom });
+    },
+  }, icone('points')));
+}
+
+function ligneProjetGroupe(projet, groupe, niveau, actif) {
+  return el('div', {
+    classe: `element-nav element-projet-groupe${actif ? ' actif' : ''}`,
+    style: { '--niveau': niveau },
+    role: 'button',
+    tabindex: '0',
+    title: projet.fiche.description || projet.fiche.nom,
+    onClick: () => {
+      groupes.afficher(groupe.id);
+      actions.selectionner(projet.id);
+    },
+    onDblclick: () => actions.ouvrirProjet(projet),
+    onKeydown: (e) => { if (e.key === 'Enter') actions.ouvrirProjet(projet); },
+    onContextmenu: menuProjet(projet),
+    ...groupes.glissable({ type: 'projet', id: projet.id, depuis: groupe.id }),
+  },
+  iconeProjet(projet, 18),
+  el('span', { classe: 'libelle' }, projet.fiche.nom),
+  el('button', {
+    classe: 'bouton-icone',
+    title: `Retirer du groupe « ${groupe.nom} » (le projet n'est pas supprimé)`,
+    onClick: (e) => { e.stopPropagation(); groupes.retirerProjet(groupe.id, projet.id); },
+  }, icone('croix')));
+}
+
+function sectionGroupes(projets, filtre, selection, ongletActif) {
+  const parId = new Map(projets.map((p) => [p.id, p]));
+  const parNom = (a, b) => a.fiche.nom.localeCompare(b.fiche.nom, 'fr', { sensitivity: 'base' });
+  const lignes = [];
+  const parcourir = (parent, niveau) => {
+    for (const g of groupes.enfants(parent)) {
+      lignes.push(ligneGroupe(g, niveau, filtre));
+      if (g.replie) continue;
+      parcourir(g.id, niveau + 1);
+      const actifIci = ongletActif === 'bibliotheque' && filtre.type === 'groupe' && filtre.valeur === g.id;
+      g.projets.map((id) => parId.get(id)).filter(Boolean).sort(parNom)
+        .forEach((p) => lignes.push(ligneProjetGroupe(p, g, niveau + 1, actifIci && selection === p.id)));
+    }
+  };
+  parcourir(null, 0);
+  return [
+    // Déposer un groupe sur ce titre le remet au premier niveau.
+    el('div', { classe: 'barre-section avec-bouton', ...groupes.deposable(null) },
+      el('span', {}, 'Groupes'),
+      el('button', { classe: 'bouton-icone', title: 'Nouveau groupe', onClick: () => groupes.creer() }, icone('nouveauDossier'))),
+    lignes.length
+      ? lignes
+      : elementNav({ libelle: 'Créer un groupe…', visuel: icone('nouveauDossier'), auClic: () => groupes.creer() }),
+  ];
 }
 
 export function rendre() {
@@ -100,6 +197,8 @@ export function rendre() {
         auClic: choisir({ type: 'favoris' }),
       }),
       projetsEpingles(projets, selection, ongletActif),
+
+      sectionGroupes(projets, filtre, selection, ongletActif),
 
       el('div', { classe: 'barre-section' }, 'Catégories'),
       categories.length === 0 ? el('div', { classe: 'barre-vide' }, 'Aucune') : null,

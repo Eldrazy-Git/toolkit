@@ -5,6 +5,7 @@ import { notifier } from './notifications.js';
 import { demanderTexte, confirmer, choisir, formulaire } from './dialogue.js';
 import * as actionsGit from './actions-git.js';
 import { ouvrirMenu } from './menu.js';
+import * as groupes from './groupes.js';
 
 const api = window.toolkit;
 
@@ -232,9 +233,26 @@ export function elementsMenuProjet(projet, position) {
     'separateur',
     { libelle: projet.fiche.favori ? 'Retirer des favoris' : 'Ajouter aux favoris', icone: 'etoile', desactive: bloque, action: () => basculerFavori(projet) },
     { libelle: estEpingle(projet.id) ? 'Désépingler de la barre latérale' : 'Épingler dans la barre latérale', icone: 'epingle', action: () => basculerEpingle(projet) },
+    { libelle: 'Groupes…', icone: 'dossier', action: () => groupes.choisirGroupesDuProjet(projet) },
+    ...elementsRetirerDuGroupe(projet),
     'separateur',
     ...elementsMenuIcone(projet).map((e) => ({ ...e, desactive: e.desactive || bloque })),
   ];
+}
+
+// Quand la bibliothèque affiche un groupe qui contient directement ce projet.
+function elementsRetirerDuGroupe(projet) {
+  const { filtre } = etat.obtenir();
+  const groupe = filtre.type === 'groupe' ? groupes.trouver(filtre.valeur) : null;
+  if (!groupe?.projets.includes(projet.id)) return [];
+  return [{ libelle: `Retirer du groupe « ${groupe.nom} »`, icone: 'croix', action: () => groupes.retirerProjet(groupe.id, projet.id) }];
+}
+
+// Double-clic : ouvre l'outil HTML dans un onglet, sinon le projet dans son éditeur par défaut.
+export function ouvrirProjet(projet) {
+  if (projet.erreur) return;
+  if (estOuvrableCommeOutil(projet)) ouvrirOutil(projet.id);
+  else ouvrirAvec(projet);
 }
 
 // --- Modification des fiches ----------------------------------------------------------

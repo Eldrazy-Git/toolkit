@@ -101,7 +101,8 @@ app/
             ├── actions.js       actions de l'interface (appels à window.toolkit)
             ├── dom.js           el() pour construire le HTML sans innerHTML
             ├── icones.js        icônes SVG
-            ├── dialogue.js      demanderTexte(), confirmer(), choisir(), formulaire(), fenetre()
+            ├── dialogue.js      demanderTexte(), confirmer(), choisir(), formulaire(), fenetre(), cocher()
+            ├── groupes.js       groupes de projets de la barre latérale (données, menus, glisser-déposer)
             ├── notifications.js notifier(message, type)
             ├── onglets.js       barre d'onglets + panneaux des outils (<webview>)
             ├── apercu-appareil.js aperçu ordinateur / smartphone / tablette d'un outil
@@ -125,7 +126,11 @@ concernés et conserve les autres.
 Bibliothèque : chaque projet chargé porte aussi `dateAjout` (création du dossier) et
 `dateModification` (fichier le plus récent sur 2 niveaux, dossiers générés ignorés) pour
 le tri. Préférences d'affichage dans `reglages.interface` : `vue`, `tri`, `epingles`
-(ids des projets épinglés, dans l'ordre ; pas dans projet.json). Icône : `changerIcone()`
+(ids des projets épinglés, dans l'ordre ; pas dans projet.json), `groupes` (voir
+`composants/groupes.js` : `{ id, nom, parent, projets, replie }`, imbricables, un projet
+peut être dans plusieurs groupes ; nettoyés au chargement par `groupes.nettoyer()` ; filtre
+de bibliothèque `{ type: 'groupe', valeur: id }` = projets du groupe et de ses sous-groupes ;
+glisser-déposer par `groupes.glissable()` / `groupes.deposable()`). Icône : `changerIcone()`
 référence une image déjà dans le projet, sinon la copie en `icone.<ext>` (ou
 `icone-toolkit.<ext>` si ce nom est déjà pris) ; une image n'est jamais supprimée.
 

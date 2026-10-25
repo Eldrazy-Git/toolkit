@@ -114,6 +114,62 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .marque-epingle { color: var(--accent-texte); }
 .marque-epingle .ico { fill: currentColor; }
 
+/* Groupes de projets dans la barre latérale (arbre dépliable) */
+.barre-section.avec-bouton { display: flex; align-items: center; justify-content: space-between; padding-right: 8px; }
+.barre-section.avec-bouton .bouton-icone { width: 22px; height: 22px; }
+/* (.element-nav.… : plus précis que la règle .element-nav définie plus bas) */
+.element-nav.element-groupe { padding-left: calc(4px + var(--niveau, 0) * 16px); }
+.element-nav.element-projet-groupe { padding-left: calc(22px + (var(--niveau, 1) - 1) * 16px); }
+.element-projet-groupe .icone-projet { border-radius: 4px; font-size: 8px; }
+.element-groupe > .ico { color: var(--accent-texte); flex-shrink: 0; }
+.bouton-replier {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: -4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--texte-faible);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.bouton-replier .ico { width: 12px; height: 12px; transition: transform 0.12s; }
+.bouton-replier.ouvert .ico { transform: rotate(90deg); }
+.bouton-replier:hover { color: var(--texte-fort); }
+.survol-depot { outline: 2px dashed var(--accent); outline-offset: -2px; background: rgba(0, 120, 212, 0.15); }
+[draggable="true"] { -webkit-user-drag: element; }
+
+/* Liste de cases à cocher (fenêtre « Groupes… ») */
+.liste-cases {
+  display: flex;
+  flex-direction: column;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--rayon);
+  background: var(--fond-champ);
+}
+.case-liste {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 2px 8px 2px calc(8px + var(--niveau, 0) * 20px);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.case-liste:hover { background: var(--fond-survol); }
+.case-liste > .ico { color: var(--accent-texte); flex-shrink: 0; }
+.case-libelle { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dialogue .liste-cases + .champ-nouveau, .dialogue .details-aide + .champ-nouveau { margin-top: 12px; }
+.dialogue > input[type="text"] { margin-bottom: 8px; }
+.etiquette .texte-etiquette { color: var(--texte); font: inherit; }
+.etiquette .texte-etiquette:hover { color: var(--accent-texte); text-decoration: underline; }
+
 /* Tri et groupes de la bibliothèque */
 .champ-tri {
   display: flex;

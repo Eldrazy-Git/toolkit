@@ -6,6 +6,7 @@ import { iconeProjet } from './icone-projet.js';
 import { ouvrirMenu } from './menu.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
+import * as groupes from './groupes.js';
 
 export const LIBELLES_TYPES = {
   html: 'Outil HTML',
@@ -72,14 +73,17 @@ function titreDuFiltre(filtre) {
     case 'favoris': return 'Favoris';
     case 'categorie': return filtre.valeur;
     case 'tag': return `Tag : ${filtre.valeur}`;
+    case 'groupe': return groupes.chemin(filtre.valeur) || 'Groupe';
     default: return 'Tous les projets';
   }
 }
 
 function projetsVisibles({ projets, filtre, texteFiltre }) {
   const recherche = normaliser(texteFiltre.trim());
+  const duGroupe = filtre.type === 'groupe' ? groupes.projetsDe(filtre.valeur) : null;
   return projets.filter((p) => {
     const f = p.fiche;
+    if (duGroupe && !duGroupe.has(p.id)) return false;
     if (filtre.type === 'favoris' && !f.favori) return false;
     if (filtre.type === 'categorie' && f.categorie !== filtre.valeur) return false;
     if (filtre.type === 'tag' && !f.tags.includes(filtre.valeur)) return false;
@@ -127,13 +131,6 @@ function marques(projet) {
   ];
 }
 
-// Double-clic : ouvre l'outil HTML dans un onglet, sinon le projet dans son éditeur par défaut.
-function ouvrir(projet) {
-  if (projet.erreur) return;
-  if (actions.estOuvrableCommeOutil(projet)) actions.ouvrirOutil(projet.id);
-  else actions.ouvrirAvec(projet);
-}
-
 function menuContextuel(projet) {
   return (e) => {
     e.preventDefault();
@@ -147,8 +144,10 @@ function carte(projet, selection) {
     classe: `carte${projet.id === selection ? ' selectionne' : ''}`,
     title: projet.fiche.description || projet.fiche.nom,
     onClick: () => actions.selectionner(projet.id),
-    onDblclick: () => ouvrir(projet),
+    onDblclick: () => actions.ouvrirProjet(projet),
     onContextmenu: menuContextuel(projet),
+    // Glisser sur un groupe de la barre latérale pour l'y ajouter.
+    ...groupes.glissable({ type: 'projet', id: projet.id }),
   },
   el('div', { classe: 'carte-marques' }, marques(projet)),
   iconeProjet(projet, 56),
@@ -161,8 +160,9 @@ function ligne(projet, selection) {
   return el('div', {
     classe: `ligne${projet.id === selection ? ' selectionne' : ''}`,
     onClick: () => actions.selectionner(projet.id),
-    onDblclick: () => ouvrir(projet),
+    onDblclick: () => actions.ouvrirProjet(projet),
     onContextmenu: menuContextuel(projet),
+    ...groupes.glissable({ type: 'projet', id: projet.id }),
   },
   iconeProjet(projet, 32),
   el('div', { classe: 'ligne-texte' },
@@ -186,6 +186,11 @@ function messageVide(etatCourant) {
       ' contenant une fiche ',
       el('code', {}, 'projet.json'),
       '.');
+  }
+  if (etatCourant.filtre.type === 'groupe' && !etatCourant.texteFiltre) {
+    return el('div', { classe: 'message-vide' },
+      el('strong', {}, 'Ce groupe est vide'),
+      'Glisse des projets sur le groupe dans la barre latérale, ou clic droit sur le groupe > « Choisir les projets… ».');
   }
   return el('div', { classe: 'message-vide' },
     el('strong', {}, 'Aucun projet ne correspond'),

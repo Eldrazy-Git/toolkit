@@ -8,6 +8,7 @@ import * as actions from './actions.js';
 import { ouvrirMenu } from './menu.js';
 import * as actionsGit from './actions-git.js';
 import { pastillesGit, boutonsGit, dernierCommit } from './git.js';
+import * as groupes from './groupes.js';
 
 // Notes d'un projet et rétroliens, gardés quelques secondes (le panneau se redessine souvent).
 const cacheNotes = new Map();
@@ -158,6 +159,15 @@ function tags(projet) {
       : null);
 }
 
+// Groupes de la barre latérale (pas dans projet.json : modifiable même si la fiche a un problème).
+function listeGroupes(projet) {
+  return el('div', { classe: 'liste-etiquettes' },
+    groupes.groupesDuProjet(projet.id).map((g) => el('span', { classe: 'etiquette' },
+      el('button', { classe: 'texte-etiquette', title: 'Afficher les projets de ce groupe', onClick: () => groupes.afficher(g.id) }, groupes.chemin(g.id)),
+      el('button', { title: `Retirer du groupe « ${g.nom} »`, onClick: () => groupes.retirerProjet(g.id, projet.id) }, icone('croix')))),
+    el('button', { classe: 'etiquette', onClick: () => groupes.choisirGroupesDuProjet(projet) }, icone('plus'), 'Ajouter'));
+}
+
 function rendreProjet(projet) {
   const f = projet.fiche;
   const boutonFavori = el('button', {
@@ -227,6 +237,7 @@ function rendreProjet(projet) {
       section('Catégorie', selecteurCategorie(projet)),
       section('Éditeur par défaut', selecteurEditeur(projet)),
       section('Tags', tags(projet)),
+      section('Groupes', listeGroupes(projet)),
 
       section('Informations',
         el('dl', { classe: 'infos' },

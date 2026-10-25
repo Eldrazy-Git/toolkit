@@ -89,7 +89,19 @@ le dossier `Toolkit`.
   puis « Choisir une image… » (une image prise ailleurs est copiée dans le projet ; une
   image déjà dans le projet est simplement utilisée).
 - **Clic droit** sur un projet (bibliothèque ou barre latérale) : ouvrir, Claude, favori,
-  épingler, icône.
+  épingler, groupes, icône.
+- **Groupes** (barre latérale) : rassemble des projets qui vont ensemble, par exemple une
+  application et ses outils annexes. Les groupes peuvent contenir des sous-groupes, et un
+  projet peut être dans plusieurs groupes. Les dossiers des projets ne bougent jamais.
+  - créer : bouton 📁+ à droite du titre « Groupes » ;
+  - remplir : glisse un projet de la bibliothèque sur un groupe, ou clic droit sur le
+    projet > **Groupes…** ;
+  - ranger un groupe dans un autre : glisse-le dessus (sur le titre « Groupes » pour le
+    remettre au premier niveau), ou clic droit > **Déplacer dans…** ;
+  - un projet glissé d'un groupe vers un autre y est déplacé (avec **Ctrl** : ajouté aux deux) ;
+  - clic sur un groupe : ses projets (sous-groupes compris) s'affichent au centre ; la petite
+    flèche le déplie ou le replie ;
+  - supprimer un groupe ne supprime aucun projet.
 - Double-clic sur un projet : l'ouvre (outil HTML dans un onglet, sinon dans son éditeur).
 - Les outils, terminaux, consoles et notes s'ouvrent en **onglets** en haut. **Ctrl+Tab**
   passe à l'onglet suivant, **Ctrl+W** ferme l'onglet d'un outil.

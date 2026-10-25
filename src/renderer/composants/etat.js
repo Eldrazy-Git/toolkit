@@ -8,11 +8,12 @@ const etat = {
   chargement: true,
   projets: [],
   infosApp: null,
-  filtre: { type: 'tous' }, // tous | favoris | categorie (valeur) | tag (valeur)
+  filtre: { type: 'tous' }, // tous | favoris | categorie (valeur) | tag (valeur) | groupe (valeur = id)
   texteFiltre: '',
   vue: 'grille', // grille | liste
   tri: 'nom', // nom | modification | ajout | type | categorie (voir bibliotheque.js > TRIS)
   epingles: [], // ids des projets épinglés dans la barre latérale, dans l'ordre
+  groupes: [], // groupes de projets de la barre latérale (voir groupes.js)
   selection: null, // id d'un projet, ID_TOOLKIT ou null
   onglets: [], // outils HTML ouverts : { id, nom, projetId, outilLie, url, partition, chemin }
   ongletActif: 'bibliotheque', // 'bibliotheque', 'reglages' ou l'id d'un outil ouvert

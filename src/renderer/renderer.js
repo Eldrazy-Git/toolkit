@@ -8,6 +8,7 @@ import * as onglets from './composants/onglets.js';
 import * as reglages from './composants/reglages.js';
 import * as assistantImport from './composants/import.js';
 import * as panneauGit from './composants/git.js';
+import * as groupes from './composants/groupes.js';
 import { notifier } from './composants/notifications.js';
 import { ouvrirRecherche } from './composants/recherche.js';
 
@@ -66,6 +67,7 @@ async function demarrer() {
       vue: preferences.vue === 'liste' ? 'liste' : 'grille',
       tri: typeof preferences.tri === 'string' ? preferences.tri : 'nom',
       epingles: Array.isArray(preferences.epingles) ? preferences.epingles : [],
+      groupes: groupes.nettoyer(preferences.groupes),
       infosApp,
     });
   } catch (erreur) {

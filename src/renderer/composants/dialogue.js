@@ -1,5 +1,5 @@
 // Boîtes de dialogue simples (prompt() et confirm() n'existent pas dans Electron).
-import { el } from './dom.js';
+import { el, normaliser } from './dom.js';
 
 // Affiche une boîte modale ; « construire(fermer) » renvoie { contenu, valider }.
 // Entrée valide (si valider existe), Échap ou un clic à côté annule.
@@ -186,6 +186,55 @@ export function formulaire({ titre, message, champs, bouton = 'Valider' }) {
         message ? el('p', {}, message) : null,
         lignes,
         erreur,
+        el('div', { classe: 'dialogue-boutons' },
+          el('button', { classe: 'bouton', onClick: () => fermer(null) }, 'Annuler'),
+          el('button', { classe: 'bouton principal', onClick: valider }, bouton)),
+      ],
+    };
+  });
+}
+
+// Liste de cases à cocher (ex. groupes d'un projet, projets d'un groupe).
+// elements : [{ valeur, libelle, niveau? (décalage), coche?, visuel? }] ;
+// filtrable : champ pour filtrer une longue liste ;
+// nouveau : libellé d'un champ texte facultatif en dessous (ex. « Créer aussi un groupe »).
+// Renvoie { choisis: [valeurs cochées], nouveau: texte saisi } ou null si annulé.
+export function cocher({ titre, message, elements, bouton = 'Valider', filtrable = false, nouveau = null, vide = 'Aucun élément.' }) {
+  return ouvrir((fermer) => {
+    const lignes = elements.map((e) => {
+      const caseACocher = el('input', { type: 'checkbox' });
+      caseACocher.checked = Boolean(e.coche);
+      const ligne = el('label', { classe: 'case-liste', style: { '--niveau': e.niveau || 0 } },
+        caseACocher, e.visuel || null, el('span', { classe: 'case-libelle' }, e.libelle));
+      return { e, caseACocher, ligne };
+    });
+    const champFiltre = filtrable
+      ? el('input', {
+        type: 'text',
+        placeholder: 'Filtrer…',
+        spellcheck: 'false',
+        onInput: () => {
+          const texte = normaliser(champFiltre.value.trim());
+          lignes.forEach((l) => { l.ligne.hidden = Boolean(texte) && !normaliser(l.e.libelle).includes(texte); });
+        },
+      })
+      : null;
+    const champNouveau = nouveau ? el('input', { type: 'text', placeholder: 'Nom du nouveau groupe', spellcheck: 'false' }) : null;
+    const valider = () => fermer({
+      choisis: lignes.filter((l) => l.caseACocher.checked).map((l) => l.e.valeur),
+      nouveau: champNouveau?.value.trim() || '',
+    });
+    return {
+      focus: champFiltre || (lignes.length ? lignes[0].caseACocher : champNouveau),
+      valider,
+      contenu: [
+        el('h2', {}, titre),
+        message ? el('p', {}, message) : null,
+        champFiltre,
+        lignes.length
+          ? el('div', { classe: 'liste-cases' }, lignes.map((l) => l.ligne))
+          : el('p', { classe: 'details-aide' }, vide),
+        champNouveau ? el('label', { classe: 'champ-formulaire champ-nouveau' }, el('span', { classe: 'champ-libelle' }, nouveau), champNouveau) : null,
         el('div', { classe: 'dialogue-boutons' },
           el('button', { classe: 'bouton', onClick: () => fermer(null) }, 'Annuler'),
           el('button', { classe: 'bouton principal', onClick: valider }, bouton)),
