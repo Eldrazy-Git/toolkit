@@ -122,6 +122,10 @@ function enregistrer() {
     return { url };
   });
 
+  // Détail : commits à envoyer / à récupérer, et différences d'un fichier.
+  gerer('git:commits', async (cible, sens) => git.listerCommits(await dossierCible(cible), sens === 'recuperer' ? 'recuperer' : 'envoyer'));
+  gerer('git:differences', async (cible, chemin, hash) => git.differences(await dossierCible(cible), chemin, hash || null));
+
   gerer('git:ouvrir-github', async (cible) => {
     const url = git.urlWeb(await git.urlRemote(await dossierCible(cible)));
     if (!url) throw new Error('Ce projet n\'est relié à aucun dépôt en ligne.');

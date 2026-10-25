@@ -886,6 +886,70 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .pastille-git.violet { background: rgba(163, 113, 247, 0.18); color: #c4a5ff; }
 .pastille-git.orange { background: rgba(240, 163, 92, 0.18); color: #f0a35c; }
 .pastille-git.rouge { background: rgba(241, 76, 76, 0.15); color: #ff8080; }
+/* Pastille cliquable (ouvre le détail des modifications / commits) */
+button.pastille-git.cliquable { gap: 5px; font: inherit; font-size: 12px; cursor: pointer; }
+button.pastille-git.cliquable .ico { width: 12px; height: 12px; opacity: 0.7; }
+button.pastille-git.cliquable:hover { filter: brightness(1.25); text-decoration: underline; }
+.pastille-git.petite { height: 18px; padding: 0 7px; font-size: 11px; flex-shrink: 0; }
+
+/* Grande fenêtre (détail Git…) */
+.dialogue.large {
+  display: flex;
+  flex-direction: column;
+  width: min(1000px, calc(100vw - 48px));
+  max-height: 86vh;
+}
+.voile:has(.dialogue.large) { padding-top: 5vh; }
+.corps-fenetre { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: hidden; }
+.corps-fenetre > .details-aide { margin: 0; }
+
+.liste-fichiers-git { display: flex; flex-direction: column; gap: 2px; max-height: 26vh; overflow-y: auto; flex-shrink: 0; }
+.fichier-git {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--rayon);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.fichier-git:hover { background: var(--fond-survol); }
+.fichier-git.choisi { background: var(--fond-actif); border-color: var(--accent); }
+.chemin-fichier { font-family: var(--police-code); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.liste-commits { display: flex; flex-direction: column; gap: 6px; max-height: 32vh; overflow-y: auto; flex-shrink: 0; }
+.commit-git { border: 1px solid var(--bordure); border-radius: var(--rayon); background: var(--fond-panneau); }
+.commit-git summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 8px 10px; cursor: pointer; }
+.commit-message { font-weight: 600; color: var(--texte-fort); }
+.commit-meta { font-size: 12px; color: var(--texte-faible); }
+.commit-git .liste-fichiers-git { padding: 0 8px 8px; max-height: none; }
+
+.zone-diff { display: flex; flex-direction: column; min-height: 0; flex: 1; border: 1px solid var(--bordure); border-radius: var(--rayon); overflow: hidden; }
+.titre-diff { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--bordure); background: var(--fond-element); color: var(--texte-faible); font-size: 12px; }
+.titre-diff code { font-family: var(--police-code); color: var(--texte); }
+.diff {
+  flex: 1;
+  min-height: 120px;
+  max-height: 42vh;
+  margin: 0;
+  padding: 8px 0;
+  overflow: auto;
+  background: #161616;
+  font-family: var(--police-code);
+  font-size: 12px;
+  line-height: 1.5;
+  user-select: text;
+}
+.diff span { display: block; padding: 0 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.diff-ajout { background: rgba(76, 175, 80, 0.16); color: #a8e6a1; }
+.diff-retrait { background: rgba(241, 76, 76, 0.16); color: #ffb0b0; }
+.diff-bloc { margin-top: 6px; color: var(--accent-texte); font-weight: 600; }
+.diff-contexte { color: var(--texte-faible); }
+.diff-info { color: var(--texte-faible); font-style: italic; }
+
 .dernier-commit { font-size: 12px; color: var(--texte-faible); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .details-section .dernier-commit { display: block; margin-top: 6px; }
 .boutons-git { margin-top: 10px; align-items: center; }

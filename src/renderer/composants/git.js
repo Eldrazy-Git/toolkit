@@ -6,6 +6,7 @@ import { icone } from './icones.js';
 import { ouvrirMenu } from './menu.js';
 import * as etat from './etat.js';
 import * as git from './actions-git.js';
+import { afficherModifications, afficherCommits } from './details-git.js';
 
 export const ID_GIT = 'git';
 
@@ -16,8 +17,11 @@ export function element() {
   return panneau;
 }
 
-function pastille(texte, classe, titre) {
-  return el('span', { classe: `pastille-git ${classe}`, title: titre }, texte);
+// action : si présente, la pastille est cliquable (ouvre le détail).
+function pastille(texte, classe, titre, action) {
+  if (!action) return el('span', { classe: `pastille-git ${classe}`, title: titre }, texte);
+  return el('button', { classe: `pastille-git ${classe} cliquable`, title: `${titre}\nClique pour voir le détail.`, onClick: action },
+    texte, icone('recherche'));
 }
 
 // Pastilles décrivant l'état d'un dépôt.
@@ -29,12 +33,23 @@ export function pastillesGit(e) {
   if (e.secretsSuivis?.length) liste.push(pastille('Fichiers sensibles dans Git', 'rouge', `Enregistrés dans l'historique : ${e.secretsSuivis.join(', ')}. Ne rends jamais ce dépôt public.`));
   if (e.secretsNonProteges?.length) liste.push(pastille('Fichiers sensibles non protégés', 'orange', `${e.secretsNonProteges.join(', ')} : clique sur « Protéger les fichiers sensibles » (menu ⋯).`));
   if (e.aucunCommit) liste.push(pastille('Aucun commit', 'neutre'));
-  if (e.nbModifications > 0) liste.push(pastille(`${e.nbModifications} modification(s) non enregistrée(s)`, 'jaune', 'Fichiers modifiés depuis le dernier commit. Clique sur « Commit » pour enregistrer une version.'));
+  if (e.nbModifications > 0) {
+    liste.push(pastille(`${e.nbModifications} modification(s) non enregistrée(s)`, 'jaune',
+      'Fichiers modifiés depuis le dernier commit. Clique sur « Commit » pour enregistrer une version.',
+      () => afficherModifications(e.cible)));
+  }
   if (!e.remote) liste.push(pastille('Pas sur GitHub', 'neutre', 'Ce projet n\'est relié à aucun dépôt en ligne.'));
-  else if (!e.aucunCommit && !e.amont) liste.push(pastille('Jamais envoyé', 'bleu', 'Cette branche n\'a encore jamais été envoyée sur GitHub.'));
-  else {
-    if (e.enAvance > 0) liste.push(pastille(`${e.enAvance} commit(s) à envoyer`, 'bleu', 'Commits faits sur ce PC (par toi ou par Claude) pas encore envoyés sur GitHub.'));
-    if (e.enRetard > 0) liste.push(pastille(`${e.enRetard} commit(s) à récupérer`, 'violet', 'GitHub contient des changements absents de ce PC : clique sur « Pull ».'));
+  else if (!e.aucunCommit && !e.amont) {
+    liste.push(pastille('Jamais envoyé', 'bleu', 'Cette branche n\'a encore jamais été envoyée sur GitHub.', () => afficherCommits(e.cible, 'envoyer')));
+  } else {
+    if (e.enAvance > 0) {
+      liste.push(pastille(`${e.enAvance} commit(s) à envoyer`, 'bleu', 'Commits faits sur ce PC (par toi ou par Claude) pas encore envoyés sur GitHub.',
+        () => afficherCommits(e.cible, 'envoyer')));
+    }
+    if (e.enRetard > 0) {
+      liste.push(pastille(`${e.enRetard} commit(s) à récupérer`, 'violet', 'GitHub contient des changements absents de ce PC : clique sur « Pull ».',
+        () => afficherCommits(e.cible, 'recuperer')));
+    }
   }
   if (liste.length === 0) liste.push(pastille('À jour', 'vert', e.remote ? 'Tout est enregistré et envoyé (selon la dernière vérification).' : 'Tout est enregistré.'));
   return liste;

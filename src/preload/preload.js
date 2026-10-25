@@ -109,6 +109,10 @@ contextBridge.exposeInMainWorld('toolkit', {
     proteger: (cible) => appeler('git:proteger', cible), // lignes ajoutées au .gitignore
     creerGithub: (cible) => appeler('git:creer-github', cible), // { url }
     ouvrirGithub: (cible) => appeler('git:ouvrir-github', cible),
+    // sens : 'envoyer' | 'recuperer' -> [{ hash, message, date, auteur, fichiers: [{ chemin, etat }] }]
+    commits: (cible, sens) => appeler('git:commits', cible, sens),
+    // hash absent : changements non enregistrés. -> { texte, binaire, nouveau, tronque }
+    differences: (cible, chemin, hash) => appeler('git:differences', cible, chemin, hash),
   },
   // Recherche globale (Ctrl+K) et notes Markdown.
   recherche: {

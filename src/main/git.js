@@ -283,6 +283,88 @@ async function etatDepot(dossier) {
   return etat;
 }
 
+// --- Détail : commits et différences ---------------------------------------------------------
+
+const LIBELLES_ETATS_FICHIERS = { M: 'modifié', A: 'ajouté', D: 'supprimé', R: 'renommé', C: 'copié', T: 'modifié' };
+const TAILLE_MAX_DIFF = 300 * 1024;
+
+// Commits à envoyer (sens 'envoyer') ou à récupérer (sens 'recuperer'), 100 au plus :
+// [{ hash, message, date, auteur, fichiers: [{ chemin, etat }] }]
+async function listerCommits(dossier, sens) {
+  const etat = await etatDepot(dossier);
+  if (!etat.estDepot || etat.aucunCommit) return [];
+  let plage;
+  if (sens === 'recuperer') {
+    if (!etat.amont) return [];
+    plage = ['HEAD..@{u}'];
+  } else if (etat.amont) {
+    plage = ['@{u}..HEAD'];
+  } else {
+    // Branche jamais envoyée : tous les commits absents du dépôt distant.
+    plage = ['HEAD', '--not', '--remotes'];
+  }
+  const r = await git(dossier, ['-c', 'core.quotepath=off', 'log', ...plage, '--max-count=100',
+    '--format=%x1e%h%x00%s%x00%ct%x00%an', '--name-status']);
+  if (r.code !== 0) throw new Error(messageErreur(r, 'La lecture des commits'));
+  return r.sortie.split('\x1e').filter((b) => b.trim()).map((bloc) => {
+    const [entete, ...lignes] = bloc.split('\n');
+    const [hash, message, date, auteur] = entete.split('\0');
+    const fichiers = lignes.filter(Boolean).map((l) => {
+      const champs = l.split('\t');
+      const code = champs[0][0];
+      return { etat: LIBELLES_ETATS_FICHIERS[code] || 'modifié', chemin: champs[champs.length - 1] };
+    });
+    return { hash, message, date: Number(date) * 1000, auteur, fichiers };
+  });
+}
+
+// Différences d'un fichier : non enregistrées (sans hash) ou apportées par un commit (hash).
+// Renvoie { texte, binaire, nouveau, tronque }.
+async function differences(dossier, chemin, hash) {
+  const relatif = String(chemin || '').replace(/\\/g, '/');
+  const racine = path.resolve(dossier);
+  const absolu = path.resolve(racine, relatif);
+  if (!relatif || !absolu.toLowerCase().startsWith(racine.toLowerCase() + path.sep)) throw new Error('Chemin de fichier invalide.');
+  if (hash && !/^[0-9a-f]{4,40}$/i.test(hash)) throw new Error('Commit invalide.');
+
+  let args;
+  if (hash) {
+    args = ['show', '--format=', '--no-color', hash, '--', relatif];
+  } else {
+    // Fichier jamais enregistré (nouveau) : tout son contenu est « ajouté ».
+    const suivi = await git(dossier, ['ls-files', '--error-unmatch', '--', relatif]);
+    const aucunCommit = (await git(dossier, ['rev-parse', '--verify', 'HEAD'])).code !== 0;
+    if (suivi.code !== 0 || aucunCommit) {
+      let contenu;
+      try {
+        const infos = await fs.stat(absolu);
+        if (infos.isDirectory()) return { texte: '', nouveau: true, binaire: false, tronque: false };
+        contenu = await fs.readFile(absolu);
+      } catch {
+        return { texte: '', nouveau: true, binaire: false, tronque: false };
+      }
+      if (contenu.subarray(0, 8000).includes(0)) return { texte: '', nouveau: true, binaire: true, tronque: false };
+      const texte = contenu.subarray(0, TAILLE_MAX_DIFF).toString('utf8');
+      return {
+        texte: texte.split('\n').map((l) => `+${l}`).join('\n'),
+        nouveau: true,
+        binaire: false,
+        tronque: contenu.length > TAILLE_MAX_DIFF,
+      };
+    }
+    args = ['diff', 'HEAD', '--no-color', '--', relatif];
+  }
+  const r = await git(dossier, ['-c', 'core.quotepath=off', ...args]);
+  if (r.code !== 0) throw new Error(messageErreur(r, 'La lecture des différences'));
+  const binaire = /^Binary files .* differ$/m.test(r.sortie);
+  return {
+    texte: binaire ? '' : r.sortie.slice(0, TAILLE_MAX_DIFF),
+    binaire,
+    nouveau: false,
+    tronque: r.sortie.length > TAILLE_MAX_DIFF,
+  };
+}
+
 // --- Envoi et récupération -------------------------------------------------------------------
 
 // Envoie les commits sur le dépôt distant (publie la branche si besoin).
@@ -356,6 +438,8 @@ module.exports = {
   LIGNES_SENSIBLES,
   EXPRESSION_SECRETS,
   etatDepot,
+  listerCommits,
+  differences,
   pousser,
   recuperer,
   verifierEnLigne,

@@ -101,7 +101,7 @@ app/
             ├── actions.js       actions de l'interface (appels à window.toolkit)
             ├── dom.js           el() pour construire le HTML sans innerHTML
             ├── icones.js        icônes SVG
-            ├── dialogue.js      demanderTexte(), confirmer()
+            ├── dialogue.js      demanderTexte(), confirmer(), choisir(), formulaire(), fenetre()
             ├── notifications.js notifier(message, type)
             ├── onglets.js       barre d'onglets + panneaux des outils (<webview>)
             ├── apercu-appareil.js aperçu ordinateur / smartphone / tablette d'un outil
@@ -111,6 +111,7 @@ app/
             ├── import.js        onglet « Importer un projet » (assistant en étapes)
             ├── git.js           onglet « Git et GitHub » + pastilles/boutons réutilisés dans les détails
             ├── actions-git.js   actions Git (commit, push, pull, tout envoyer, dépôt GitHub privé)
+            ├── details-git.js   fenêtres de détail : fichiers modifiés + différences, commits
             ├── recherche.js     palette de recherche Ctrl+K
             ├── note.js          onglet d'une note : lecture, liens, rétroliens, modification
             ├── menu.js          ouvrirMenu(bouton, elements) : menu déroulant
@@ -234,6 +235,11 @@ dans `docs/projet-json.md`. Points clés :
 - Dépôt GitHub : toujours PRIVÉ (`gh repo create --private`), refusé si des secrets sont
   suivis par Git ; l'adresse est notée dans `projet.json` (`git.remote`).
 - Le repo de l'application ne contient que `app/` : un clone donne un Toolkit vierge.
+- Détail (`composants/details-git.js`, ouvert par les pastilles cliquables) :
+  `git.listerCommits(dossier, 'envoyer' | 'recuperer')` (`@{u}..HEAD`, `HEAD..@{u}`, ou
+  `HEAD --not --remotes` pour une branche jamais envoyée) et `git.differences(dossier,
+  chemin, hash?)` (`git diff HEAD` / `git show <hash>` ; fichier nouveau = contenu affiché
+  comme ajouté ; binaire détecté ; 300 Ko au plus). `core.quotepath=off` pour les accents.
 
 ### Recherche et notes
 

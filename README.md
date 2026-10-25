@@ -189,6 +189,16 @@ Si un point est en rouge, règle-le puis clique sur **Analyser à nouveau**.
 - menu **⋯** : activer Git, créer un dépôt GitHub **privé**, ouvrir sur GitHub, protéger
   les fichiers sensibles (clés, keystores, `.env`).
 
+**Voir le détail** : clique sur une pastille colorée (dans ce panneau ou dans la section
+Git d'un projet) :
+- jaune « modifications non enregistrées » : la liste des fichiers modifiés, nouveaux ou
+  supprimés ; clique sur un fichier pour voir ce qui a changé dedans (vert = ajouté,
+  rouge = retiré), puis **Commit…** pour les enregistrer ;
+- bleue « commits à envoyer » : chaque commit (message, date, auteur, fichiers), puis
+  **Envoyer sur GitHub (Push)** ;
+- violette « commits à récupérer » : ce qui est sur GitHub et pas encore sur ce PC, puis
+  **Récupérer (Pull)**.
+
 Toolkit utilise ta connexion GitHub existante (commande `gh`) et ne stocke jamais de mot
 de passe. Si GitHub n'est pas connecté, le panneau explique comment faire.
 

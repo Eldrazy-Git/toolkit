@@ -2,8 +2,9 @@
 import { el } from './dom.js';
 
 // Affiche une boîte modale ; « construire(fermer) » renvoie { contenu, valider }.
-// Entrée valide, Échap ou un clic à côté annule.
-function ouvrir(construire) {
+// Entrée valide (si valider existe), Échap ou un clic à côté annule.
+// classe : classe CSS en plus (ex. 'large' pour une grande fenêtre).
+function ouvrir(construire, { classe = '' } = {}) {
   return new Promise((resoudre) => {
     let voile;
     const fermer = (resultat) => {
@@ -16,18 +17,35 @@ function ouvrir(construire) {
       if (evenement.key === 'Escape') {
         evenement.stopPropagation();
         fermer(null);
-      } else if (evenement.key === 'Enter' && (evenement.target.tagName !== 'TEXTAREA' || evenement.ctrlKey)) {
+      } else if (valider && evenement.key === 'Enter' && (evenement.target.tagName !== 'TEXTAREA' || evenement.ctrlKey)) {
         // Dans une zone de texte, Entrée va à la ligne ; Ctrl+Entrée valide.
         evenement.preventDefault();
         valider();
       }
     };
     voile = el('div', { classe: 'voile', onMousedown: (e) => { if (e.target === voile) fermer(null); } },
-      el('div', { classe: 'dialogue', role: 'dialog', 'aria-modal': 'true' }, contenu));
+      el('div', { classe: `dialogue ${classe}`.trim(), role: 'dialog', 'aria-modal': 'true' }, contenu));
     document.body.append(voile);
     document.addEventListener('keydown', surTouche, true);
     (focus || voile.querySelector('button:last-child'))?.focus();
   });
+}
+
+// Grande fenêtre de consultation (listes, détails). corps : élément(s) affichés ;
+// boutons : [{ libelle, style?, action(fermer) }] en plus du bouton « Fermer ».
+// Entrée ne déclenche rien (on peut naviguer au clavier dans la liste).
+export function fenetre({ titre, corps, boutons = [] }) {
+  return ouvrir((fermer) => ({
+    valider: null,
+    focus: null,
+    contenu: [
+      el('h2', {}, titre),
+      el('div', { classe: 'corps-fenetre' }, corps),
+      el('div', { classe: 'dialogue-boutons' },
+        boutons.map((b) => el('button', { classe: `bouton ${b.style || ''}`, onClick: () => b.action(fermer) }, b.libelle)),
+        el('button', { classe: 'bouton', onClick: () => fermer(null) }, 'Fermer')),
+    ],
+  }), { classe: 'large' });
 }
 
 // Renvoie le texte saisi (éventuellement vide) ou null si annulé.
