@@ -45,16 +45,20 @@ function lignesDiff(d) {
 
 // Zone qui affiche les différences d'un fichier. charger(chemin, hash) : hash absent =
 // changements non enregistrés ; sinon changements apportés par ce commit.
-function creerZoneDiff(cible) {
+// lire / legende : autre source de différences (ex. historique : « depuis cette version »).
+export function creerZoneDiff(cible, {
+  lire = (chemin, hash) => api.differences(cible, chemin, hash),
+  legende = (hash) => (hash ? ` (commit ${hash.slice(0, 7)})` : ''),
+} = {}) {
   const titre = el('div', { classe: 'titre-diff' }, 'Clique sur un fichier pour voir ce qui a changé dedans.');
   const contenu = el('pre', { classe: 'diff' });
   let demande = 0;
   async function charger(chemin, hash = null) {
     const numero = ++demande;
-    titre.replaceChildren(icone('note'), el('code', {}, chemin), hash ? el('span', { classe: 'details-aide' }, ` (commit ${hash})`) : '');
+    titre.replaceChildren(icone('note'), el('code', {}, chemin), el('span', { classe: 'details-aide' }, legende(hash)));
     contenu.replaceChildren(info('Chargement…'));
     try {
-      const d = await api.differences(cible, chemin, hash);
+      const d = await lire(chemin, hash);
       if (numero === demande) contenu.replaceChildren(...lignesDiff(d)); // sinon : un autre fichier a été demandé
     } catch (erreur) {
       contenu.replaceChildren(el('span', { classe: 'diff-retrait' }, erreur.message));
@@ -64,7 +68,7 @@ function creerZoneDiff(cible) {
 }
 
 // Bouton d'un fichier ; au clic, il est surligné et ses différences sont chargées.
-function boutonFichier(fichier, conteneurListe, auClic) {
+export function boutonFichier(fichier, conteneurListe, auClic) {
   const bouton = el('button', {
     classe: 'fichier-git',
     title: fichier.chemin,

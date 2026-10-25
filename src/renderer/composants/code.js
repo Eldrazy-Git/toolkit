@@ -14,6 +14,7 @@ import { ouvrirMenu } from './menu.js';
 import * as etat from './etat.js';
 import { chargerMonaco, langageDe, nomLangage, OPTIONS_EDITEUR } from './monaco.js';
 import * as lsp from './lsp-python.js';
+import { afficherHistorique } from './historique.js';
 
 const api = window.toolkit.code;
 const panneaux = new Map(); // cle -> panneau ouvert (ouvreur de Monaco, surveillance)
@@ -237,11 +238,12 @@ export function creerPanneauCode(o, zone) {
     return [
       ...elements,
       'separateur',
+      entree.dossier ? null : { libelle: 'Historique de ce fichier…', icone: 'historique', action: () => afficherHistorique(cible, o.nomCible, { chemin: entree.chemin }) },
       { libelle: 'Renommer…', icone: 'crayon', detail: 'F2', action: () => renommerEntree(entree) },
       { libelle: 'Mettre à la Corbeille…', icone: 'effacer', detail: 'Suppr', action: () => mettreALaCorbeille(entree) },
       'separateur',
       { libelle: 'Copier le chemin relatif', icone: 'note', action: () => navigator.clipboard.writeText(entree.chemin).then(() => notifier('Chemin copié.')).catch(() => {}) },
-    ];
+    ].filter(Boolean);
   }
 
   function toucheArbre(e) {

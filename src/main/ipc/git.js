@@ -126,6 +126,12 @@ function enregistrer() {
   gerer('git:commits', async (cible, sens) => git.listerCommits(await dossierCible(cible), sens === 'recuperer' ? 'recuperer' : 'envoyer'));
   gerer('git:differences', async (cible, chemin, hash) => git.differences(await dossierCible(cible), chemin, hash || null));
 
+  // Historique et retour arrière.
+  gerer('git:historique', async (cible, chemin) => git.historique(await dossierCible(cible), { chemin: chemin || null }));
+  gerer('git:fichiers-depuis', async (cible, hash) => git.fichiersDifferentsDepuis(await dossierCible(cible), hash));
+  gerer('git:differences-depuis', async (cible, hash, chemin) => git.differencesDepuis(await dossierCible(cible), hash, chemin));
+  gerer('git:restaurer', async (cible, hash, chemins) => git.restaurer(await dossierCible(cible), hash, Array.isArray(chemins) && chemins.length ? chemins : null));
+
   gerer('git:ouvrir-github', async (cible) => {
     const url = git.urlWeb(await git.urlRemote(await dossierCible(cible)));
     if (!url) throw new Error('Ce projet n\'est relié à aucun dépôt en ligne.');

@@ -7,6 +7,7 @@ import { ouvrirMenu } from './menu.js';
 import * as etat from './etat.js';
 import * as git from './actions-git.js';
 import { afficherModifications, afficherCommits } from './details-git.js';
+import { afficherHistorique } from './historique.js';
 
 export const ID_GIT = 'git';
 
@@ -59,6 +60,7 @@ function elementsMenu(e) {
   return [
     !e.estDepot ? { libelle: 'Activer l\'historique Git', icone: 'git', action: () => git.initialiser(e.cible) } : null,
     e.estDepot && !e.remote ? { libelle: 'Créer un dépôt GitHub privé…', icone: 'plus', action: () => git.creerGithub(e.cible) } : null,
+    e.estDepot && !e.aucunCommit ? { libelle: 'Historique des versions…', icone: 'historique', action: () => afficherHistorique(e.cible, e.nom) } : null,
     e.urlWeb ? { libelle: 'Ouvrir sur GitHub', icone: 'ouvrirAvec', action: () => git.ouvrirGithub(e.cible) } : null,
     e.estDepot ? { libelle: 'Protéger les fichiers sensibles', icone: 'coche', detail: '.gitignore', action: () => git.proteger(e.cible) } : null,
     { libelle: 'Actualiser', icone: 'redemarrer', action: () => git.rafraichir(e.cible) },

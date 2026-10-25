@@ -33,19 +33,24 @@ function ouvrir(construire, { classe = '' } = {}) {
 
 // Grande fenêtre de consultation (listes, détails). corps : élément(s) affichés ;
 // boutons : [{ libelle, style?, action(fermer) }] en plus du bouton « Fermer ».
+// surOuverture(fermer) : pour fermer la fenêtre depuis son contenu.
 // Entrée ne déclenche rien (on peut naviguer au clavier dans la liste).
-export function fenetre({ titre, corps, boutons = [] }) {
-  return ouvrir((fermer) => ({
-    valider: null,
-    focus: null,
-    contenu: [
-      el('h2', {}, titre),
-      el('div', { classe: 'corps-fenetre' }, corps),
-      el('div', { classe: 'dialogue-boutons' },
-        boutons.map((b) => el('button', { classe: `bouton ${b.style || ''}`, onClick: () => b.action(fermer) }, b.libelle)),
-        el('button', { classe: 'bouton', onClick: () => fermer(null) }, 'Fermer')),
-    ],
-  }), { classe: 'large' });
+export function fenetre({ titre, corps, boutons = [], surOuverture = null }) {
+  return ouvrir((fermer) => {
+    surOuverture?.(fermer);
+    const boutonFermer = el('button', { classe: 'bouton', onClick: () => fermer(null) }, 'Fermer');
+    return {
+      valider: null,
+      focus: boutonFermer,
+      contenu: [
+        el('h2', {}, titre),
+        el('div', { classe: 'corps-fenetre' }, corps),
+        el('div', { classe: 'dialogue-boutons' },
+          boutons.map((b) => el('button', { classe: `bouton ${b.style || ''}`, onClick: () => b.action(fermer) }, b.libelle)),
+          boutonFermer),
+      ],
+    };
+  }, { classe: 'large' });
 }
 
 // Renvoie le texte saisi (éventuellement vide) ou null si annulé.

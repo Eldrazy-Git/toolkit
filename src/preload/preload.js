@@ -113,6 +113,12 @@ contextBridge.exposeInMainWorld('toolkit', {
     commits: (cible, sens) => appeler('git:commits', cible, sens),
     // hash absent : changements non enregistrés. -> { texte, binaire, nouveau, tronque }
     differences: (cible, chemin, hash) => appeler('git:differences', cible, chemin, hash),
+    // Historique : chemin facultatif -> [{ hash, message, date, auteur, sauvegardeClaude, fichiers }]
+    historique: (cible, chemin) => appeler('git:historique', cible, chemin),
+    fichiersDepuis: (cible, hash) => appeler('git:fichiers-depuis', cible, hash), // [{ etat, chemin }]
+    differencesDepuis: (cible, hash, chemin) => appeler('git:differences-depuis', cible, hash, chemin),
+    // chemins absent : tout le projet. -> { sauvegarde, commite }
+    restaurer: (cible, hash, chemins) => appeler('git:restaurer', cible, hash, chemins),
   },
   // Explorateur de fichiers et éditeur de code. Chemins relatifs au dossier de la cible.
   code: {

@@ -238,6 +238,15 @@ Git d'un projet) :
 - violette « commits à récupérer » : ce qui est sur GitHub et pas encore sur ce PC, puis
   **Récupérer (Pull)**.
 
+**Historique et retour en arrière** : bouton 🕘 de la section Git d'un projet (ou clic droit
+> **Historique des versions…**, ou clic droit sur un fichier dans l'onglet « Code » >
+**Historique de ce fichier…**). Chaque version est listée ; celles marquées
+**« Avant une modification par Claude »** sont les sauvegardes faites avant que Claude
+travaille. Choisis une version pour voir ce qu'elle a changé, ou les **différences avec
+maintenant**, puis **Remettre** (un fichier) ou **Remettre tout le projet comme à cette
+version…**. Rien n'est perdu : tes modifications en cours sont sauvegardées d'abord, et le
+retour en arrière devient lui-même une version que tu peux annuler de la même façon.
+
 Toolkit utilise ta connexion GitHub existante (commande `gh`) et ne stocke jamais de mot
 de passe. Si GitHub n'est pas connecté, le panneau explique comment faire.
 

@@ -239,6 +239,7 @@ export function elementsMenuProjet(projet, position) {
     { libelle: 'Ouvrir', icone: 'lecture', desactive: bloque, action: () => (estOuvrableCommeOutil(projet) ? ouvrirOutil(projet.id) : ouvrirAvec(projet)) },
     { libelle: 'Ouvrir avec…', icone: 'ouvrirAvec', detail: '▸', desactive: bloque, action: () => ouvrirMenu(position, elementsMenuOuvrirAvec(projet)) },
     { libelle: 'Explorer le code', icone: 'code', action: () => ouvrirCode({ type: 'projet', id: projet.id }, projet.fiche.nom) },
+    { libelle: 'Historique des versions…', icone: 'historique', action: () => import('./historique.js').then((h) => h.afficherHistorique({ type: 'projet', id: projet.id }, projet.fiche.nom)) },
     { libelle: 'Modifier avec Claude', icone: 'claude', desactive: bloque, action: () => modifierAvecClaude(projet) },
     'separateur',
     { libelle: projet.fiche.favori ? 'Retirer des favoris' : 'Ajouter aux favoris', icone: 'etoile', desactive: bloque, action: () => basculerFavori(projet) },

@@ -365,6 +365,111 @@ async function differences(dossier, chemin, hash) {
   };
 }
 
+// --- Historique et retour arrière ------------------------------------------------------------
+// Rien n'est jamais réécrit : revenir à une version crée un NOUVEAU commit (annulable), après
+// une sauvegarde des modifications en cours.
+
+const MESSAGE_SAUVEGARDE_CLAUDE = 'Sauvegarde automatique avant modification par Claude';
+
+function verifierHash(hash) {
+  if (!/^[0-9a-f]{4,40}$/i.test(String(hash || ''))) throw new Error('Version invalide.');
+}
+
+function cheminRelatif(dossier, chemin) {
+  const relatif = String(chemin || '').replace(/\\/g, '/');
+  const racine = path.resolve(dossier);
+  const absolu = path.resolve(racine, relatif);
+  if (!relatif || !absolu.toLowerCase().startsWith(racine.toLowerCase() + path.sep)) throw new Error('Chemin de fichier invalide.');
+  return relatif;
+}
+
+function lireNameStatus(lignes) {
+  return lignes.filter(Boolean).map((l) => {
+    const champs = l.split('\t');
+    return { etat: LIBELLES_ETATS_FICHIERS[champs[0][0]] || 'modifié', chemin: champs[champs.length - 1] };
+  });
+}
+
+// Versions (commits) du projet, de la plus récente à la plus ancienne ; chemin : seulement
+// celles qui touchent ce fichier. -> [{ hash, message, date, auteur, sauvegardeClaude, fichiers }]
+async function historique(dossier, { chemin = null, maximum = 300 } = {}) {
+  if ((await git(dossier, ['rev-parse', '--verify', 'HEAD'])).code !== 0) return [];
+  const filtre = chemin ? ['--', cheminRelatif(dossier, chemin)] : [];
+  const r = await git(dossier, ['-c', 'core.quotepath=off', 'log', `--max-count=${maximum}`,
+    '--format=%x1e%H%x00%s%x00%ct%x00%an', '--name-status', ...filtre]);
+  if (r.code !== 0) throw new Error(messageErreur(r, 'La lecture de l\'historique'));
+  return r.sortie.split('\x1e').filter((b) => b.trim()).map((bloc) => {
+    const [entete, ...lignes] = bloc.split('\n');
+    const [hash, message, date, auteur] = entete.split('\0');
+    return {
+      hash,
+      message,
+      date: Number(date) * 1000,
+      auteur,
+      sauvegardeClaude: message.startsWith(MESSAGE_SAUVEGARDE_CLAUDE),
+      fichiers: lireNameStatus(lignes),
+    };
+  });
+}
+
+// Fichiers qui diffèrent entre cette version et l'état actuel du dossier.
+async function fichiersDifferentsDepuis(dossier, hash) {
+  verifierHash(hash);
+  const r = await git(dossier, ['-c', 'core.quotepath=off', 'diff', '--name-status', '--no-renames', hash]);
+  if (r.code !== 0) throw new Error(messageErreur(r, 'La comparaison'));
+  // « ajouté » vu depuis la version : le fichier n'existait pas encore à ce moment-là.
+  return lireNameStatus(r.sortie.split('\n'));
+}
+
+// Différences d'un fichier entre cette version et maintenant.
+async function differencesDepuis(dossier, hash, chemin) {
+  verifierHash(hash);
+  const relatif = cheminRelatif(dossier, chemin);
+  const r = await git(dossier, ['-c', 'core.quotepath=off', 'diff', '--no-color', '--no-renames', hash, '--', relatif]);
+  if (r.code !== 0) throw new Error(messageErreur(r, 'La comparaison'));
+  const binaire = /^Binary files .* differ$/m.test(r.sortie);
+  return { texte: binaire ? '' : r.sortie.slice(0, TAILLE_MAX_DIFF), binaire, nouveau: false, tronque: r.sortie.length > TAILLE_MAX_DIFF };
+}
+
+// Remet tout le projet (chemins null) ou certains fichiers comme dans cette version.
+// Un fichier absent de cette version est retiré (il reste dans l'historique).
+// Renvoie { sauvegarde: bool (modifs en cours enregistrées avant), commite: bool }.
+async function restaurer(dossier, hash, chemins = null) {
+  verifierHash(hash);
+  const date = new Date().toLocaleString('fr-FR');
+  const { commite: sauvegarde } = await commiterTout(dossier, `Sauvegarde automatique avant retour en arrière (${date})`);
+  const info = await git(dossier, ['log', '-1', '--format=%s%x00%ct', hash]);
+  if (info.code !== 0) throw new Error('Cette version est introuvable dans l\'historique.');
+  const [message, quand] = info.sortie.trim().split('\0');
+  const dateVersion = new Date(Number(quand) * 1000).toLocaleString('fr-FR');
+
+  const cibles = chemins ? chemins.map((c) => cheminRelatif(dossier, c)) : ['.'];
+  if (chemins) {
+    // Un fichier qui n'existait pas dans cette version : on le retire du suivi et du disque.
+    for (const c of cibles) {
+      const present = await git(dossier, ['cat-file', '-e', `${hash}:${c}`]);
+      if (present.code !== 0) {
+        const rm = await git(dossier, ['rm', '-q', '--ignore-unmatch', '--', c]);
+        if (rm.code !== 0) throw new Error(messageErreur(rm, 'Le retour en arrière'));
+      } else {
+        const r = await git(dossier, ['restore', `--source=${hash}`, '--staged', '--worktree', '--', c]);
+        if (r.code !== 0) throw new Error(messageErreur(r, 'Le retour en arrière'));
+      }
+    }
+  } else {
+    const r = await git(dossier, ['restore', `--source=${hash}`, '--staged', '--worktree', '--', ':/']);
+    if (r.code !== 0) throw new Error(messageErreur(r, 'Le retour en arrière'));
+  }
+  const prets = await git(dossier, ['diff', '--cached', '--name-only']);
+  if (prets.sortie.trim() === '') return { sauvegarde, commite: false };
+  const titre = chemins
+    ? `Retour de ${cibles.length === 1 ? `« ${cibles[0]} »` : `${cibles.length} fichiers`} à la version du ${dateVersion}`
+    : `Retour du projet à la version du ${dateVersion}`;
+  const commit = await git(dossier, ['commit', '-m', titre, '-m', `Version choisie : « ${message} » (${hash.slice(0, 7)})`]);
+  if (commit.code !== 0) throw new Error(messageErreur(commit, 'Le commit du retour en arrière'));
+  return { sauvegarde, commite: true };
+}
+
 // --- Envoi et récupération -------------------------------------------------------------------
 
 // Envoie les commits sur le dépôt distant (publie la branche si besoin).
@@ -440,6 +545,10 @@ module.exports = {
   etatDepot,
   listerCommits,
   differences,
+  historique,
+  fichiersDifferentsDepuis,
+  differencesDepuis,
+  restaurer,
   pousser,
   recuperer,
   verifierEnLigne,

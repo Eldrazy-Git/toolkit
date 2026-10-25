@@ -9,6 +9,7 @@ import { ouvrirMenu } from './menu.js';
 import * as actionsGit from './actions-git.js';
 import { pastillesGit, boutonsGit, dernierCommit } from './git.js';
 import * as groupes from './groupes.js';
+import { afficherHistorique } from './historique.js';
 
 // Notes d'un projet et rétroliens, gardés quelques secondes (le panneau se redessine souvent).
 const cacheNotes = new Map();
@@ -55,6 +56,10 @@ const gitDemande = new Set();
 
 // Section « Git » : état du dépôt et boutons. L'état est chargé à la première ouverture,
 // en différé (on ne modifie jamais l'état pendant un rendu).
+function nomCible(cible) {
+  return cible.type === 'toolkit' ? 'Toolkit' : etat.obtenir().projets.find((p) => p.id === cible.id)?.fiche.nom || cible.id;
+}
+
 function sectionGit(cible) {
   const e = actionsGit.etatDe(cible);
   const cle = actionsGit.cle(cible);
@@ -66,6 +71,9 @@ function sectionGit(cible) {
     el('div', { classe: 'liste-pastilles' }, pastillesGit(e)),
     dernierCommit(e),
     el('div', { classe: 'details-boutons boutons-git' }, boutonsGit(e),
+      e?.estDepot && !e.aucunCommit
+        ? el('button', { classe: 'bouton-icone', title: 'Historique des versions (revenir en arrière)', onClick: () => afficherHistorique(cible, e.nom || nomCible(cible)) }, icone('historique'))
+        : null,
       el('button', { classe: 'bouton-icone', title: 'Ouvrir le panneau Git et GitHub', onClick: actions.ouvrirGit }, icone('git'))));
 }
 const conteneur = document.getElementById('details');

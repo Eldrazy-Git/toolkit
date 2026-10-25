@@ -114,6 +114,7 @@ app/
             ├── git.js           onglet « Git et GitHub » + pastilles/boutons réutilisés dans les détails
             ├── actions-git.js   actions Git (commit, push, pull, tout envoyer, dépôt GitHub privé)
             ├── details-git.js   fenêtres de détail : fichiers modifiés + différences, commits
+            ├── historique.js    historique des versions et retour arrière (projet ou fichier)
             ├── recherche.js     palette de recherche Ctrl+K
             ├── code.js          onglet « Code » : arborescence + éditeur Monaco + onglets de fichiers
             ├── monaco.js        chargement de Monaco (AMD « min »), langages, options
@@ -251,6 +252,12 @@ dans `docs/projet-json.md`. Points clés :
   `HEAD --not --remotes` pour une branche jamais envoyée) et `git.differences(dossier,
   chemin, hash?)` (`git diff HEAD` / `git show <hash>` ; fichier nouveau = contenu affiché
   comme ajouté ; binaire détecté ; 300 Ko au plus). `core.quotepath=off` pour les accents.
+- Historique (`composants/historique.js`) : `git.historique()` (commits, sauvegardes
+  « avant Claude » repérées par leur message), `fichiersDifferentsDepuis()` /
+  `differencesDepuis()` (version -> état actuel) et `restaurer(dossier, hash, chemins?)` :
+  commit de sauvegarde des modifications en cours, puis `git restore --source=<hash>
+  --staged --worktree` (projet entier `:/`, ou fichier ; absent de la version = `git rm`),
+  puis un NOUVEAU commit « Retour … ». L'historique n'est jamais réécrit (pas de reset).
 
 ### Recherche et notes
 
