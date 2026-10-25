@@ -11,7 +11,10 @@ import * as panneauGit from './composants/git.js';
 import * as groupes from './composants/groupes.js';
 import * as recents from './composants/recents.js';
 import { notifier } from './composants/notifications.js';
-import { ouvrirRecherche } from './composants/recherche.js';
+import * as raccourcis from './composants/raccourcis.js';
+import * as commandes from './composants/commandes.js';
+import * as session from './composants/session.js';
+import * as preferencesUtilisateur from './composants/preferences.js';
 
 let nonEnregistre = false;
 etat.abonner(() => {
@@ -27,35 +30,18 @@ etat.abonner(() => {
   reglages.rendre();
   assistantImport.rendre();
   panneauGit.rendre();
+  session.suivre();
 });
 
+// Raccourcis clavier (voir composants/raccourcis.js, modifiables dans les Réglages).
 document.addEventListener('keydown', (e) => {
-  const touche = e.key.toLowerCase();
-  if (e.ctrlKey && touche === 'k') {
-    e.preventDefault();
-    ouvrirRecherche();
-  } else if (e.ctrlKey && e.shiftKey && touche === 'f' && document.querySelector('.panneau-code:not(.inactif)')) {
-    e.preventDefault();
-    document.querySelector('.panneau-code:not(.inactif)').dispatchEvent(new CustomEvent('rechercher'));
-  } else if (e.ctrlKey && touche === 'f') {
-    e.preventDefault();
-    actions.activerOnglet(onglets.ID_BIBLIOTHEQUE);
-    bibliotheque.focaliserFiltre();
-  } else if (e.ctrlKey && touche === 'p' && document.querySelector('.panneau-code:not(.inactif)')) {
-    // Onglet « Code » affiché : aller à un fichier.
-    e.preventDefault();
-    const champ = document.querySelector('.panneau-code:not(.inactif) .code-recherche');
-    champ.focus();
-    champ.select();
-  } else if (e.ctrlKey && touche === 'w') {
-    e.preventDefault();
-    actions.fermerOngletActif();
-  } else if (e.ctrlKey && e.key === 'Tab') {
-    e.preventDefault();
-    actions.ongletSuivant(e.shiftKey ? -1 : 1);
-  } else if (e.key === 'Escape' && !document.querySelector('.voile')) {
+  if (e.key === 'Escape' && !document.querySelector('.voile')) {
     actions.selectionner(null);
+    return;
   }
+  if (document.querySelector('.voile')) return; // une fenêtre de dialogue est ouverte
+  const commande = raccourcis.commandeDe(e, 'partout') || raccourcis.commandeDe(e, 'editeur');
+  if (commande && commandes.executer(commande.id)) e.preventDefault();
 });
 
 // Ctrl+W pressé à l'intérieur d'un outil (les touches n'arrivent pas jusqu'ici).
@@ -64,10 +50,25 @@ window.toolkit.misesAJour.surDisponibles(() => {
   notifier('Des mises à jour sont disponibles pour Toolkit : Réglages > Mises à jour.');
 });
 
-window.toolkit.outils.surRaccourci((raccourci) => {
-  if (raccourci === 'fermer') actions.fermerOngletActif();
-  if (raccourci === 'recherche') ouvrirRecherche();
+// Claude a fini ou attend une réponse (voir src/main/terminal.js) : si on regarde ailleurs,
+// l'onglet est signalé et une notification Windows est affichée.
+window.toolkit.terminal.surClaudeAttend((id) => {
+  if (!preferencesUtilisateur.lire('claude').notifications) return;
+  const { onglets, ongletActif } = etat.obtenir();
+  const onglet = onglets.find((o) => o.id === id);
+  if (!onglet || (document.hasFocus() && ongletActif === id)) return;
+  etat.modifier({ onglets: onglets.map((o) => (o.id === id ? { ...o, attention: true } : o)) });
+  window.toolkit.terminal.notifierClaude(id, onglet.nomCible).catch(() => {});
 });
+window.toolkit.terminal.surAfficher((id) => actions.activerOnglet(id));
+// Retour dans Toolkit : l'onglet affiché n'a plus besoin d'être signalé.
+window.addEventListener('focus', () => {
+  const { onglets, ongletActif } = etat.obtenir();
+  if (onglets.some((o) => o.id === ongletActif && o.attention)) actions.activerOnglet(ongletActif);
+});
+
+// Raccourci pressé à l'intérieur d'un outil (les touches n'arrivent pas jusqu'ici).
+window.toolkit.outils.surRaccourci((id) => commandes.executer(id));
 
 // Dernier filet de sécurité : une erreur imprévue s'affiche au lieu de passer inaperçue.
 // (Le détail technique part aussi dans donnees/journal.log via la console.)
@@ -77,6 +78,8 @@ window.addEventListener('error', (e) => {
   notifier('Une erreur inattendue s\'est produite dans l\'interface. Si quelque chose ne marche plus, appuie sur F5. Détails : Réglages > Ouvrir le journal des erreurs.', 'erreur');
 });
 
+let sessionSauvee = null;
+
 async function demarrer() {
   try {
     const [reglagesSauves, infosApp] = await Promise.all([
@@ -84,12 +87,14 @@ async function demarrer() {
       window.toolkit.application.infos(),
     ]);
     const preferences = reglagesSauves.interface || {};
+    sessionSauvee = preferences.session;
     etat.modifier({
       vue: preferences.vue === 'liste' ? 'liste' : 'grille',
       tri: typeof preferences.tri === 'string' ? preferences.tri : 'nom',
       epingles: Array.isArray(preferences.epingles) ? preferences.epingles : [],
       groupes: groupes.nettoyer(preferences.groupes),
       recents: recents.nettoyer(preferences.recents),
+      preferences: reglagesSauves.preferences || {},
       infosApp,
     });
   } catch (erreur) {
@@ -98,6 +103,7 @@ async function demarrer() {
   window.toolkit.projets.surChangement(actions.chargerProjets);
   await actions.chargerProjets();
   await actions.chargerEditeurs();
+  await session.restaurer(sessionSauvee);
 }
 
 demarrer();

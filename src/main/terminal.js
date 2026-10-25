@@ -15,6 +15,39 @@ const { environnementPropre, sortieDe } = require('./processus');
 
 const DELAI_ENVOI = 8;
 
+// --- Claude a fini / attend une réponse ---------------------------------------------------------
+// Pendant qu'il travaille, Claude Code redessine sans cesse son écran (animation, minuteur).
+// Quand la sortie a été continue au moins 3 s puis s'arrête 4 s, il a fini ou attend une
+// réponse : l'interface est prévenue (« terminal:claude-attend »). La frappe de l'utilisateur
+// (son écho) et les premières secondes (écran d'accueil) ne comptent pas. Un « bip » du
+// terminal (caractère BEL hors des séquences de titre) prévient aussitôt.
+const ACTIVITE_MINIMUM = 3000;
+const ECART_MAXIMUM = 1500;
+const SILENCE = 4000;
+const DEMARRAGE = 6000;
+
+// signaler() : appelé quand Claude a fini ou attend.
+function suivreClaude(c, donnees, signaler) {
+  const maintenant = Date.now();
+  // Les séquences OSC (titre de la fenêtre…) se terminent aussi par BEL : on les retire.
+  if (donnees.replace(/\x1b\][^\x07\x1b]*(\x07|\x1b\\)/g, '').includes('\x07')) {
+    clearTimeout(c.minuterie);
+    c.travaille = false;
+    signaler();
+    return;
+  }
+  if (maintenant - c.debut < DEMARRAGE || maintenant - c.derniereSaisie < 400) return;
+  if (!c.derniere || maintenant - c.derniere > ECART_MAXIMUM) c.debutActivite = maintenant;
+  c.derniere = maintenant;
+  if (maintenant - c.debutActivite >= ACTIVITE_MINIMUM) c.travaille = true;
+  clearTimeout(c.minuterie);
+  c.minuterie = setTimeout(() => {
+    if (!c.travaille) return;
+    c.travaille = false;
+    signaler();
+  }, SILENCE);
+}
+
 // id -> { processus, contenu, tampon, minuteur }
 const terminaux = new Map();
 
@@ -83,8 +116,13 @@ async function creer(id, { mode, dossier, demande, continuer, colonnes, lignes, 
   if (mode === 'claude') {
     executable = await trouverClaude();
     if (!executable) return { ok: false, raison: 'claude-introuvable' };
-    if (continuer) args = ['--continue'];
-    else args = demande ? [demande] : [];
+    // Préférences (Réglages > Claude) : modèle et autonomie.
+    const pref = require('./reglages').obtenir().preferences?.claude || {};
+    const options = [];
+    if (/^[a-z0-9.-]+$/i.test(pref.modele || '')) options.push('--model', pref.modele);
+    if (['manual', 'acceptEdits', 'auto', 'plan'].includes(pref.autonomie)) options.push('--permission-mode', pref.autonomie);
+    if (continuer) args = [...options, '--continue'];
+    else args = demande ? [...options, demande] : options;
     // Après la demande : « --add-dir » prend tous les arguments qui le suivent.
     if (dossiersLies.length) args.push('--add-dir', ...dossiersLies);
   } else if (mode === 'powershell') {
@@ -109,18 +147,20 @@ async function creer(id, { mode, dossier, demande, continuer, colonnes, lignes, 
     throw new Error(`Impossible de démarrer le terminal : ${erreur.message}`);
   }
 
-  const t = { processus, contenu, tampon: '', minuteur: null };
+  const t = { processus, contenu, tampon: '', minuteur: null, claude: mode === 'claude' ? { debut: Date.now(), debutActivite: 0, derniere: 0, derniereSaisie: 0, travaille: false, minuterie: null } : null };
   terminaux.set(id, t);
   activite.debut();
 
   processus.onData((donnees) => {
     t.tampon += donnees;
     if (!t.minuteur) t.minuteur = setTimeout(() => viderTampon(id), DELAI_ENVOI);
+    if (t.claude) suivreClaude(t.claude, donnees, () => envoyer(id, 'terminal:claude-attend'));
   });
   processus.onExit(({ exitCode }) => {
     viderTampon(id);
     envoyer(id, 'terminal:fin', exitCode);
     clearTimeout(t.minuteur);
+    if (t.claude) clearTimeout(t.claude.minuterie);
     terminaux.delete(id);
     activite.fin();
   });
@@ -128,7 +168,10 @@ async function creer(id, { mode, dossier, demande, continuer, colonnes, lignes, 
 }
 
 function ecrire(id, donnees) {
-  terminaux.get(id)?.processus.write(donnees);
+  const t = terminaux.get(id);
+  if (!t) return;
+  if (t.claude) t.claude.derniereSaisie = Date.now();
+  t.processus.write(donnees);
 }
 
 function redimensionner(id, colonnes, lignes) {
@@ -155,4 +198,4 @@ function fermerTous() {
   for (const id of [...terminaux.keys()]) fermer(id);
 }
 
-module.exports = { trouverClaude, creer, ecrire, redimensionner, fermer, fermerTous };
+module.exports = { trouverClaude, creer, ecrire, redimensionner, fermer, fermerTous, suivreClaude };

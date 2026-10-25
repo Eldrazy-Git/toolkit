@@ -4,7 +4,7 @@
 // Les dossiers sont désignés par des « cibles » (voir cibles.js).
 'use strict';
 
-const { ipcMain } = require('electron');
+const { ipcMain, Notification, BrowserWindow } = require('electron');
 const { gerer } = require('./gerer');
 const chemins = require('../chemins');
 const terminal = require('../terminal');
@@ -23,6 +23,27 @@ function enregistrer() {
     return { ...resultat, chemin: chemins.versRelatif(dossier) || '.' };
   }, { avecEmetteur: true });
   gerer('terminal:fermer', (id) => terminal.fermer(id));
+
+  // Claude a fini ou attend : notification Windows (un clic ramène sur son onglet) et
+  // clignotement du bouton de Toolkit dans la barre des tâches.
+  gerer('terminal:notifier-claude', (contenu, id, nom) => {
+    const fenetre = BrowserWindow.fromWebContents(contenu);
+    if (fenetre && !fenetre.isFocused()) fenetre.flashFrame(true);
+    if (!Notification.isSupported()) return;
+    const notification = new Notification({
+      title: `Claude a terminé — ${String(nom || '').slice(0, 60)}`,
+      body: 'Claude a fini son travail ou attend ta réponse. Clique pour y aller.',
+      icon: chemins.icone,
+    });
+    notification.on('click', () => {
+      if (!fenetre || fenetre.isDestroyed()) return;
+      if (fenetre.isMinimized()) fenetre.restore();
+      fenetre.show();
+      fenetre.focus();
+      if (!contenu.isDestroyed()) contenu.send('terminal:afficher', id);
+    });
+    notification.show();
+  }, { avecEmetteur: true });
   // Frappes et redimensionnement : envois sans réponse, pour la réactivité.
   ipcMain.on('terminal:ecrire', (_e, id, donnees) => terminal.ecrire(id, donnees));
   ipcMain.on('terminal:redimensionner', (_e, id, colonnes, lignes) => terminal.redimensionner(id, colonnes, lignes));

@@ -16,6 +16,9 @@ import { chargerMonaco, langageDe, nomLangage, OPTIONS_EDITEUR } from './monaco.
 import * as lsp from './lsp-python.js';
 import { afficherHistorique } from './historique.js';
 import * as recents from './recents.js';
+import * as raccourcis from './raccourcis.js';
+import * as preferences from './preferences.js';
+import * as actions from './actions.js';
 import { creerApercu, genreApercu } from './apercu-code.js';
 
 const api = window.toolkit.code;
@@ -108,8 +111,38 @@ export function creerPanneauCode(o, zone) {
   const statut = el('div', { classe: 'code-statut' });
   // Aperçu à droite de l'éditeur (HTML, Markdown, SVG, XML Android, CSV) : voir apercu-code.js.
   const apercu = creerApercu({ cible, cle });
-  let apercuOuvert = true;
-  try { apercuOuvert = localStorage.getItem('toolkit:code:apercu') !== '0'; } catch { /* ouvert par défaut */ }
+  // Choix fait avec le bouton « Aperçu » (gardé), sinon la préférence.
+  let apercuOuvert = preferences.lire('editeur').apercuParDefaut;
+  try {
+    const choix = localStorage.getItem('toolkit:code:apercu');
+    if (choix !== null) apercuOuvert = choix !== '0';
+  } catch { /* préférence */ }
+
+  // --- Préférences de l'éditeur (Réglages > Éditeur) ---
+  let surPreferences = null;
+
+  function optionsPreferences() {
+    const p = preferences.lire('editeur');
+    return {
+      fontSize: p.taillePolice,
+      fontFamily: `'${p.police}', Consolas, monospace`,
+      wordWrap: p.retourLigne ? 'on' : 'off',
+      minimap: { enabled: p.miniCarte },
+      detectIndentation: p.tabulation === 'auto',
+    };
+  }
+  function appliquerIndentation(modele) {
+    const t = preferences.lire('editeur').tabulation;
+    if (t === 'tab') modele.updateOptions({ insertSpaces: false, tabSize: 4 });
+    else if (t === '2' || t === '4') modele.updateOptions({ insertSpaces: true, tabSize: Number(t) });
+  }
+  function enregistrementApresFrappe(doc) {
+    if (preferences.lire('editeur').enregistrementAuto !== 'delai') return;
+    clearTimeout(doc.minuterieEnregistrement);
+    doc.minuterieEnregistrement = setTimeout(() => {
+      if (documents.get(doc.chemin) === doc) enregistrer(doc.chemin, false, { auto: true });
+    }, 1000);
+  }
   const boutonApercu = el('button', {
     classe: 'bouton petit',
     title: 'Afficher ou masquer l\'aperçu du fichier',
@@ -294,7 +327,7 @@ export function creerPanneauCode(o, zone) {
   zone.append(element);
   changerVue('fichiers');
   // Ctrl+Maj+F pressé hors du panneau (voir renderer.js).
-  element.addEventListener('rechercher', ouvrirRechercheGlobale);
+  element.addEventListener('commande', (e) => executerCommande(e.detail));
 
   // --- Arbre des fichiers ----------------------------------------------------------------------
 
@@ -552,8 +585,10 @@ export function creerPanneauCode(o, zone) {
       const uri = uriDe(chemin);
       monaco.editor.getModel(uri)?.dispose();
       doc.modele = monaco.editor.createModel(lu.texte, langageDe(monaco, nomDe(chemin)), uri);
+      appliquerIndentation(doc.modele);
       doc.versionSauvee = doc.modele.getAlternativeVersionId();
       doc.modele.onDidChangeContent(() => {
+        enregistrementApresFrappe(doc);
         surModification();
         apercuApresFrappe(doc);
       });
@@ -603,6 +638,7 @@ export function creerPanneauCode(o, zone) {
 
   async function activer(chemin) {
     const precedent = documents.get(actif);
+    if (precedent && precedent.chemin !== chemin && preferences.lire('editeur').enregistrementAuto === 'focus') enregistrer(precedent.chemin, false, { auto: true });
     if (precedent?.modele && editeur.getModel() === precedent.modele) precedent.vue = editeur.saveViewState();
     actif = chemin;
     selection = chemin;
@@ -693,7 +729,27 @@ export function creerPanneauCode(o, zone) {
     document.addEventListener('mouseup', lacher);
   }
 
+  // Fichier(s) demandé(s) de l'extérieur (Récents, recherche, onglets de la dernière fois).
+  async function ouvrirDemande(demande) {
+    if (Array.isArray(demande.chemins)) {
+      for (const chemin of demande.chemins) await ouvrirFichier(chemin);
+      if (demande.actif && ouverts.includes(demande.actif)) await activer(demande.actif);
+    } else if (demande.chemin) await ouvrirFichier(demande.chemin);
+  }
+
+  // Les fichiers ouverts sont notés sur l'onglet (pour les rouvrir au prochain démarrage).
+  function publierFichiers() {
+    queueMicrotask(() => {
+      const actuel = etat.obtenir().onglets.find((x) => x.id === o.id);
+      if (!actuel) return;
+      const fichiers = ouverts.filter((c) => documents.has(c));
+      if (JSON.stringify(actuel.fichiers || []) === JSON.stringify(fichiers) && (actuel.fichierActif || null) === actif) return;
+      etat.modifier({ onglets: etat.obtenir().onglets.map((x) => (x.id === o.id ? { ...x, fichiers, fichierActif: actif } : x)) });
+    });
+  }
+
   function rendreFichiers() {
+    publierFichiers();
     barreFichiers.replaceChildren(...ouverts.map((chemin) => {
       const doc = documents.get(chemin);
       const modifie = estModifie(doc);
@@ -783,15 +839,23 @@ export function creerPanneauCode(o, zone) {
   // --- Enregistrer, fermer --------------------------------------------------------------------
 
   // Renvoie true si le fichier est enregistré.
-  async function enregistrer(chemin, forcer = false) {
+  // auto : enregistrement automatique (préférence) ; en cas de conflit, pas de question :
+  // le fichier est signalé « modifié ailleurs » et l'utilisateur décidera avec Ctrl+S.
+  async function enregistrer(chemin, forcer = false, { auto = false } = {}) {
     const doc = documents.get(chemin);
     if (!doc?.modele) return false;
+    if (auto && (doc.modifieAilleurs || !estModifie(doc))) return false;
     const version = doc.modele.getAlternativeVersionId();
     let resultat;
     try {
       resultat = await api.ecrire(cible, chemin, doc.modele.getValue(), { encodage: doc.encodage, mtimeAttendu: doc.mtime, forcer });
     } catch (erreur) {
       notifier(erreur.message, 'erreur');
+      return false;
+    }
+    if (resultat.modifieAilleurs && auto) {
+      doc.modifieAilleurs = true;
+      rendreStatut();
       return false;
     }
     if (resultat.modifieAilleurs) {
@@ -967,27 +1031,32 @@ export function creerPanneauCode(o, zone) {
 
   // --- Clavier et largeur ---------------------------------------------------------------------
 
-  function touchesPanneau(e) {
-    if (!e.ctrlKey || e.altKey) return;
-    const touche = e.key.toLowerCase();
-    if (touche === 'f' && e.shiftKey) {
-      e.preventDefault();
-      e.stopPropagation();
-      ouvrirRechercheGlobale();
-    } else if (touche === 's') {
-      e.preventDefault();
-      e.stopPropagation();
-      if (actif) enregistrer(actif);
-    } else if (touche === 'p') {
-      e.preventDefault();
-      e.stopPropagation();
+  // Commandes de l'éditeur (raccourcis modifiables, voir raccourcis.js), reçues du clavier
+  // ou de commandes.js (événement « commande »).
+  function executerCommande(id) {
+    if (id === 'rechercherFichiers') ouvrirRechercheGlobale();
+    else if (id === 'enregistrer') { if (actif) enregistrer(actif); } else if (id === 'allerFichier') {
+      changerVue('fichiers');
       champRecherche.focus();
       champRecherche.select();
-    } else if (touche === 'w' && actif) {
+    } else if (id === 'apercu') {
+      if (!boutonApercu.hidden) boutonApercu.click();
+    } else if (id === 'fermerOnglet') {
+      // Un fichier affiché : on le ferme ; sinon c'est l'onglet « Code » qui se ferme.
+      if (actif) fermerFichier(actif);
+      else actions.fermerOngletActif();
+    } else return false;
+    return true;
+  }
+
+  function touchesPanneau(e) {
+    const commande = raccourcis.commandeDe(e, 'editeur')
+      || (raccourcis.correspond(e, 'fermerOnglet') && actif ? { id: 'fermerOnglet' } : null);
+    if (commande) {
       e.preventDefault();
       e.stopPropagation();
-      fermerFichier(actif);
-    } else if (e.target.closest?.('.monaco-editor') && ['f', 'h', 'k', 'd', 'g', 'l', '/'].includes(touche)) {
+      executerCommande(commande.id);
+    } else if (e.ctrlKey && e.target.closest?.('.monaco-editor') && ['f', 'h', 'k', 'd', 'g', 'l', '/'].includes(e.key.toLowerCase())) {
       // Raccourcis de l'éditeur (chercher, commenter…) : ne pas déclencher ceux de Toolkit.
       e.stopPropagation();
     }
@@ -1025,7 +1094,7 @@ export function creerPanneauCode(o, zone) {
     mettreAJour(nouveau) {
       if (nouveau.demande && nouveau.demande !== derniereDemande) {
         derniereDemande = nouveau.demande;
-        if (monaco) ouvrirFichier(nouveau.demande.chemin);
+        if (monaco) ouvrirDemande(nouveau.demande);
       }
     },
     detruire() {
@@ -1035,6 +1104,8 @@ export function creerPanneauCode(o, zone) {
       for (const doc of documents.values()) doc.modele?.dispose();
       documents.clear();
       abonnementMarques?.dispose();
+      if (surPreferences) window.removeEventListener('toolkit:preferences', surPreferences);
+
       apercu.detruire();
       editeur?.dispose();
       element.remove();
@@ -1058,14 +1129,24 @@ export function creerPanneauCode(o, zone) {
     }
     if (!panneaux.has(cle)) return; // onglet fermé pendant le chargement
     preparerMonaco(monaco);
-    editeur = monaco.editor.create(zoneEditeur, { ...OPTIONS_EDITEUR, model: null });
+    editeur = monaco.editor.create(zoneEditeur, { ...OPTIONS_EDITEUR, ...optionsPreferences(), model: null });
+    // Enregistrement automatique « quand je quitte le fichier » : aussi quand l'éditeur perd le clavier.
+    editeur.onDidBlurEditorWidget(() => {
+      if (actif && preferences.lire('editeur').enregistrementAuto === 'focus') enregistrer(actif, false, { auto: true });
+    });
+    // Préférences changées dans les Réglages : appliquées tout de suite.
+    surPreferences = () => {
+      editeur.updateOptions(optionsPreferences());
+      for (const doc of documents.values()) if (doc.modele) appliquerIndentation(doc.modele);
+    };
+    window.addEventListener('toolkit:preferences', surPreferences);
     editeur.onDidChangeCursorPosition(() => rendreStatut());
     abonnementMarques = monaco.editor.onDidChangeMarkers((uris) => {
       const doc = documents.get(actif);
       if (doc?.modele && uris.some((u) => u.toString() === doc.modele.uri.toString())) rendreStatut();
     });
     afficher();
-    if (o.demande) await ouvrirFichier(o.demande.chemin);
+    if (o.demande) await ouvrirDemande(o.demande);
   })();
 
   return panneau;

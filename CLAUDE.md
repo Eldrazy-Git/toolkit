@@ -125,6 +125,12 @@ app/
             ├── lsp-python.js    client LSP minimal (Pyright -> complétion, survol, définition…)
             ├── groupes.js       groupes de projets de la barre latérale
             ├── recents.js       « Récents » : dernières ouvertures (réglages interface.recents)
+            ├── preferences.js   préférences (reglages.preferences) + événement « toolkit:preferences »
+            ├── preferences-ui.js pages Claude / Éditeur / Interface / Raccourcis des Réglages
+            ├── raccourcis.js    liste des raccourcis, touches par défaut / choisies, combinaison()
+            ├── commandes.js     exécution des raccourcis + liste de la palette
+            ├── palette.js       palette de commandes (Ctrl+Maj+P)
+            ├── session.js       onglets de la dernière fois (interface.session)
             ├── note.js          onglet d'une note : lecture, liens, rétroliens, modification
             ├── menu.js          ouvrirMenu(bouton, elements) : menu déroulant
             └── barre-laterale.js, bibliotheque.js, details.js, icone-projet.js
@@ -431,6 +437,25 @@ Règles : ne jamais modifier les vrais projets de l'utilisateur (créer un proje
 temporaire et le supprimer), ne jamais envoyer de demande à Claude (quota de
 l'utilisateur), ne jamais créer de dépôt GitHub ni pousser (tester avec un dépôt distant
 local `git init --bare`).
+
+## Préférences, raccourcis, palette, notifications
+
+- `reglages.preferences` = { claude, editeur, interface, raccourcis } (défauts dans
+  `composants/preferences.js`, toujours lus fusionnés). `preferences.modifier(groupe, …)`
+  enregistre et émet `toolkit:preferences` (l'éditeur applique `updateOptions` en direct).
+- Claude : consignes -> section `<!-- toolkit:consignes -->` de `Toolkit/CLAUDE.md` (racine,
+  donc lue pour app/ et pour projets/ ; fichier supprimé si la section est vide) ; modèle
+  (`--model`) et autonomie (`--permission-mode`, jamais bypassPermissions) ajoutés par
+  `terminal.creer`.
+- Raccourcis : TOUJOURS passer par `raccourcis.js` (`commandeDe`, `correspond`) ; lettres et
+  signes d'après `e.key` (AZERTY), chiffres d'après la position. Les touches pressées dans un
+  outil (webview) sont captées par `outils-html.js` (`RACCOURCIS_DANS_OUTILS`, mêmes règles).
+  Commandes de zone « editeur » envoyées au panneau Code par l'événement DOM `commande`.
+- Notification Claude : `terminal.js > suivreClaude()` (sortie continue ≥ 3 s puis silence de
+  4 s, écho de frappe et 6 premières secondes ignorés, BEL hors séquences OSC) ->
+  `terminal:claude-attend` ; l'interface marque l'onglet (`attention`) si on regarde ailleurs
+  et demande `terminal:notifier-claude` (Notification + `flashFrame`).
+- Zoom : `webContents.setZoomFactor` au chargement et à chaque changement.
 
 ## Mises à jour (Réglages > Mises à jour)
 

@@ -58,6 +58,9 @@ contextBridge.exposeInMainWorld('toolkit', {
     fermer: (id) => appeler('terminal:fermer', id),
     surDonnees: (rappel) => ecouter('terminal:donnees', rappel), // rappel(id, donnees)
     surFin: (rappel) => ecouter('terminal:fin', rappel), // rappel(id, codeDeSortie)
+    surClaudeAttend: (rappel) => ecouter('terminal:claude-attend', rappel), // rappel(id)
+    notifierClaude: (id, nom) => appeler('terminal:notifier-claude', id, nom),
+    surAfficher: (rappel) => ecouter('terminal:afficher', rappel), // clic sur la notification
   },
   // Commit de sauvegarde avant de lancer Claude.
   sauvegarde: {

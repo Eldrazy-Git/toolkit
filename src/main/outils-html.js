@@ -203,6 +203,30 @@ function ouvrirLienExterne(url) {
   }
 }
 
+// Raccourcis de Toolkit qui restent actifs quand un outil a le clavier (mêmes règles que
+// renderer/composants/raccourcis.js ; touches choisies dans preferences.raccourcis).
+const RACCOURCIS_DANS_OUTILS = {
+  palette: 'Ctrl+Shift+P', recherche: 'Ctrl+K', fermerOnglet: 'Ctrl+W', ongletSuivant: 'Ctrl+Tab', ongletPrecedent: 'Ctrl+Shift+Tab', bibliotheque: 'Ctrl+Shift+B',
+};
+
+function combinaison(t) {
+  if (['Control', 'Shift', 'Alt', 'Meta'].includes(t.key)) return null;
+  let cle;
+  if (/^[a-z]$/i.test(t.key)) cle = t.key.toUpperCase();
+  else if (/^[0-9]$/.test(t.key)) cle = t.key;
+  else if (/^[=\-+,.;:/\'`[\]*!?]$/.test(t.key)) cle = t.key === '+' ? '=' : t.key;
+  else if (/^(Digit|Numpad)\d$/.test(t.code)) cle = t.code.slice(-1);
+  else cle = t.key.length === 1 ? t.key.toUpperCase() : t.key;
+  return [t.control && 'Ctrl', t.alt && 'Alt', t.shift && 'Shift', cle].filter(Boolean).join('+');
+}
+
+function raccourciToolkit(touche) {
+  const combi = combinaison(touche);
+  if (!combi || !(touche.control || touche.alt)) return null;
+  const choisis = require('./reglages').obtenir().preferences?.raccourcis || {};
+  return Object.keys(RACCOURCIS_DANS_OUTILS).find((id) => (id in choisis ? choisis[id] : RACCOURCIS_DANS_OUTILS[id]) === combi) || null;
+}
+
 // À appeler pour la fenêtre principale : sécurise et configure chaque outil affiché.
 function attacher(contenuPrincipal) {
   contenuPrincipal.on('will-attach-webview', (evenement, preferences, parametres) => {
@@ -242,10 +266,8 @@ function attacher(contenuPrincipal) {
         invite.toggleDevTools();
       } else if (touche.key === 'F5' || (touche.control && lettre === 'r')) {
         invite.reloadIgnoringCache();
-      } else if (touche.control && lettre === 'w') {
-        contenuPrincipal.send('outils:raccourci', 'fermer');
-      } else if (touche.control && lettre === 'k') {
-        contenuPrincipal.send('outils:raccourci', 'recherche');
+      } else if (raccourciToolkit(touche)) {
+        contenuPrincipal.send('outils:raccourci', raccourciToolkit(touche));
       } else {
         return;
       }

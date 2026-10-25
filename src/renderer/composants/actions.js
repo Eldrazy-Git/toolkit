@@ -88,6 +88,12 @@ export async function ouvrirOutil(projetId, outilLie = null) {
 }
 
 export function activerOnglet(id) {
+  // Un onglet signalé (Claude a fini) cesse de l'être quand on le regarde.
+  const { onglets } = etat.obtenir();
+  if (onglets.some((o) => o.id === id && o.attention)) {
+    etat.modifier({ ongletActif: id, onglets: onglets.map((o) => (o.id === id ? { ...o, attention: false } : o)) });
+    return;
+  }
   etat.modifier({ ongletActif: id });
 }
 
@@ -265,11 +271,12 @@ function elementsRetirerDuGroupe(projet) {
 
 // Onglet « Code » (explorateur de fichiers + éditeur) d'un projet ou de Toolkit ; fichier :
 // chemin relatif à ouvrir tout de suite (facultatif).
-export function ouvrirCode(cible, nom, fichier = null) {
+// fichiers : plusieurs fichiers à ouvrir (fichier = celui à afficher), ex. à la restauration.
+export function ouvrirCode(cible, nom, fichier = null, fichiers = null) {
   const cle = cible.type === 'projet' ? `p-${cible.id}` : 'toolkit';
   const id = `code:${cle}`;
   const { onglets } = etat.obtenir();
-  const demande = fichier ? { chemin: fichier, n: Date.now() } : null;
+  const demande = fichiers?.length ? { chemins: fichiers, actif: fichier, n: Date.now() } : fichier ? { chemin: fichier, n: Date.now() } : null;
   if (onglets.some((o) => o.id === id)) {
     etat.modifier({ onglets: onglets.map((o) => (o.id === id && demande ? { ...o, demande } : o)), ongletActif: id });
     return;
@@ -606,8 +613,10 @@ export function ouvrirImport() {
   etat.modifier({ importOuvert: true, ongletActif: 'import' });
 }
 
-export function ouvrirReglages() {
-  etat.modifier({ reglagesOuverts: true, ongletActif: 'reglages' });
+// onglet : 'general' | 'claude' | 'editeur' | 'interface' | 'raccourcis' | 'mises-a-jour'
+export function ouvrirReglages(onglet, { verifier = false } = {}) {
+  etat.modifier({ reglagesOuverts: true, ongletActif: 'reglages', ...(typeof onglet === 'string' ? { ongletReglages: onglet } : {}) });
+  if (verifier) import('./mises-a-jour.js').then((m) => m.verifier());
   chargerEditeurs();
   chargerProgrammes();
   essayer(async () => etat.modifier({ demarrageWindows: await api.reglages.demarrageWindows() }));

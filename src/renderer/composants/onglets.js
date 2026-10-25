@@ -35,13 +35,13 @@ let dernierActif = null;
 
 // --- Barre d'onglets -----------------------------------------------------------------
 
-function onglet({ id, titre, visuel, actif, fermable }) {
+function onglet({ id, titre, visuel, actif, fermable, attention = false }) {
   const fermer = (e) => {
     e.stopPropagation();
     actions.fermerOnglet(id);
   };
   return el('div', {
-    classe: `onglet${actif ? ' actif' : ''}`,
+    classe: `onglet${actif ? ' actif' : ''}${attention && !actif ? ' attention' : ''}`,
     role: 'tab',
     'aria-selected': actif ? 'true' : 'false',
     title: titre,
@@ -136,7 +136,7 @@ export function rendre() {
     importOuvert
       ? onglet({ id: ID_IMPORT, titre: 'Importer un projet', visuel: icone('importer'), actif: ongletActif === ID_IMPORT, fermable: true })
       : '',
-    ...onglets.map((o) => onglet({ id: o.id, titre: o.nonEnregistre ? `● ${o.nom}` : o.nom, visuel: visuelOutil(o), actif: ongletActif === o.id, fermable: true })),
+    ...onglets.map((o) => onglet({ id: o.id, titre: o.nonEnregistre ? `● ${o.nom}` : o.nom, visuel: visuelOutil(o), actif: ongletActif === o.id, fermable: true, attention: o.attention })),
   );
 
   // Crée les panneaux des nouveaux onglets, supprime ceux des onglets fermés.

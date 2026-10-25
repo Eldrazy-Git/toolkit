@@ -7,6 +7,7 @@ import { confirmer } from './dialogue.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
 import * as misesAJour from './mises-a-jour.js';
+import { pageClaude, pageEditeur, pageInterface, pageRaccourcis } from './preferences-ui.js';
 
 export const ID_REGLAGES = 'reglages';
 
@@ -137,12 +138,47 @@ function sectionsFinales() {
   ];
 }
 
+const ONGLETS_REGLAGES = [
+  ['general', 'Général', 'reglages'],
+  ['claude', 'Claude', 'claude'],
+  ['editeur', 'Éditeur', 'code'],
+  ['interface', 'Interface', 'grille'],
+  ['raccourcis', 'Raccourcis', 'points'],
+  ['mises-a-jour', 'Mises à jour', 'redemarrer'],
+];
+
+// Les pages de préférences gardent leur saisie en cours : on ne les redessine que quand on
+// change de page (ou sur demande), pas à chaque changement de l'état de Toolkit.
+let pageAffichee = null;
+
 export function rendre() {
-  const { editeurs, programmes, reglagesOuverts } = etat.obtenir();
+  const { reglagesOuverts, ongletReglages = 'general' } = etat.obtenir();
   if (!reglagesOuverts) return;
-  const listes = editeurs.filter((e) => e.source !== 'systeme');
+  const pagesFigees = ['claude', 'editeur', 'interface', 'raccourcis'];
+  if (pagesFigees.includes(ongletReglages) && pageAffichee === ongletReglages && panneau.firstChild) return;
+  pageAffichee = ongletReglages;
+  const rafraichir = () => { pageAffichee = null; rendre(); };
+  const contenu = {
+    general: () => pageGenerale(),
+    claude: pageClaude,
+    editeur: pageEditeur,
+    interface: pageInterface,
+    raccourcis: () => pageRaccourcis(rafraichir),
+    'mises-a-jour': () => misesAJour.section(),
+  }[ongletReglages] || (() => pageGenerale());
   panneau.replaceChildren(el('div', { classe: 'page-reglages' },
     el('h1', {}, 'Réglages'),
+    el('nav', { classe: 'onglets-reglages' }, ONGLETS_REGLAGES.map(([id, libelle, ico]) => el('button', {
+      classe: `onglet-reglage${id === ongletReglages ? ' actif' : ''}`,
+      onClick: () => etat.modifier({ ongletReglages: id }),
+    }, icone(ico), libelle))),
+    contenu()));
+}
+
+function pageGenerale() {
+  const { editeurs, programmes } = etat.obtenir();
+  const listes = editeurs.filter((e) => e.source !== 'systeme');
+  return [
     sectionsGenerales(),
 
     el('section', { classe: 'section-reglages' },
@@ -163,6 +199,6 @@ export function rendre() {
       programmes ? programmes.map(ligneProgramme) : el('p', { classe: 'details-aide' }, 'Recherche des programmes…'),
       el('button', { classe: 'bouton', onClick: actions.chargerProgrammes }, icone('recherche'), 'Détecter à nouveau')),
 
-    misesAJour.section(),
-    sectionsFinales()));
+    sectionsFinales(),
+  ];
 }

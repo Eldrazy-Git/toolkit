@@ -15,10 +15,12 @@ const etat = {
   epingles: [], // ids des projets épinglés dans la barre latérale, dans l'ordre
   groupes: [], // groupes de projets de la barre latérale (voir groupes.js)
   recents: [], // dernières ouvertures (voir recents.js)
+  preferences: {}, // préférences de l'utilisateur (voir preferences.js)
   selection: null, // id d'un projet, ID_TOOLKIT ou null
   onglets: [], // outils HTML ouverts : { id, nom, projetId, outilLie, url, partition, chemin }
   ongletActif: 'bibliotheque', // 'bibliotheque', 'reglages' ou l'id d'un outil ouvert
   reglagesOuverts: false, // onglet « Réglages » affiché
+  ongletReglages: 'general', // page des Réglages : general | claude | editeur | interface | raccourcis | mises-a-jour
   demarrageWindows: null, // Toolkit démarre-t-il avec Windows ? (lu à l'ouverture des Réglages)
   importOuvert: false, // onglet « Importer un projet » affiché
   gitOuvert: false, // onglet « Git et GitHub » affiché

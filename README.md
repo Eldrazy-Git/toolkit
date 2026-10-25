@@ -301,7 +301,9 @@ de passe. Si GitHub n'est pas connecté, le panneau explique comment faire.
 
 ## 11. Réglages
 
-**Réglages** (en bas à gauche) :
+**Réglages** (en bas à gauche, ou Ctrl+,) : six onglets.
+
+**Général** :
 - **Démarrer Toolkit avec Windows** : Toolkit s'ouvre discrètement près de l'horloge à
   chaque démarrage du PC.
 - **Dossier des projets** : par défaut `projets`, à l'intérieur du dossier Toolkit. Tu peux
@@ -309,6 +311,36 @@ de passe. Si GitHub n'est pas connecté, le panneau explique comment faire.
   projets existants ne sont pas déplacés automatiquement.
 - **Éditeurs** et **Programmes pour les scripts** : ce que Toolkit a trouvé sur ton PC.
 - **Ouvrir le journal des erreurs** : les détails techniques des problèmes rencontrés.
+
+**Claude** :
+- **Tes consignes pour Claude** : ce que tu écris ici s'applique à TOUS tes projets et à
+  Toolkit (Toolkit l'écrit dans `Toolkit/CLAUDE.md`, que Claude Code lit tout seul, même
+  lancé depuis VS Code). Exemple : « commente le code en français », « demande avant de
+  supprimer un fichier ».
+- **Modèle** (Fable, Opus, Sonnet, Haiku) et **Autonomie** (demander avant chaque
+  modification, modifier les fichiers sans demander, automatique, plan d'abord) quand
+  Toolkit lance Claude.
+- **Me prévenir quand Claude a fini ou attend une réponse** : si tu regardes ailleurs,
+  une notification Windows apparaît (clic = retour sur l'onglet de Claude), le bouton de
+  Toolkit clignote dans la barre des tâches et l'onglet de Claude porte un point orange.
+
+**Éditeur** : taille et police du texte, retour à la ligne, enregistrement automatique (une
+seconde après la frappe, ou en quittant le fichier ; un fichier modifié ailleurs n'est
+jamais écrasé), indentation, mini-carte, aperçu affiché ou non par défaut.
+
+**Interface** : taille de toute l'interface (aussi Ctrl+= / Ctrl+- / Ctrl+0), **rouvrir les
+onglets de la dernière fois** au démarrage (outils, onglets « Code » avec leurs fichiers,
+notes), sections affichées dans la barre latérale.
+
+**Raccourcis** : tous les raccourcis clavier, modifiables (« Modifier », puis appuie sur la
+nouvelle combinaison) ; ↺ remet celui par défaut.
+
+### Palette de commandes (Ctrl+Maj+P)
+
+Tape ce que tu veux faire : « code catalogue », « commit lacitadelle », « réglages »,
+« claude », « historique »… puis Entrée. Elle contient toutes les commandes de Toolkit et,
+pour chaque projet : ouvrir, afficher, code, Claude, historique, commit, push, et ses
+actions (boutons de projet.json).
 
 ### Mises à jour
 

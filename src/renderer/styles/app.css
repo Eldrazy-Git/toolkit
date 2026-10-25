@@ -1699,3 +1699,42 @@ mark { background: rgba(229, 192, 73, 0.3); color: var(--texte-fort); border-rad
 .remarque-faille .ico { flex-shrink: 0; width: 14px; height: 14px; color: var(--accent-texte); margin-top: 1px; }
 .case-maj input:disabled { visibility: hidden; }
 .section-maj .champ-case { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Réglages en onglets */
+.onglets-reglages { display: flex; flex-wrap: wrap; gap: 4px; margin: -6px 0 24px; border-bottom: 1px solid var(--bordure); }
+.onglet-reglage {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--texte-faible);
+  font: inherit;
+  cursor: pointer;
+}
+.onglet-reglage .ico { width: 14px; height: 14px; }
+.onglet-reglage:hover { color: var(--texte-fort); }
+.onglet-reglage.actif { color: var(--texte-fort); border-bottom-color: var(--accent); }
+.page-reglages textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--bordure-forte); border-radius: var(--rayon); background: var(--fond-champ); color: var(--texte-fort); font: inherit; line-height: 1.5; resize: vertical; }
+.page-reglages textarea:focus { outline: none; border-color: var(--accent); }
+.page-reglages select { height: 32px; padding: 0 8px; border: 1px solid var(--bordure-forte); border-radius: var(--rayon); background: var(--fond-champ); color: var(--texte-fort); max-width: 460px; }
+.ligne-raccourci { display: flex; align-items: center; gap: 10px; padding: 6px 4px; border-bottom: 1px solid var(--bordure); }
+.libelle-raccourci { flex: 1; }
+.ligne-raccourci kbd, .resultat.commande kbd { flex-shrink: 0; }
+.capture-touches { font-size: 18px; text-align: center; color: var(--accent-texte); }
+.resultat.commande { align-items: center; }
+
+/* Onglet signalé : Claude a fini ou attend une réponse */
+.onglet.attention { color: var(--texte-fort); }
+.onglet.attention::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-left: 2px;
+  border-radius: 50%;
+  background: #f0a35c;
+  animation: pulsation 1.2s ease-in-out infinite;
+}
+@keyframes pulsation { 50% { opacity: 0.35; transform: scale(0.8); } }

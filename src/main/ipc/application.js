@@ -12,7 +12,7 @@ const demarrageWindows = require('../demarrage-windows');
 const misesAJour = require('../mises-a-jour');
 
 // Réglages modifiables directement depuis l'interface (les autres ont leur propre canal).
-const CLES_MODIFIABLES = ['interface'];
+const CLES_MODIFIABLES = ['interface', 'preferences'];
 
 // Vérifie un dossier de projets choisi et renvoie son chemin relatif à la racine de Toolkit.
 function dossierProjetsRelatif(absolu) {
@@ -59,11 +59,17 @@ function enregistrer({ quitter }) {
 
   gerer('reglages:lire', () => reglages.obtenir());
 
-  gerer('reglages:modifier', (changements) => {
+  gerer('reglages:modifier', async (changements) => {
     const filtres = Object.fromEntries(
       Object.entries(changements || {}).filter(([cle]) => CLES_MODIFIABLES.includes(cle)),
     );
-    return reglages.modifier(filtres);
+    const resultat = await reglages.modifier(filtres);
+    // Consignes pour Claude : CLAUDE.md à la racine de Toolkit. Zoom : appliqué tout de suite.
+    if (filtres.preferences?.claude) require('../contexte-claude').planifier(300);
+    if (filtres.preferences?.interface?.zoom) {
+      BrowserWindow.getAllWindows().forEach((f) => f.webContents.setZoomFactor(Number(filtres.preferences.interface.zoom) / 100));
+    }
+    return resultat;
   });
 
   // Mises à jour de Toolkit (voir mises-a-jour.js).

@@ -93,6 +93,11 @@ function creerFenetre() {
   fenetre.loadFile(chemins.interface);
 
   const contenu = fenetre.webContents;
+  // Taille de l'interface choisie dans Réglages > Interface.
+  contenu.on('did-finish-load', () => {
+    const zoom = Number(reglages.obtenir().preferences?.interface?.zoom) || 100;
+    contenu.setZoomFactor(Math.min(200, Math.max(50, zoom)) / 100);
+  });
   outilsHtml.attacher(contenu);
 
   // F12 : outils de développement. Ctrl+R / F5 : recharger l'interface.
@@ -135,6 +140,8 @@ function creerFenetre() {
     }
     afficherAstuceZoneNotification();
   });
+
+  fenetre.on('focus', () => fenetre?.flashFrame(false));
 
   fenetre.on('closed', () => {
     fenetre = null;

@@ -8,6 +8,8 @@ import * as actions from './actions.js';
 import { ouvrirRecherche } from './recherche.js';
 import * as groupes from './groupes.js';
 import * as recents from './recents.js';
+import * as preferences from './preferences.js';
+import * as raccourcis from './raccourcis.js';
 
 const conteneur = document.getElementById('barre-laterale');
 
@@ -258,15 +260,18 @@ export function rendre() {
 
   const categories = actions.listeCategories();
   const tags = actions.listeTags();
+  // Sections masquées dans Réglages > Interface.
+  const masquees = preferences.lire('interface').sectionsMasquees;
+  const visible = (section) => !masquees.includes(section);
 
   conteneur.replaceChildren(
     el('div', { classe: 'barre-entete' },
       infosApp ? el('img', { src: infosApp.icone, alt: '' }) : null,
       'Toolkit'),
     el('button', { classe: 'bouton-recherche', title: 'Rechercher dans les projets et les notes', onClick: ouvrirRecherche },
-      icone('recherche'), el('span', {}, 'Rechercher…'), el('kbd', {}, 'Ctrl+K')),
+      icone('recherche'), el('span', {}, 'Rechercher…'), raccourcis.touche('recherche') ? el('kbd', {}, raccourcis.afficher(raccourcis.touche('recherche'))) : null),
     el('div', { classe: 'barre-defilante' },
-      sectionRecents(projets),
+      visible('recents') ? sectionRecents(projets) : null,
       el('div', { classe: 'barre-section' }, 'Bibliothèque'),
       elementNav({
         libelle: 'Tous les projets',
@@ -282,13 +287,13 @@ export function rendre() {
         actif: filtre.type === 'favoris',
         auClic: choisir({ type: 'favoris' }),
       }),
-      projetsEpingles(projets, selection, ongletActif),
+      visible('epingles') ? projetsEpingles(projets, selection, ongletActif) : null,
 
-      sectionGroupes(projets, filtre, selection, ongletActif),
+      visible('groupes') ? sectionGroupes(projets, filtre, selection, ongletActif) : null,
 
-      el('div', { classe: 'barre-section' }, 'Catégories'),
-      categories.length === 0 ? el('div', { classe: 'barre-vide' }, 'Aucune') : null,
-      categories.map(([nom, nombre]) => {
+      visible('categories') ? el('div', { classe: 'barre-section' }, 'Catégories') : null,
+      visible('categories') && categories.length === 0 ? el('div', { classe: 'barre-vide' }, 'Aucune') : null,
+      !visible('categories') ? null : categories.map(([nom, nombre]) => {
         const f = { type: 'categorie', valeur: nom };
         return elementNav({
           libelle: nom,
@@ -300,9 +305,9 @@ export function rendre() {
         });
       }),
 
-      el('div', { classe: 'barre-section' }, 'Tags'),
-      tags.length === 0 ? el('div', { classe: 'barre-vide' }, 'Aucun') : null,
-      tags.map(([nom, nombre]) => {
+      visible('tags') ? el('div', { classe: 'barre-section' }, 'Tags') : null,
+      visible('tags') && tags.length === 0 ? el('div', { classe: 'barre-vide' }, 'Aucun') : null,
+      !visible('tags') ? null : tags.map(([nom, nombre]) => {
         const f = { type: 'tag', valeur: nom };
         return elementNav({
           libelle: nom,

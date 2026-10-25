@@ -19,6 +19,8 @@ const journal = require('./journal');
 
 const DEBUT_LIES = '<!-- toolkit:projets-lies (section tenue à jour par Toolkit : ne pas la modifier à la main) -->';
 const FIN_LIES = '<!-- /toolkit:projets-lies -->';
+const DEBUT_CONSIGNES = '<!-- toolkit:consignes (section tenue à jour par Toolkit depuis Réglages > Claude : ne pas la modifier ici) -->';
+const FIN_CONSIGNES = '<!-- /toolkit:consignes -->';
 const DEBUT_CATALOGUE = '<!-- toolkit:catalogue (section tenue à jour par Toolkit : ne pas la modifier à la main) -->';
 const FIN_CATALOGUE = '<!-- /toolkit:catalogue -->';
 const LIBELLES_TYPES = { html: 'outil HTML', script: 'script', 'mod-minecraft': 'mod Minecraft', android: 'application Android', autre: 'autre' };
@@ -176,6 +178,11 @@ async function ecrireSection(fichier, debut, fin, section, { creerSi = null } = 
     nouveau = `${texte.replace(/\n*$/, '\n\n')}${section}\n`;
   }
   if (nouveau === texte) return false;
+  // Fichier qui ne contenait que la section retirée : supprimé plutôt que laissé vide.
+  if (!nouveau.trim()) {
+    await fs.unlink(fichier);
+    return true;
+  }
   await fs.writeFile(fichier, crlf ? nouveau.replace(/\n/g, '\r\n') : nouveau, 'utf8');
   return true;
 }
@@ -189,6 +196,21 @@ async function toutMettreAJour() {
   const aretes = graphe(liste);
   const parId = new Map(liste.map((p) => [p.id, p]));
   const modifies = [];
+  // Consignes personnelles (Réglages > Claude) : CLAUDE.md à la racine de Toolkit, lu par
+  // Claude Code pour Toolkit lui-même (app/) comme pour tous les projets.
+  const consignes = String(reglages.obtenir().preferences?.claude?.consignes || '').trim();
+  const fichierConsignes = path.join(chemins.racine, 'CLAUDE.md');
+  const sectionConsignes = consignes ? [
+    DEBUT_CONSIGNES,
+    '# Consignes de l\'utilisateur pour tous ses projets',
+    '',
+    'Ces consignes viennent de l\'utilisateur (Réglages de Toolkit > Claude). Applique-les dans',
+    'tous les projets, sauf si le CLAUDE.md du projet ou l\'utilisateur demande autre chose.',
+    '',
+    consignes,
+    FIN_CONSIGNES,
+  ].join('\n') : null;
+  if (await ecrireSection(fichierConsignes, DEBUT_CONSIGNES, FIN_CONSIGNES, sectionConsignes)) modifies.push(fichierConsignes);
   const catalogue = path.join(chemins.projets(), 'CLAUDE.md');
   if (await ecrireSection(catalogue, DEBUT_CATALOGUE, FIN_CATALOGUE, sectionCatalogue(liste, aretes))) modifies.push(catalogue);
   for (const p of liste) {
