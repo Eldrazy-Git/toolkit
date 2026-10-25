@@ -175,6 +175,14 @@ contextBridge.exposeInMainWorld('toolkit', {
     choisirDossierProjets: () => appeler('reglages:choisir-dossier-projets'),
     dossierProjetsDefaut: () => appeler('reglages:dossier-projets-defaut'),
   },
+  // Mises à jour des bibliothèques et programmes utilisés par Toolkit.
+  misesAJour: {
+    verifier: () => appeler('mises-a-jour:verifier'), // { date, paquets, audit, programmes }
+    etat: () => appeler('mises-a-jour:etat'), // { resultat, automatique, derniereVerification }
+    automatique: (actif) => appeler('mises-a-jour:automatique', actif),
+    installer: (paquets) => appeler('mises-a-jour:installer', paquets), // Toolkit quitte puis redémarre
+    surDisponibles: (rappel) => ecouter('mises-a-jour:disponibles', rappel),
+  },
   application: {
     infos: () => appeler('application:infos'),
     redemarrer: () => appeler('application:redemarrer'),

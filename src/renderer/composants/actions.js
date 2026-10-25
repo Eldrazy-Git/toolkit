@@ -879,8 +879,8 @@ export function demanderCorrection(projetId, nomAction, commande, erreur) {
   return modifierAvecClaude(projet, demande);
 }
 
-export function modifierToolkitAvecClaude() {
-  return lancerClaude({ type: 'toolkit' }, 'Toolkit');
+export function modifierToolkitAvecClaude(demande) {
+  return lancerClaude({ type: 'toolkit' }, 'Toolkit', typeof demande === 'string' ? demande : undefined);
 }
 
 export async function nouvelOutil() {

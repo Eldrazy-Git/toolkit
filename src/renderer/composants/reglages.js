@@ -1,11 +1,12 @@
 // Onglet « Réglages » : démarrage avec Windows, dossier des projets, éditeurs, programmes,
-// journal des erreurs, à propos.
+// mises à jour, journal des erreurs, à propos.
 import { el } from './dom.js';
 import { icone } from './icones.js';
 import { notifier } from './notifications.js';
 import { confirmer } from './dialogue.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
+import * as misesAJour from './mises-a-jour.js';
 
 export const ID_REGLAGES = 'reglages';
 
@@ -162,5 +163,6 @@ export function rendre() {
       programmes ? programmes.map(ligneProgramme) : el('p', { classe: 'details-aide' }, 'Recherche des programmes…'),
       el('button', { classe: 'bouton', onClick: actions.chargerProgrammes }, icone('recherche'), 'Détecter à nouveau')),
 
+    misesAJour.section(),
     sectionsFinales()));
 }

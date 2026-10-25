@@ -310,6 +310,20 @@ de passe. Si GitHub n'est pas connecté, le panneau explique comment faire.
 - **Éditeurs** et **Programmes pour les scripts** : ce que Toolkit a trouvé sur ton PC.
 - **Ouvrir le journal des erreurs** : les détails techniques des problèmes rencontrés.
 
+### Mises à jour
+
+**Réglages > Mises à jour** : « Vérifier maintenant » (et automatiquement une fois par
+semaine au démarrage, désactivable).
+- **Bibliothèques de Toolkit** : les mises à jour sûres (même version majeure, publiées depuis
+  au moins 7 jours) sont cochées ; « Installer … et redémarrer » ferme Toolkit, une fenêtre
+  noire installe (une à deux minutes), puis Toolkit se relance tout seul. Une sauvegarde Git
+  du code de Toolkit est faite avant. Une **version majeure** se fait avec Claude (bouton
+  « Faire avec Claude » : il lit les notes de version et adapte le code si besoin).
+- **Failles de sécurité connues** (npm audit), avec une explication quand le risque est nul
+  pour Toolkit.
+- **Programmes du PC** (Claude Code, Git, GitHub CLI, Node.js) : la commande de mise à jour
+  est affichée, à copier dans PowerShell (Toolkit n'installe rien sur le PC lui-même).
+
 ## 12. Comment sont rangés les dossiers
 
 ```

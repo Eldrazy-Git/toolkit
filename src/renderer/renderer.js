@@ -59,6 +59,11 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Ctrl+W pressé à l'intérieur d'un outil (les touches n'arrivent pas jusqu'ici).
+// Vérification hebdomadaire (au démarrage) : des mises à jour sont proposées.
+window.toolkit.misesAJour.surDisponibles(() => {
+  notifier('Des mises à jour sont disponibles pour Toolkit : Réglages > Mises à jour.');
+});
+
 window.toolkit.outils.surRaccourci((raccourci) => {
   if (raccourci === 'fermer') actions.fermerOngletActif();
   if (raccourci === 'recherche') ouvrirRecherche();

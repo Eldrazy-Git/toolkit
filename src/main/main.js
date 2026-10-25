@@ -188,6 +188,10 @@ async function demarrer() {
   // Boutons de compilation des mods / applications Android (un peu après le démarrage).
   setTimeout(() => require('./actions-auto').completerProjets()
     .catch((erreur) => journal.erreur('Boutons de compilation :', erreur)), 3000);
+  // Mises à jour : vérification si la dernière date de plus d'une semaine (une seule fois).
+  setTimeout(() => require('./mises-a-jour').verifierSiBesoin()
+    .then((resultat) => { if (resultat) fenetre?.webContents.send('mises-a-jour:disponibles'); })
+    .catch((erreur) => journal.info(`Vérification des mises à jour impossible : ${erreur.message}`)), 30000);
   // Ce que Claude sait des autres projets (projets/CLAUDE.md, sections « Projets liés »).
   require('./contexte-claude').planifier(5000);
 

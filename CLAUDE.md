@@ -83,6 +83,7 @@ app/
     │   ├── notes.js             notes .md : rendu markdown-it (HTML brut désactivé), lecture, écriture
     │   ├── modeles.js           modèles de « Nouvel outil » et création du projet
     │   ├── claude-md.js         génération du CLAUDE.md d'un projet
+    │   ├── mises-a-jour.js      versions (registre npm, npm audit, programmes) et script d'installation
     │   ├── contexte-claude.js   catalogue projets/CLAUDE.md + sections « Projets liés » + --add-dir
     │   ├── editeurs.js          détection des éditeurs + « Ouvrir avec… »
     │   ├── explorateur.js       onglet « Code » : lister, lire, écrire, créer, renommer, Corbeille, surveiller
@@ -430,6 +431,19 @@ Règles : ne jamais modifier les vrais projets de l'utilisateur (créer un proje
 temporaire et le supprimer), ne jamais envoyer de demande à Claude (quota de
 l'utilisateur), ne jamais créer de dépôt GitHub ni pousser (tester avec un dépôt distant
 local `git init --bare`).
+
+## Mises à jour (Réglages > Mises à jour)
+
+`src/main/mises-a-jour.js` + `composants/mises-a-jour.js`. Versions lues sur le registre npm
+(dates de publication), « sûre » = même majeure (0.x : même mineure) ET publiée depuis 7 jours
+ou plus ; une majeure est confiée à Claude (il modifie package.json et le code, sans lancer
+npm install). Installation Toolkit FERMÉ (electron.exe et node-pty verrouillés sinon) :
+commit de sauvegarde de app/, puis `donnees/mise-a-jour-toolkit.cmd` (chemins relatifs au
+script) attend la fin du processus de Toolkit (PID en argument), lance `npm install --save
+paquet@version`, `node node_modules/electron/install.js`, puis relance `Lancer Toolkit.vbs`.
+Vérification automatique au démarrage si la dernière a plus de 7 jours
+(`reglages.misesAJour`). Programmes du PC : commande affichée seulement (installation
+globale = action de l'utilisateur).
 
 ## Performances (mesurées à la phase 10)
 

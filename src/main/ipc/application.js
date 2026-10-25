@@ -9,6 +9,7 @@ const { gerer } = require('./gerer');
 const chemins = require('../chemins');
 const reglages = require('../reglages');
 const demarrageWindows = require('../demarrage-windows');
+const misesAJour = require('../mises-a-jour');
 
 // Réglages modifiables directement depuis l'interface (les autres ont leur propre canal).
 const CLES_MODIFIABLES = ['interface'];
@@ -63,6 +64,20 @@ function enregistrer({ quitter }) {
       Object.entries(changements || {}).filter(([cle]) => CLES_MODIFIABLES.includes(cle)),
     );
     return reglages.modifier(filtres);
+  });
+
+  // Mises à jour de Toolkit (voir mises-a-jour.js).
+  gerer('mises-a-jour:verifier', () => misesAJour.verifier());
+  gerer('mises-a-jour:etat', () => ({
+    resultat: misesAJour.dernier(),
+    automatique: reglages.obtenir().misesAJour?.automatique !== false,
+    derniereVerification: reglages.obtenir().misesAJour?.derniereVerification || null,
+  }));
+  gerer('mises-a-jour:automatique', (actif) => reglages.modifier({ misesAJour: { automatique: Boolean(actif) } }));
+  // Installation : le script attend que Toolkit soit fermé, installe, puis le relance.
+  gerer('mises-a-jour:installer', async (paquets) => {
+    await misesAJour.preparerInstallation(paquets);
+    setTimeout(quitter, 300);
   });
 
   gerer('reglages:demarrage-windows', () => demarrageWindows.estActif());
