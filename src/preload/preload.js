@@ -194,5 +194,7 @@ contextBridge.exposeInMainWorld('toolkit', {
     signalerNonEnregistre: (valeur) => ipcRenderer.send('application:non-enregistre', valeur),
     // Disposition du clavier (AZERTY…) : { position de touche: caractère }.
     disposition: (carte) => ipcRenderer.send('application:disposition', carte),
+    // Combinaisons déjà réservées par un autre programme du PC -> [combinaisons prises]
+    raccourcisPris: (combinaisons) => appeler('raccourcis:pris', combinaisons),
   },
 });

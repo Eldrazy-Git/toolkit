@@ -86,6 +86,28 @@ export function commandeDe(e, zone = 'partout') {
   return COMMANDES.find((c) => c.zone === zone && touche(c.id) === combi) || null;
 }
 
+// Au démarrage : prévient (une fois par combinaison) si un raccourci de Toolkit est réservé
+// par un autre programme du PC (il n'arriverait jamais jusqu'à Toolkit).
+export async function verifierConflits(notifier) {
+  const parCombinaison = new Map();
+  for (const c of COMMANDES) {
+    const t = touche(c.id);
+    if (t) parCombinaison.set(t, [...(parCombinaison.get(t) || []), c.libelle]);
+  }
+  let pris = [];
+  try {
+    pris = await window.toolkit.application.raccourcisPris([...parCombinaison.keys()]);
+  } catch {
+    return;
+  }
+  let dejaSignales = [];
+  try { dejaSignales = JSON.parse(localStorage.getItem('toolkit:raccourcis:signales') || '[]'); } catch { /* aucun */ }
+  const nouveaux = pris.filter((p) => !dejaSignales.includes(p));
+  if (!nouveaux.length) return;
+  notifier(`Raccourci(s) pris par un autre programme du PC : ${nouveaux.map((p) => `${afficher(p)} (${parCombinaison.get(p).join(', ')})`).join(' ; ')}. Ils ne marcheront pas dans Toolkit : change-les dans Réglages > Raccourcis.`);
+  try { localStorage.setItem('toolkit:raccourcis:signales', JSON.stringify([...dejaSignales, ...nouveaux])); } catch { /* sans importance */ }
+}
+
 // Affichage : « Ctrl+Maj+P ».
 export function afficher(combi) {
   return (combi || '').replace(/\bShift\b/g, 'Maj');

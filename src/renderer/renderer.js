@@ -104,6 +104,7 @@ async function demarrer() {
   await actions.chargerProjets();
   await actions.chargerEditeurs();
   await session.restaurer(sessionSauvee);
+  raccourcis.verifierConflits(notifier);
 }
 
 demarrer();

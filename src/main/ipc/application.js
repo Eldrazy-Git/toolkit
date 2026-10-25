@@ -1,7 +1,7 @@
 // Canaux IPC « application:* » et « reglages:* » : infos sur Toolkit, réglages, redémarrage.
 'use strict';
 
-const { app, dialog, shell, BrowserWindow, ipcMain } = require('electron');
+const { app, dialog, shell, BrowserWindow, ipcMain, globalShortcut } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -71,6 +71,21 @@ function enregistrer({ quitter }) {
     }
     return resultat;
   });
+
+  // Raccourcis déjà réservés par un AUTRE programme du PC (Windows les lui donne avant
+  // Toolkit) : on essaie de les réserver un instant ; si c'est refusé, ils sont pris.
+  // Renvoie la liste des combinaisons prises (format de Toolkit, ex. « Ctrl+Shift+P »).
+  gerer('raccourcis:pris', (combinaisons) => (Array.isArray(combinaisons) ? combinaisons : []).filter((combi) => {
+    const accelerateur = String(combi || '').split('+').map((m) => ({ Ctrl: 'Control', Espace: 'Space', '+': 'Plus' }[m] || m)).join('+');
+    try {
+      if (globalShortcut.isRegistered(accelerateur)) return false; // réservé par Toolkit lui-même
+      const libre = globalShortcut.register(accelerateur, () => {});
+      if (libre) globalShortcut.unregister(accelerateur);
+      return !libre;
+    } catch {
+      return false; // touche inconnue d'Electron (ex. « ù ») : impossible de vérifier
+    }
+  }));
 
   // Disposition du clavier (pour les raccourcis pressés dans un outil HTML).
   ipcMain.on('application:disposition', (_e, carte) => require('../outils-html').definirDisposition(carte));

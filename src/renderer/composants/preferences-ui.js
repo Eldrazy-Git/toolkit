@@ -141,6 +141,15 @@ function capturer(commande, rafraichir) {
       return;
     }
     fin();
+    // Combinaison réservée par un autre programme du PC : elle n'arriverait jamais à Toolkit.
+    if (combi && (await window.toolkit.application.raccourcisPris([combi]).catch(() => [])).length) {
+      const quandMeme = await confirmer({
+        titre: 'Raccourci pris par un autre programme',
+        message: `${raccourcis.afficher(combi)} est déjà utilisé par un autre programme de ton PC (par exemple AMD Radeon Software, PowerToys, Logi Options+…). Windows le lui donne avant Toolkit : il ne fonctionnerait donc pas ici.\n\nChoisis plutôt une autre combinaison, ou désactive ce raccourci dans l'autre programme.`,
+        bouton: 'L\'enregistrer quand même',
+      });
+      if (!quandMeme) return;
+    }
     const conflit = combi && raccourcis.COMMANDES.find((c) => c.id !== commande.id && raccourcis.touche(c.id) === combi
       && (c.zone === commande.zone || c.zone === 'partout' || commande.zone === 'partout'));
     if (conflit) {
@@ -165,8 +174,10 @@ export function pageRaccourcis(rafraichir) {
   const ligne = (c) => {
     const actuelle = raccourcis.touche(c.id);
     const modifie = Object.prototype.hasOwnProperty.call(choisis, c.id) && choisis[c.id] !== c.defaut;
-    return el('div', { classe: 'ligne-raccourci' },
-      el('span', { classe: 'libelle-raccourci' }, c.libelle),
+    return el('div', { classe: 'ligne-raccourci', 'data-combinaison': actuelle },
+      el('span', { classe: 'libelle-raccourci' }, c.libelle,
+        el('span', { classe: 'raccourci-pris', hidden: true, title: 'Windows donne ce raccourci à un autre programme avant Toolkit : choisis-en un autre, ou désactive-le dans cet autre programme.' },
+          icone('attention'), 'déjà pris par un autre programme du PC')),
       actuelle ? el('kbd', {}, raccourcis.afficher(actuelle)) : el('span', { classe: 'details-aide' }, 'aucun'),
       el('button', { classe: 'bouton petit', onClick: () => capturer(c, rafraichir) }, icone('crayon'), 'Modifier'),
       modifie
@@ -182,6 +193,14 @@ export function pageRaccourcis(rafraichir) {
         }, icone('redemarrer'))
         : null);
   };
+  // Après l'affichage : signale les raccourcis réservés par un autre programme du PC.
+  const combinaisons = [...new Set(raccourcis.COMMANDES.map((c) => raccourcis.touche(c.id)).filter(Boolean))];
+  window.toolkit.application.raccourcisPris(combinaisons).then((pris) => {
+    document.querySelectorAll('.ligne-raccourci').forEach((l) => {
+      const marque = l.querySelector('.raccourci-pris');
+      if (marque) marque.hidden = !pris.includes(l.dataset.combinaison);
+    });
+  }).catch(() => {});
   return [
     section('Partout dans Toolkit', null, raccourcis.COMMANDES.filter((c) => c.zone === 'partout').map(ligne)),
     section('Dans l\'éditeur de code', null, raccourcis.COMMANDES.filter((c) => c.zone === 'editeur').map(ligne)),

@@ -451,7 +451,11 @@ local `git init --bare`).
   touche = caractère écrit SANS Maj sur le clavier de l'utilisateur
   (`navigator.keyboard.getLayoutMap()`, ex. « Ctrl+Shift+ù » en AZERTY), chiffres d'après la
   position (Ctrl+0 = touche « à » en AZERTY), sauf « - » et « = ». Disposition transmise au
-  processus principal (`application:disposition`). Les touches pressées dans un
+  processus principal (`application:disposition`).
+- Un raccourci réservé par un AUTRE programme du PC (Radeon Software, PowerToys…) n'arrive
+  jamais à Toolkit : `raccourcis:pris` le détecte (tentative de `globalShortcut.register`
+  aussitôt annulée) ; signalé au démarrage (une fois), dans Réglages > Raccourcis et au
+  moment d'en choisir un. Les tests de Toolkit par événements simulés ne le voient pas. Les touches pressées dans un
   outil (webview) sont captées par `outils-html.js` (`RACCOURCIS_DANS_OUTILS`, mêmes règles).
   Commandes de zone « editeur » envoyées au panneau Code par l'événement DOM `commande`.
 - Notification Claude : `terminal.js > suivreClaude()` (sortie continue ≥ 3 s puis silence de
