@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('toolkit', {
     renommerCategorie: (ancienne, nouvelle) => appeler('projets:renommer-categorie', ancienne, nouvelle),
     renommerTag: (ancien, nouveau) => appeler('projets:renommer-tag', ancien, nouveau),
     choisirIcone: (id) => appeler('projets:choisir-icone', id), // projet mis à jour, ou null si annulé
+    supprimer: (id) => appeler('projets:supprimer', id), // dossier envoyé à la Corbeille
     surChangement: (rappel) => ecouter('projets:changes', rappel),
   },
   outils: {
@@ -131,6 +132,8 @@ contextBridge.exposeInMainWorld('toolkit', {
     creer: (cible, parent, nom, type) => appeler('code:creer', cible, parent, nom, type), // chemin créé
     renommer: (cible, relatif, nom) => appeler('code:renommer', cible, relatif, nom), // nouveau chemin
     corbeille: (cible, relatif) => appeler('code:corbeille', cible, relatif),
+    apercuHtml: (cible, cle) => appeler('code:apercu-html', cible, cle), // { racine (URL), partition }
+    rendreMarkdown: (cible, relatif, texte) => appeler('code:rendre-markdown', cible, relatif, texte), // HTML sûr
     // options : { texte, casse, motEntier, regex } -> { fichiers: [{ chemin, resultats }], total, tronque }
     rechercher: (cible, options) => appeler('code:rechercher', cible, options),
     // chemins : fichiers où remplacer -> { fichiers, remplacements, sauvegarde, git }

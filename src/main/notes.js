@@ -173,4 +173,4 @@ async function creer(projetId, nom) {
   return chemins.versRelatif(fichier);
 }
 
-module.exports = { lire, enregistrer, creer };
+module.exports = { lire, enregistrer, creer, rendre };

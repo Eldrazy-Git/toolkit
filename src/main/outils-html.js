@@ -26,6 +26,7 @@ const SCHEMA = 'toolkit-outil';
 const PREFIXE_PARTITION = 'persist:outil-';
 // Page vide servie sur l'origine d'un outil (utilisée pendant l'import de données).
 const CHEMIN_PAGE_VIDE = '/__toolkit__/vide.html';
+const PREFIXE_APERCU = 'apercu-';
 
 // hote -> { racine, entree, nom }
 const registre = new Map();
@@ -181,6 +182,19 @@ async function preparer(projetId, outilLie) {
   };
 }
 
+// Aperçu d'une page HTML dans l'éditeur de code (onglet « Code ») : même service de
+// fichiers, racine = dossier ouvert dans l'éditeur, session NON persistante (l'aperçu ne
+// garde aucune donnée et ne touche pas à celles de l'outil). Renvoie { racine, partition }.
+function preparerApercu(dossier, cle) {
+  const racine = path.resolve(dossier);
+  const empreinte = crypto.createHash('sha1').update(racine.toLowerCase()).digest('hex').slice(0, 8);
+  const hote = `apercu-${slug(cle)}-${empreinte}`;
+  registre.set(hote, { racine, entree: '', nom: 'Aperçu' });
+  const partition = `${PREFIXE_APERCU}${hote}`;
+  configurerSession(partition);
+  return { racine: `${SCHEMA}://${hote}/`, partition };
+}
+
 // --- Contrôle des <webview> --------------------------------------------------------------
 
 function ouvrirLienExterne(url) {
@@ -199,7 +213,9 @@ function attacher(contenuPrincipal) {
     preferences.contextIsolation = true;
     preferences.sandbox = true;
     preferences.webSecurity = true;
-    const valide = parametres.src?.startsWith(`${SCHEMA}://`) && parametres.partition?.startsWith(PREFIXE_PARTITION);
+    // Partitions acceptées : celles des outils, et celles (temporaires) des aperçus de l'éditeur.
+    const valide = parametres.src?.startsWith(`${SCHEMA}://`)
+      && (parametres.partition?.startsWith(PREFIXE_PARTITION) || parametres.partition?.startsWith(PREFIXE_APERCU));
     if (!valide) {
       journal.erreur('Webview refusée :', parametres.src);
       evenement.preventDefault();
@@ -256,6 +272,7 @@ module.exports = {
   CHEMIN_PAGE_VIDE,
   enregistrerSchema,
   preparer,
+  preparerApercu,
   attacher,
   contenuOutil,
   fenetreDe,

@@ -259,7 +259,10 @@ function rendreProjet(projet) {
           el('dt', {}, 'GitHub'), el('dd', {}, f.git.remote || 'Aucun repo distant'))),
 
       sectionNotes(projet.id),
-      sectionGit({ type: 'projet', id: projet.id })),
+      sectionGit({ type: 'projet', id: projet.id }),
+      el('div', { classe: 'zone-danger' },
+        el('button', { classe: 'bouton petit danger', title: 'Envoie le dossier du projet à la Corbeille de Windows (après confirmation)', onClick: () => actions.supprimerProjet(projet) },
+          icone('effacer'), 'Supprimer ce projet…'))),
   ];
 }
 

@@ -93,7 +93,11 @@ le dossier `Toolkit`.
   puis « Choisir une image… » (une image prise ailleurs est copiée dans le projet ; une
   image déjà dans le projet est simplement utilisée).
 - **Clic droit** sur un projet (bibliothèque ou barre latérale) : ouvrir, Claude, favori,
-  épingler, groupes, icône.
+  épingler, groupes, icône, **supprimer**.
+- **Supprimer un projet** : clic droit > « Supprimer le projet… », ou le bouton tout en bas du
+  panneau de droite. Il faut retaper le nom du projet. Le dossier part à la **Corbeille de
+  Windows** (récupérable tant qu'elle n'est pas vidée) ; son dépôt GitHub n'est jamais
+  supprimé.
 - **Groupes** (barre latérale) : rassemble des projets qui vont ensemble, par exemple une
   application et ses outils annexes. Les groupes peuvent contenir des sous-groupes, et un
   projet peut être dans plusieurs groupes. Les dossiers des projets ne bougent jamais.
@@ -164,6 +168,13 @@ Il marche aussi pour Toolkit lui-même (bouton **Code** de l'entrée « Toolkit 
     l'autre du projet.
   - **Kotlin, Java, Gradle, Markdown, .bat…** : couleurs et suggestions de mots. Pour la
     vraie compréhension du Kotlin/Java d'un projet Android, Android Studio reste l'outil.
+- **Aperçu** (bouton « Aperçu » au-dessus de l'éditeur, panneau à droite) pour ce qui peut
+  s'afficher : page **HTML** (avec ses CSS, images et scripts ; mise à jour à chaque
+  enregistrement), **Markdown** et **SVG** (en direct pendant la frappe), tableaux **CSV**,
+  et XML Android : **layouts** dessinés dans un téléphone (textes de `strings.xml`, couleurs,
+  icônes vectorielles, `tools:listitem`, `<include>`…), **icônes vectorielles**, **formes**,
+  fichiers de **couleurs / textes**. L'aperçu des layouts est simplifié : Android Studio
+  reste la référence.
 - Si Claude (ou un autre programme) modifie un fichier ouvert, l'éditeur le recharge.
   Si tu avais aussi des changements en cours, Toolkit te demande quelle version garder.
 - Pour que double-cliquer un projet ouvre cet éditeur : **Éditeur par défaut** >

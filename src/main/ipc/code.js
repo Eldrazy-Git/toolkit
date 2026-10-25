@@ -9,6 +9,10 @@ const explorateur = require('../explorateur');
 const lspPython = require('../lsp-python');
 const { dossierCible } = require('../cibles');
 const git = require('../git');
+const path = require('node:path');
+const chemins = require('../chemins');
+const notes = require('../notes');
+const outilsHtml = require('../outils-html');
 
 // Arrêts liés à la fermeture d'une interface, enregistrés une seule fois par interface.
 const suivis = new WeakMap(); // webContents -> Set de clés
@@ -36,6 +40,13 @@ function enregistrer() {
       sauvegarde = (await git.commiterTout(dossier, `Sauvegarde automatique avant « Remplacer partout » (${new Date().toLocaleString('fr-FR')})`)).commite;
     }
     return { ...(await explorateur.remplacer(dossier, options || {}, String(remplacement ?? ''), chemins)), sauvegarde, git: await git.estDepot(dossier) };
+  });
+  // Aperçus : page HTML servie comme un outil (session temporaire), Markdown rendu comme
+  // une note (HTML brut désactivé), à partir du texte en cours d'édition.
+  gerer('code:apercu-html', async (cible, cle) => outilsHtml.preparerApercu(await dossierCible(cible), String(cle || 'code')));
+  gerer('code:rendre-markdown', async (cible, relatif, texte) => {
+    const dossier = await dossierCible(cible);
+    return notes.rendre(String(texte ?? ''), chemins.versRelatif(path.resolve(dossier, String(relatif || 'x.md'))));
   });
   gerer('code:corbeille', async (cible, relatif) => explorateur.mettreALaCorbeille(await dossierCible(cible), relatif));
 

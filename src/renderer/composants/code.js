@@ -16,6 +16,7 @@ import { chargerMonaco, langageDe, nomLangage, OPTIONS_EDITEUR } from './monaco.
 import * as lsp from './lsp-python.js';
 import { afficherHistorique } from './historique.js';
 import * as recents from './recents.js';
+import { creerApercu, genreApercu } from './apercu-code.js';
 
 const api = window.toolkit.code;
 const panneaux = new Map(); // cle -> panneau ouvert (ouvreur de Monaco, surveillance)
@@ -105,6 +106,21 @@ export function creerPanneauCode(o, zone) {
   const zoneEditeur = el('div', { classe: 'code-editeur' });
   const zoneMessage = el('div', { classe: 'code-message' });
   const statut = el('div', { classe: 'code-statut' });
+  // Aperçu à droite de l'éditeur (HTML, Markdown, SVG, XML Android, CSV) : voir apercu-code.js.
+  const apercu = creerApercu({ cible, cle });
+  let apercuOuvert = true;
+  try { apercuOuvert = localStorage.getItem('toolkit:code:apercu') !== '0'; } catch { /* ouvert par défaut */ }
+  const boutonApercu = el('button', {
+    classe: 'bouton petit',
+    title: 'Afficher ou masquer l\'aperçu du fichier',
+    hidden: true,
+    onClick: () => {
+      apercuOuvert = !apercuOuvert;
+      try { localStorage.setItem('toolkit:code:apercu', apercuOuvert ? '1' : '0'); } catch { /* sans importance */ }
+      afficher();
+    },
+  }, icone('lecture'), 'Aperçu');
+  const poigneeApercu = el('div', { classe: 'code-poignee', title: 'Glisser pour changer la largeur de l\'aperçu', hidden: true, onMousedown: (e) => redimensionnerApercu(e) });
   const boutonEnregistrer = el('button', { classe: 'bouton petit', title: 'Enregistrer le fichier (Ctrl+S)', disabled: true, onClick: () => enregistrer(actif) }, 'Enregistrer');
 
   // Panneau « Rechercher dans tous les fichiers » (Ctrl+Maj+F), à la place de l'arborescence.
@@ -263,12 +279,17 @@ export function creerPanneauCode(o, zone) {
     explorateur,
     el('div', { classe: 'code-poignee', title: 'Glisser pour changer la largeur', onMousedown: redimensionner }),
     el('div', { classe: 'code-principal' },
-      el('div', { classe: 'code-barre-fichiers' }, barreFichiers, boutonEnregistrer),
-      el('div', { classe: 'code-zone' }, zoneEditeur, zoneMessage),
+      el('div', { classe: 'code-barre-fichiers' }, barreFichiers, boutonApercu, boutonEnregistrer),
+      el('div', { classe: 'code-zone' },
+        el('div', { classe: 'code-edition' }, zoneEditeur, zoneMessage),
+        poigneeApercu,
+        apercu.element),
       statut));
   try {
     const largeur = Number(localStorage.getItem('toolkit:code:largeur'));
     if (largeur >= 160 && largeur <= 700) element.style.setProperty('--largeur-explorateur', `${largeur}px`);
+    const largeurApercu = Number(localStorage.getItem('toolkit:code:largeur-apercu'));
+    if (largeurApercu >= 220) element.style.setProperty('--largeur-apercu', `${largeurApercu}px`);
   } catch { /* stockage indisponible : largeur par défaut */ }
   zone.append(element);
   changerVue('fichiers');
@@ -532,7 +553,10 @@ export function creerPanneauCode(o, zone) {
       monaco.editor.getModel(uri)?.dispose();
       doc.modele = monaco.editor.createModel(lu.texte, langageDe(monaco, nomDe(chemin)), uri);
       doc.versionSauvee = doc.modele.getAlternativeVersionId();
-      doc.modele.onDidChangeContent(() => surModification());
+      doc.modele.onDidChangeContent(() => {
+        surModification();
+        apercuApresFrappe(doc);
+      });
       if (doc.modele.getLanguageId() === 'python') lsp.client(cle, cible, o.nomCible).ouvrir(doc.modele);
     }
     documents.set(chemin, doc);
@@ -623,6 +647,50 @@ export function creerPanneauCode(o, zone) {
     rendreFichiers();
     rendreStatut();
     rendreArbre();
+    rendreApercu();
+  }
+
+  function rendreApercu() {
+    clearTimeout(minuterieApercu);
+    const doc = documents.get(actif);
+    const genre = doc?.modele ? genreApercu(doc.chemin, doc.modele.getValue()) : null;
+    boutonApercu.hidden = !genre;
+    boutonApercu.classList.toggle('actif', Boolean(genre) && apercuOuvert);
+    const visible = Boolean(genre) && apercuOuvert;
+    apercu.element.hidden = !visible;
+    poigneeApercu.hidden = !visible;
+    if (visible) apercu.montrer(doc, 'ouverture');
+  }
+
+  // Frappe dans le fichier affiché : aperçu mis à jour (300 ms après la dernière touche).
+  let minuterieApercu = null;
+  function apercuApresFrappe(doc) {
+    if (doc.chemin !== actif || apercu.element.hidden) return;
+    clearTimeout(minuterieApercu);
+    minuterieApercu = setTimeout(() => {
+      if (doc.chemin === actif && !apercu.element.hidden) apercu.montrer(doc, 'frappe');
+    }, 300);
+  }
+
+  function redimensionnerApercu(e) {
+    e.preventDefault();
+    const depart = e.clientX;
+    const largeurDepart = apercu.element.getBoundingClientRect().width;
+    let largeur = largeurDepart;
+    // Pendant le glissement, la page de l'aperçu ne doit pas capturer la souris.
+    element.classList.add('redimensionnement');
+    const bouger = (m) => {
+      largeur = Math.max(220, Math.min(1400, largeurDepart - (m.clientX - depart)));
+      element.style.setProperty('--largeur-apercu', `${largeur}px`);
+    };
+    const lacher = () => {
+      element.classList.remove('redimensionnement');
+      document.removeEventListener('mousemove', bouger);
+      document.removeEventListener('mouseup', lacher);
+      try { localStorage.setItem('toolkit:code:largeur-apercu', String(Math.round(largeur))); } catch { /* sans importance */ }
+    };
+    document.addEventListener('mousemove', bouger);
+    document.addEventListener('mouseup', lacher);
   }
 
   function rendreFichiers() {
@@ -818,6 +886,7 @@ export function creerPanneauCode(o, zone) {
       if (contenus.has(chemin)) dossiers.add(chemin);
     }
     await Promise.all([...dossiers].filter((d) => contenus.has(d)).map(chargerDossier));
+    if (!apercu.element.hidden) apercu.invalider(chemins);
     const touches = [...documents.values()].filter((d) => chemins.some((c) => dansDossier(d.chemin, c)));
     for (const doc of touches) await recharger(doc);
     if (touches.some((d) => d.chemin === actif)) afficher();
@@ -966,6 +1035,7 @@ export function creerPanneauCode(o, zone) {
       for (const doc of documents.values()) doc.modele?.dispose();
       documents.clear();
       abonnementMarques?.dispose();
+      apercu.detruire();
       editeur?.dispose();
       element.remove();
     },

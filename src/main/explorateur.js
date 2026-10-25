@@ -16,7 +16,8 @@ const CACHES = new Set(['.git']);
 // Dossiers régénérables : montrés grisés, ignorés par la recherche de fichiers.
 const GENERES = new Set(['node_modules', 'build', 'dist', 'out', '.gradle', '.idea', '.vscode', '__pycache__', '.venv', 'venv', '.cxx', '.kotlin', 'run']);
 const TAILLE_MAX = 5 * 1024 * 1024;
-const IMAGES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp', '.ico': 'image/x-icon', '.svg': 'image/svg+xml' };
+const IMAGES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp', '.ico': 'image/x-icon' };
+// (.svg est du texte : il s'ouvre dans l'éditeur, avec son aperçu à côté.)
 const NOM_INTERDIT = /[<>:"/\\|?*\u0000-\u001f]|^(con|prn|aux|nul|com\d|lpt\d)(\..*)?$|[. ]$/i;
 
 // Chemin absolu d'un chemin relatif, refusé s'il sort du dossier ou touche à .git.

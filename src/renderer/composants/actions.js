@@ -250,6 +250,8 @@ export function elementsMenuProjet(projet, position) {
     ...elementsRetirerDuGroupe(projet),
     'separateur',
     ...elementsMenuIcone(projet).map((e) => ({ ...e, desactive: e.desactive || bloque })),
+    'separateur',
+    { libelle: 'Supprimer le projet…', icone: 'effacer', action: () => supprimerProjet(projet) },
   ];
 }
 
@@ -283,6 +285,76 @@ export function ouvrirProjet(projet) {
   if (projet.erreur) return;
   if (estOuvrableCommeOutil(projet)) ouvrirOutil(projet.id);
   else ouvrirAvec(projet);
+}
+
+// --- Suppression d'un projet -----------------------------------------------------------------
+// Le dossier part à la Corbeille de Windows (récupérable). Confirmation explicite : il faut
+// retaper le nom du projet. Refusé si un script, un terminal ou Claude tourne dans ce projet.
+
+const ongletsDuProjet = (projet) => etat.obtenir().onglets.filter((o) => o.projetId === projet.id
+  || o.cible?.type === 'projet' && o.cible.id === projet.id
+  || (o.genre === 'note' && o.chemin?.split('/').includes(projet.id)));
+
+export async function supprimerProjet(projet) {
+  const onglets = ongletsDuProjet(projet);
+  if (onglets.some((o) => o.enCours)) {
+    notifier('Un script, un terminal ou Claude tourne encore dans ce projet : arrête-le et ferme son onglet d\'abord.', 'erreur');
+    return;
+  }
+  if (onglets.some((o) => o.nonEnregistre)) {
+    notifier('Des fichiers de ce projet ne sont pas enregistrés : enregistre-les ou ferme leurs onglets d\'abord.', 'erreur');
+    return;
+  }
+  // Ce qui serait perdu au-delà de la Corbeille : rappel de l'état Git.
+  const cible = { type: 'projet', id: projet.id };
+  await actionsGit.rafraichir(cible);
+  const g = actionsGit.etatDe(cible);
+  const avertissements = [];
+  if (!g?.estDepot) avertissements.push('• Ce projet n\'a pas d\'historique Git : il n\'existe nulle part ailleurs.');
+  else if (!g.remote) avertissements.push('• Ce projet n\'est pas sur GitHub : il n\'existe nulle part ailleurs.');
+  else {
+    if (g.nbModifications || g.enAvance) avertissements.push('• Des changements n\'ont pas été envoyés sur GitHub : ils ne sont que sur ce PC.');
+    avertissements.push('• Le dépôt GitHub, lui, n\'est PAS supprimé.');
+  }
+  const saisie = await demanderTexte({
+    titre: 'Supprimer le projet',
+    message: `Le dossier « ${projet.dossier} » va être envoyé à la Corbeille de Windows (tu pourras l'en restaurer tant qu'elle n'est pas vidée).\n`
+      + `${avertissements.join('\n')}\n\nPour confirmer, tape le nom du projet : ${projet.fiche.nom}`,
+    bouton: 'Supprimer le projet',
+    danger: true,
+  });
+  if (saisie === null) return;
+  if (saisie.trim() !== projet.fiche.nom.trim()) {
+    notifier('Le nom tapé ne correspond pas : rien n\'a été supprimé.', 'erreur');
+    return;
+  }
+  // Fermer ses onglets (l'onglet « Code » libère le dossier : surveillance, aide Python).
+  const avaitCode = onglets.some((o) => o.genre === 'code');
+  const ids = new Set(onglets.map((o) => o.id));
+  const { ongletActif } = etat.obtenir();
+  etat.modifier({ onglets: etat.obtenir().onglets.filter((o) => !ids.has(o.id)), ongletActif: ids.has(ongletActif) ? 'bibliotheque' : ongletActif });
+  if (avaitCode) await new Promise((r) => setTimeout(r, 1500));
+  const resultat = await essayer(async () => {
+    await api.projets.supprimer(projet.id);
+    return true;
+  });
+  if (!resultat) return;
+  // Nettoyage de ses traces dans la barre latérale.
+  const { epingles, groupes: listeGroupes, selection } = etat.obtenir();
+  if (epingles.includes(projet.id)) {
+    const nouveaux = epingles.filter((id) => id !== projet.id);
+    etat.modifier({ epingles: nouveaux });
+    essayer(() => api.reglages.modifier({ interface: { epingles: nouveaux } }));
+  }
+  if (listeGroupes.some((gr) => gr.projets.includes(projet.id))) {
+    const nouveaux = listeGroupes.map((gr) => ({ ...gr, projets: gr.projets.filter((id) => id !== projet.id) }));
+    etat.modifier({ groupes: nouveaux });
+    essayer(() => api.reglages.modifier({ interface: { groupes: nouveaux } }));
+  }
+  etat.obtenir().recents.filter((r) => r.projetId === projet.id || r.cible?.id === projet.id).forEach(recents.retirer);
+  if (selection === projet.id) selectionner(null);
+  await chargerProjets();
+  notifier(`« ${projet.fiche.nom} » est dans la Corbeille de Windows.`, 'succes');
 }
 
 // --- Modification des fiches ----------------------------------------------------------

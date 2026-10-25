@@ -54,7 +54,7 @@ export function fenetre({ titre, corps, boutons = [], surOuverture = null }) {
 }
 
 // Renvoie le texte saisi (éventuellement vide) ou null si annulé.
-export function demanderTexte({ titre, message, valeur = '', suggestions = [], bouton = 'Valider', exemple = '' }) {
+export function demanderTexte({ titre, message, valeur = '', suggestions = [], bouton = 'Valider', exemple = '', danger = false }) {
   return ouvrir((fermer) => {
     const idListe = `suggestions-${Date.now()}`;
     const champ = el('input', { type: 'text', value: valeur, placeholder: exemple, list: suggestions.length ? idListe : null, spellcheck: 'false' });
@@ -70,7 +70,7 @@ export function demanderTexte({ titre, message, valeur = '', suggestions = [], b
         suggestions.length ? el('datalist', { id: idListe }, suggestions.map((s) => el('option', { value: s }))) : null,
         el('div', { classe: 'dialogue-boutons' },
           el('button', { classe: 'bouton', onClick: () => fermer(null) }, 'Annuler'),
-          el('button', { classe: 'bouton principal', onClick: valider }, bouton)),
+          el('button', { classe: `bouton ${danger ? 'danger' : 'principal'}`, onClick: valider }, bouton)),
       ],
     };
   });

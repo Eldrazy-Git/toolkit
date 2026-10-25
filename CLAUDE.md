@@ -117,6 +117,8 @@ app/
             ├── historique.js    historique des versions et retour arrière (projet ou fichier)
             ├── recherche.js     palette de recherche Ctrl+K
             ├── code.js          onglet « Code » : arborescence + éditeur Monaco + onglets de fichiers
+            ├── apercu-code.js   aperçu à côté de l'éditeur (HTML, Markdown, SVG, CSV, XML Android)
+            ├── apercu-android.js layouts / vecteurs / formes / ressources Android dessinés
             ├── monaco.js        chargement de Monaco (AMD « min »), langages, options
             ├── lsp-python.js    client LSP minimal (Pyright -> complétion, survol, définition…)
             ├── groupes.js       groupes de projets de la barre latérale
@@ -129,6 +131,11 @@ app/
 Les fiches `projet.json` : format dans `docs/projet-json.md`. `projets.js` normalise une
 fiche pour l'interface sans jamais la réécrire ; une modification ne touche que les champs
 concernés et conserve les autres.
+
+Suppression d'un projet (`actions.supprimerProjet`) : refusée si un onglet du projet tourne
+ou n'est pas enregistré ; confirmation en retapant le nom ; onglets du projet fermés (libère
+le dossier), puis `projets:supprimer` = `shell.trashItem` (Corbeille, jamais d'effacement
+définitif) ; épingles, groupes et récents nettoyés.
 
 Bibliothèque : chaque projet chargé porte aussi `dateAjout` (création du dossier) et
 `dateModification` (fichier le plus récent sur 2 niveaux, dossiers générés ignorés) pour
@@ -308,6 +315,14 @@ dans `docs/projet-json.md`. Points clés :
   de `listerTout`, 2 Mo et texte seulement, 2000 résultats au plus, encodage et fins de
   ligne conservés) ; `code:remplacer` fait d'abord un commit de sauvegarde si Git. Refusé
   dans l'interface si un fichier concerné a des modifications non enregistrées.
+- Aperçu (`composants/apercu-code.js`, `apercu-android.js`) : HTML dans une `<webview>`
+  servie par `outils-html.preparerApercu()` (racine = dossier de la cible, partition
+  NON persistante `apercu-…`, acceptée par `will-attach-webview`), rechargée par la
+  surveillance de fichiers ; Markdown via `code:rendre-markdown` (= `notes.rendre`, HTML
+  brut désactivé) ; SVG en `<img>` data: (aucun script exécuté) ; CSV en tableau ; XML
+  Android dessiné avec `el()` (layout approché, `<vector>` -> SVG, `<shape>`, `<resources>`),
+  ressources lues dans le `res/` du module (cache vidé quand un fichier de `res/` change).
+  `.svg` est lu comme du texte (modifiable), plus comme une image.
 - Modifications non enregistrées (onglets `nonEnregistre`) signalées au processus
   principal (`application:non-enregistre`) : la fenêtre est alors cachée au lieu d'être
   détruite, et « Quitter » demande confirmation.
