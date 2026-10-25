@@ -32,7 +32,8 @@ Toolkit/                  ← racine (déplaçable n'importe où)
 1. **Aucun chemin absolu stocké** (réglages, projet.json, fichiers générés). Tout est
    relatif à la racine de Toolkit. Les chemins sont calculés au lancement par
    `src/main/chemins.js` : c'est le seul endroit qui sait où se trouve la racine.
-   Exception : les chemins d'installation des éditeurs (VS Code…), qui sont hors de Toolkit.
+   Exceptions : les chemins des éditeurs choisis à la main (hors de Toolkit), et l'entrée
+   « démarrage avec Windows » du registre, réécrite à chaque lancement avec les chemins actuels.
 2. **Sécurité Electron** : `contextIsolation: true`, `nodeIntegration: false`,
    `sandbox: true` pour les outils HTML. L'interface n'accède au système **que** via
    `src/preload/preload.js` et l'IPC.
@@ -40,7 +41,7 @@ Toolkit/                  ← racine (déplaçable n'importe où)
    surveillance de fichiers seulement quand la fenêtre est ouverte, indexation paresseuse.
 4. **Robustesse** : un outil ou un script qui plante ne doit jamais faire planter Toolkit.
    Toute erreur montrée à l'utilisateur est en français compréhensible, sans trace technique
-   (la trace va dans la console de développement).
+   (la trace va dans `donnees/journal.log`, ouvrable depuis Réglages).
 5. **Pas de framework front ni d'étape de compilation** : HTML, CSS et JavaScript simples
    (modules ES dans l'interface, CommonJS dans le processus principal). Une modification
    est appliquée en redémarrant l'appli.
@@ -86,6 +87,7 @@ app/
     │   ├── outils-html.js       protocole toolkit-outil://, partitions, sécurité des <webview>
     │   ├── outils-donnees.js    export / import localStorage + IndexedDB en JSON
     │   ├── zone-notification.js icône près de l'horloge
+    │   ├── demarrage-windows.js démarrage avec Windows (réduit dans la zone de notification)
     │   └── ipc/
     │       ├── gerer.js         enregistre un canal et renvoie les erreurs proprement
     │       │                    ({ avecEmetteur: true } : reçoit le webContents appelant)
@@ -123,7 +125,7 @@ concernés et conserve les autres.
 | Besoin | Bibliothèque |
 |---|---|
 | Application | electron |
-| Terminal | @xterm/xterm + @xterm/addon-fit, @lydell/node-pty (binaires précompilés, pas besoin de Visual Studio Build Tools) |
+| Terminal | @xterm/xterm + @xterm/addon-fit, node-pty 1.1.0 (binaires Windows précompilés, pas besoin de Visual Studio Build Tools) |
 | Recherche | minisearch (dans le processus principal) |
 | Markdown | markdown-it (dans le processus principal, + règle maison pour `[[liens]]`) |
 | Git / GitHub | commandes `git` et `gh` du système (child_process) |
@@ -264,16 +266,21 @@ emplacements habituels), jamais enregistrée : elle se refait d'elle-même sur u
 
 Exemple : un bouton qui affiche le nombre de fichiers d'un projet.
 
-1. **Logique** dans `src/main/<domaine>.js` : une fonction claire, qui lance une erreur
-   avec un message en français en cas de problème.
-2. **Canal IPC** dans `src/main/ipc/<domaine>.js` : `ipcMain.handle('<domaine>:<action>', …)`.
-   Nommage : `domaine:action` en kebab-case, ex. `projets:compter-fichiers`.
+1. **Logique** dans `src/main/<domaine>.js` : une fonction claire, qui lance
+   `new Error('message en français')` en cas de problème prévu (ce message est montré tel
+   quel à l'utilisateur ; un bug imprévu donne un message générique + la trace au journal).
+2. **Canal IPC** dans `src/main/ipc/<domaine>.js` avec `gerer('<domaine>:<action>', fonction)`
+   (voir `ipc/gerer.js`). Nommage : `domaine:action` en kebab-case, ex.
+   `projets:compter-fichiers`. Un nouveau fichier `ipc/` s'enregistre dans `main.js`
+   (`demarrer()`). L'interface ne transmet jamais de chemin : utiliser une « cible »
+   (`cibles.js`) ou un identifiant de projet.
 3. **Pont** dans `src/preload/preload.js` : ajouter la fonction sous
-   `window.toolkit.<domaine>`.
-4. **Interface** dans `src/renderer/composants/<panneau>.js` : appeler
-   `await window.toolkit.<domaine>.<fonction>()` et afficher le résultat ; attraper les
-   erreurs et les montrer avec la fonction de notification commune.
-5. Redémarrer Toolkit pour tester.
+   `window.toolkit.<domaine>` (avec `appeler(...)`).
+4. **Interface** : une action dans `composants/actions.js` (avec `essayer()` pour afficher
+   les erreurs), puis le bouton dans le composant concerné (`details.js`, `reglages.js`…),
+   construit avec `el()`. Les données partagées vont dans `etat.js`.
+5. Vérifier la syntaxe (`node --check …`, voir « Pièges connus »), puis **Redémarrer
+   Toolkit** (entrée « Toolkit » > Redémarrer Toolkit) pour tester.
 
 Pour ajouter un bouton à **un seul projet**, inutile de toucher au code : ajouter une
 entrée dans `actions` de son `projet.json`.
@@ -303,6 +310,29 @@ npm start          lance Toolkit avec les sources
 npm run verifier   vérifie les prérequis
 npm run icones     régénère assets/icone.png et assets/icone.ico
 ```
+
+**Tests automatiques** (méthode utilisée pendant la construction) : un petit script
+Electron qui neutralise le verrou d'instance unique et redirige `userData` vers un dossier
+temporaire, fait `require('src/main/main.js')`, puis pilote l'interface avec
+`webContents.executeJavaScript()` (clics, lecture du DOM), `sendInputEvent()` (frappes) et
+`capturePage()` (captures d'écran à regarder). Les boîtes de dialogue système se
+remplacent par des fonctions (`dialog.showOpenDialog = async () => …`). Lancer avec
+`env -u ELECTRON_RUN_AS_NODE node_modules/electron/dist/electron.exe test.js`.
+Règles : ne jamais modifier les vrais projets de l'utilisateur (créer un projet `zz-…`
+temporaire et le supprimer), ne jamais envoyer de demande à Claude (quota de
+l'utilisateur), ne jamais créer de dépôt GitHub ni pousser (tester avec un dépôt distant
+local `git init --bare`).
+
+## Performances (mesurées à la phase 10)
+
+- Démarrage : fenêtre affichée ~0,2 s après le lancement ; index de recherche construit en
+  ~0,1 s à la première recherche.
+- Mémoire : ~370 Mo fenêtre ouverte, ~270 Mo une fois la fenêtre fermée, ~200 Mo en
+  démarrage discret avec Windows (processus principal + processus graphique + réseau
+  d'Electron : c'est le minimum d'une application Electron). Le processus graphique est
+  gardé (le désactiver ralentirait les outils 3D).
+- Aucune tâche périodique : seule la surveillance des projets (`fs.watch`, non récursive)
+  existe, et uniquement quand la fenêtre est ouverte.
 
 ## Pièges connus
 
@@ -355,7 +385,7 @@ pour l'utilisateur, attente de sa validation.
 - [x] 7. Git et GitHub
 - [x] 8. Recherche et Markdown
 - [x] 9. Compilation des mods et de l'APK
-- [ ] 10. Finitions
+- [x] 10. Finitions (démarrage avec Windows, dossier des projets, erreurs, documentation)
 
 ### Décisions prises avec l'utilisateur
 
@@ -369,5 +399,7 @@ pour l'utilisateur, attente de sa validation.
 - Thème sombre uniquement.
 - Repo GitHub de l'application : à créer par l'utilisateur lui-même depuis le panneau Git
   (ligne « Toolkit », menu ⋯ > Créer un dépôt GitHub privé), quand il le souhaite.
-- Electron 44 (et non 45, sorti trois jours avant le début du projet) : passage à une
-  version plus récente prévu aux finitions.
+- Electron 44.9.3 (dernière de la série 44). Electron 45 était trop récent à la fin de la
+  construction (4 jours, aucun correctif). Pour passer à la 45 quand une 45.1 ou plus sera
+  sortie : `npm install --save electron@^45`, `npm install`, puis tester les outils HTML
+  (webview), les terminaux (node-pty) et la recherche, et vérifier le journal.
