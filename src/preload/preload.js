@@ -126,9 +126,15 @@ contextBridge.exposeInMainWorld('toolkit', {
   reglages: {
     lire: () => appeler('reglages:lire'),
     modifier: (changements) => appeler('reglages:modifier', changements),
+    demarrageWindows: () => appeler('reglages:demarrage-windows'), // true / false
+    changerDemarrageWindows: (actif) => appeler('reglages:changer-demarrage-windows', actif),
+    // Renvoie le nouveau dossier (relatif à Toolkit) ou null ; effet au prochain démarrage.
+    choisirDossierProjets: () => appeler('reglages:choisir-dossier-projets'),
+    dossierProjetsDefaut: () => appeler('reglages:dossier-projets-defaut'),
   },
   application: {
     infos: () => appeler('application:infos'),
     redemarrer: () => appeler('application:redemarrer'),
+    ouvrirJournal: () => appeler('application:ouvrir-journal'),
   },
 });

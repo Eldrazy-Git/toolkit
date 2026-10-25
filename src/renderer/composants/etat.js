@@ -15,6 +15,7 @@ const etat = {
   onglets: [], // outils HTML ouverts : { id, nom, projetId, outilLie, url, partition, chemin }
   ongletActif: 'bibliotheque', // 'bibliotheque', 'reglages' ou l'id d'un outil ouvert
   reglagesOuverts: false, // onglet « Réglages » affiché
+  demarrageWindows: null, // Toolkit démarre-t-il avec Windows ? (lu à l'ouverture des Réglages)
   importOuvert: false, // onglet « Importer un projet » affiché
   gitOuvert: false, // onglet « Git et GitHub » affiché
   git: {}, // état Git par cible (clé : 'toolkit:' ou 'projet:<id>'), voir actions-git.js

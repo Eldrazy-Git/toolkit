@@ -337,6 +337,7 @@ export function ouvrirReglages() {
   etat.modifier({ reglagesOuverts: true, ongletActif: 'reglages' });
   chargerEditeurs();
   chargerProgrammes();
+  essayer(async () => etat.modifier({ demarrageWindows: await api.reglages.demarrageWindows() }));
 }
 
 export async function chargerProgrammes() {

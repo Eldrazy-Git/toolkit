@@ -48,7 +48,12 @@ window.toolkit.outils.surRaccourci((raccourci) => {
 });
 
 // Dernier filet de sécurité : une erreur imprévue s'affiche au lieu de passer inaperçue.
+// (Le détail technique part aussi dans donnees/journal.log via la console.)
 window.addEventListener('unhandledrejection', (e) => notifier(e.reason?.message || String(e.reason), 'erreur'));
+window.addEventListener('error', (e) => {
+  console.error(e.error || e.message);
+  notifier('Une erreur inattendue s\'est produite dans l\'interface. Si quelque chose ne marche plus, appuie sur F5. Détails : Réglages > Ouvrir le journal des erreurs.', 'erreur');
+});
 
 async function demarrer() {
   try {

@@ -7,7 +7,8 @@ const { lireJson, ecrireJson } = require('./fichiers');
 const journal = require('./journal');
 
 const DEFAUTS = {
-  dossierProjets: 'projets',
+  dossierProjets: 'projets', // relatif à la racine de Toolkit
+  demarrageWindows: false,
   interface: {
     vue: 'grille', // 'grille' ou 'liste'
   },
