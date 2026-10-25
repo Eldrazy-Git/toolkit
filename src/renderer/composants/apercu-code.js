@@ -52,6 +52,8 @@ export function creerApercu({ cible, cle }) {
     contenu);
 
   let webview = null;
+  let urlDemandee = null;
+  let minuterieInvalidation = null;
   let racineHtml = null;
   let dernier = null; // document affiché
   let numero = 0;
@@ -86,14 +88,24 @@ export function creerApercu({ cible, cle }) {
   async function montrerHtml(doc, raison) {
     if (!racineHtml) racineHtml = await api.apercuHtml(cible, cle);
     const url = racineHtml.racine + doc.chemin.split('/').map(encodeURIComponent).join('/');
+    // (On compare à la page DEMANDÉE, pas à l'attribut src : Electron le change quand la
+    // page navigue d'elle-même, ce qui provoquait des rechargements inutiles.)
     if (!webview) {
       webview = document.createElement('webview');
       webview.setAttribute('partition', racineHtml.partition);
       webview.setAttribute('src', url);
       webview.classList.add('apercu-webview');
-    } else if (webview.getAttribute('src') !== url) {
+      urlDemandee = url;
+    } else if (urlDemandee !== url) {
       webview.setAttribute('src', url);
+      urlDemandee = url;
     } else if (raison === 'enregistre' || raison === 'forcer') {
+      // Rechargement après un vrai changement de fichier : la position de défilement est gardée.
+      let defilement = 0;
+      try { defilement = Number(await webview.executeJavaScript('window.scrollY')) || 0; } catch { /* page pas encore prête */ }
+      webview.addEventListener('did-finish-load', () => {
+        if (defilement) webview.executeJavaScript(`window.scrollTo(0, ${defilement})`).catch(() => {});
+      }, { once: true });
       try { webview.reloadIgnoringCache(); } catch { webview.setAttribute('src', url); }
     }
     if (webview.parentElement !== contenu) contenu.replaceChildren(webview);
@@ -148,7 +160,10 @@ export function creerApercu({ cible, cle }) {
     // Des fichiers ont changé : ressources Android relues, page HTML rechargée.
     invalider(chemins = []) {
       if (chemins.some((c) => /(^|\/)res\//.test(c))) ressources.clear();
-      if (dernier && chemins.length) montrer(dernier, genreApercu(dernier.chemin) === 'html' ? 'enregistre' : 'forcer');
+      if (!dernier || !chemins.length) return;
+      // Plusieurs fichiers enregistrés coup sur coup (ex. par Claude) : un seul rechargement.
+      clearTimeout(minuterieInvalidation);
+      minuterieInvalidation = setTimeout(() => montrer(dernier, genreApercu(dernier.chemin) === 'html' ? 'enregistre' : 'forcer'), 400);
     },
     detruire() {
       webview?.remove();

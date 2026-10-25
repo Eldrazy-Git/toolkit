@@ -223,6 +223,30 @@ function surveiller(cle, dossier, rappel) {
     return;
   }
   const entree = { observateur, chemins: new Set(), minuterie: null };
+  // Windows signale aussi les simples LECTURES (date de dernier accès) : une page affichée
+  // dans l'aperçu qui lit ses images ou ses JSON déclencherait un rechargement en boucle.
+  // On ne garde que les vrais changements : contenu (date de modification, taille),
+  // création, suppression.
+  const debut = Date.now();
+  const signatures = new Map(); // chemin relatif -> 'date:taille' | 'dossier' | 'absent'
+  const vraimentChange = async (relatif) => {
+    let signature;
+    let recent = false;
+    try {
+      const infos = await fsp.stat(path.join(dossier, relatif));
+      signature = infos.isDirectory() ? 'dossier' : `${infos.mtimeMs}:${infos.size}`;
+      recent = Math.max(infos.mtimeMs, infos.birthtimeMs) >= debut - 2000;
+    } catch {
+      signature = 'absent';
+    }
+    const avant = signatures.get(relatif);
+    signatures.set(relatif, signature);
+    if (avant !== undefined) return avant !== signature && !(avant === 'dossier' && signature === 'dossier');
+    // Jamais vu : changé seulement s'il a été créé ou modifié depuis le début de la surveillance
+    // (ou s'il a disparu). Un dossier existant qui « change » = un de ses fichiers a changé,
+    // ce fichier est signalé de son côté.
+    return signature === 'absent' || (recent && signature !== 'dossier');
+  };
   observateur.on('change', (_type, nom) => {
     if (!nom) return;
     const relatif = String(nom).split(path.sep).join('/');
@@ -230,10 +254,12 @@ function surveiller(cle, dossier, rappel) {
     if (relatif.split('/').some((m) => CACHES.has(m.toLowerCase()) || GENERES.has(m.toLowerCase()))) return;
     entree.chemins.add(relatif);
     clearTimeout(entree.minuterie);
-    entree.minuterie = setTimeout(() => {
-      const chemins = [...entree.chemins];
+    entree.minuterie = setTimeout(async () => {
+      const candidats = [...entree.chemins];
       entree.chemins.clear();
-      rappel(chemins);
+      const chemins = [];
+      for (const c of candidats) if (await vraimentChange(c)) chemins.push(c);
+      if (chemins.length && surveillances.get(cle) === entree) rappel(chemins);
     }, 300);
   });
   observateur.on('error', (erreur) => journal.info(`Surveillance du code arrêtée : ${erreur.message}`));

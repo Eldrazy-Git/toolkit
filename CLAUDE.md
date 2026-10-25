@@ -496,6 +496,10 @@ globale = action de l'utilisateur).
   rétrograde Monaco) ni ajouter d'« overrides » (cela masquerait l'alerte sans changer le code
   exécuté). Corriger en passant à une version de monaco-editor qui embarque DOMPurify ≥ 3.4.17,
   puis tester l'onglet « Code ».
+- **`fs.watch` signale aussi les simples lectures** (date de dernier accès, activée sur
+  Windows 11) : une page de l'aperçu qui lit ses JSON / images se rechargeait en boucle.
+  `explorateur.surveiller()` ne transmet donc que les vrais changements (date de
+  modification, taille, création, suppression). Garder ce filtre pour toute surveillance.
 - `element.replaceChildren(...)` et `append(...)` ne déplient pas les tableaux : utiliser
   `...liste` (sinon on obtient « [object HTMLDivElement] »). `el()` les déplie, lui.
 
