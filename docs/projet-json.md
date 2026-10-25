@@ -56,7 +56,7 @@ est conservé tel quel par Toolkit (on peut donc y ranger ses propres notes).
 | `favori` | `true` / `false` | `false` | Affiché dans « Favoris ». |
 | `icone` | chemin | aucune | Image (png, jpg, svg, ico…). Sans icône : initiales sur fond coloré. Se change depuis Toolkit (clic sur l'icône du projet). |
 | `point_entree` | chemin | aucun | Fichier principal : la page HTML d'un outil, le script principal, etc. |
-| `ouvrir_avec` | `vscode`, `android-studio`, `notepad++`, `explorateur` | aucun | Éditeur proposé par défaut pour « Ouvrir avec… ». |
+| `ouvrir_avec` | `toolkit`, `vscode`, `android-studio`, `notepad++`, `explorateur` | aucun | Éditeur proposé par défaut pour « Ouvrir avec… » (`toolkit` = l'onglet « Code » intégré). |
 | `actions` | liste | `[]` | Boutons qui lancent une commande (voir ci-dessous). |
 | `outils_lies` | liste | `[]` | Pages HTML situées dans ce projet, à ouvrir comme des outils (voir ci-dessous). |
 | `git.remote` | URL | aucune | Adresse du repo GitHub du projet (indicatif). |

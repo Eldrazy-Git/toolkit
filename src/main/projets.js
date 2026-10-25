@@ -12,7 +12,8 @@ const journal = require('./journal');
 
 const VERSION_SCHEMA = 1;
 const TYPES = ['html', 'script', 'mod-minecraft', 'android', 'autre'];
-const EDITEURS = ['vscode', 'android-studio', 'notepad++', 'explorateur'];
+// 'toolkit' : l'éditeur de code intégré à Toolkit (onglet « Code »).
+const EDITEURS = ['toolkit', 'vscode', 'android-studio', 'notepad++', 'explorateur'];
 const TYPES_PARAMETRES = ['fichier', 'fichiers', 'dossier', 'texte', 'case', 'choix'];
 const SANS_CATEGORIE = 'Sans catégorie';
 

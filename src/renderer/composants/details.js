@@ -70,7 +70,7 @@ function sectionGit(cible) {
 }
 const conteneur = document.getElementById('details');
 
-const EDITEURS_FICHE = ['vscode', 'android-studio', 'notepad++', 'explorateur'];
+const EDITEURS_FICHE = ['toolkit', 'vscode', 'android-studio', 'notepad++', 'explorateur'];
 
 const NOUVELLE_CATEGORIE = '\u0000nouvelle';
 
@@ -89,7 +89,7 @@ function selecteurEditeur(projet) {
     onChange: () => actions.changerEditeurParDefaut(projet, select.value),
   },
   el('option', { value: '' }, `Automatique (${actions.nomEditeur(automatique)})`),
-  EDITEURS_FICHE.map((id) => el('option', { value: id }, actions.nomEditeur(id))));
+  EDITEURS_FICHE.map((id) => el('option', { value: id }, id === 'toolkit' ? 'Éditeur de Toolkit (onglet « Code »)' : actions.nomEditeur(id))));
   select.value = projet.fiche.ouvrir_avec || '';
   return select;
 }
@@ -209,6 +209,11 @@ function rendreProjet(projet) {
         boutonMenu('Ouvrir avec…', 'ouvrirAvec', () => actions.elementsMenuOuvrirAvec(projet)),
         el('button', {
           classe: 'bouton',
+          title: 'Explorer les fichiers du projet et modifier le code dans Toolkit',
+          onClick: () => actions.ouvrirCode({ type: 'projet', id: projet.id }, f.nom),
+        }, icone('code'), 'Code'),
+        el('button', {
+          classe: 'bouton',
           disabled: Boolean(projet.erreur),
           title: 'Sauvegarde le projet avec Git puis ouvre Claude Code dans son dossier',
           onClick: () => actions.modifierAvecClaude(projet),
@@ -263,6 +268,7 @@ function rendreToolkit(infos) {
           onClick: actions.modifierToolkitAvecClaude,
         }, icone('claude'), 'Modifier Toolkit avec Claude'),
         boutonMenu('Ouvrir avec…', 'ouvrirAvec', actions.elementsMenuOuvrirToolkit),
+        el('button', { classe: 'bouton', title: 'Explorer et modifier le code de Toolkit', onClick: () => actions.ouvrirCode({ type: 'toolkit' }, 'Toolkit') }, icone('code'), 'Code'),
         el('button', { classe: 'bouton', onClick: actions.redemarrerToolkit }, icone('redemarrer'), 'Redémarrer Toolkit')),
       section('Informations',
         el('dl', { classe: 'infos' },

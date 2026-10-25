@@ -405,4 +405,4 @@ function oublier(id) {
   dossiersApres.delete(id);
 }
 
-module.exports = { lancer, arreter, arreterTout, dossierApres, oublier, detecterProgrammes, decouper };
+module.exports = { lancer, arreter, arreterTout, dossierApres, oublier, detecterProgrammes, decouper, trouverPython };

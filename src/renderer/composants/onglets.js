@@ -2,7 +2,8 @@
 // Onglets ouverts (etat.onglets) de deux genres :
 // - 'outil' : outil HTML dans une <webview> ;
 // - 'terminal' : Claude Code ou PowerShell (voir terminal.js) ;
-// - 'console' : exécution d'une action de projet.json (voir console.js).
+// - 'console' : exécution d'une action de projet.json (voir console.js) ;
+// - 'note' : note Markdown (voir note.js) ; 'code' : explorateur + éditeur (voir code.js).
 // Chaque panneau est créé une seule fois puis conservé tant que son onglet est ouvert
 // (changer d'onglet ne recharge pas l'outil et n'interrompt pas le terminal).
 import { el } from './dom.js';
@@ -20,6 +21,7 @@ import { creerPanneauTerminal } from './terminal.js';
 import { creerPanneauConsole } from './console.js';
 import { creerPanneauNote } from './note.js';
 import { creerApercuAppareil } from './apercu-appareil.js';
+import { creerPanneauCode } from './code.js';
 
 export const ID_BIBLIOTHEQUE = 'bibliotheque';
 
@@ -56,6 +58,7 @@ function visuelOutil(o) {
   if (o.genre === 'terminal') return icone(o.mode === 'claude' ? 'claude' : 'terminal');
   if (o.genre === 'console') return icone('lecture');
   if (o.genre === 'note') return icone('note');
+  if (o.genre === 'code') return icone('code');
   const projet = etat.obtenir().projets.find((p) => p.id === o.projetId);
   return projet && !o.outilLie ? iconeProjet(projet, 16) : icone('outil');
 }
@@ -113,6 +116,7 @@ function creerPanneau(o) {
   if (o.genre === 'terminal') return creerPanneauTerminal(o, zone);
   if (o.genre === 'console') return creerPanneauConsole({ ...o }, zone);
   if (o.genre === 'note') return creerPanneauNote({ ...o }, zone);
+  if (o.genre === 'code') return creerPanneauCode({ ...o }, zone);
   return creerPanneauOutil(o);
 }
 

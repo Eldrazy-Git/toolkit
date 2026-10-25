@@ -114,6 +114,29 @@ contextBridge.exposeInMainWorld('toolkit', {
     // hash absent : changements non enregistrés. -> { texte, binaire, nouveau, tronque }
     differences: (cible, chemin, hash) => appeler('git:differences', cible, chemin, hash),
   },
+  // Explorateur de fichiers et éditeur de code. Chemins relatifs au dossier de la cible.
+  code: {
+    lister: (cible, relatif) => appeler('code:lister', cible, relatif), // [{ nom, chemin, dossier, genere }]
+    listerTout: (cible) => appeler('code:lister-tout', cible), // { fichiers: [chemins], tronque }
+    // { chemin, texte, encodage, finLigne, mtime } | { binaire, raison } | { image: 'data:…' }
+    lire: (cible, relatif) => appeler('code:lire', cible, relatif),
+    // options : { encodage, mtimeAttendu, forcer } -> { mtime } ou { modifieAilleurs: true }
+    ecrire: (cible, relatif, texte, options) => appeler('code:ecrire', cible, relatif, texte, options),
+    creer: (cible, parent, nom, type) => appeler('code:creer', cible, parent, nom, type), // chemin créé
+    renommer: (cible, relatif, nom) => appeler('code:renommer', cible, relatif, nom), // nouveau chemin
+    corbeille: (cible, relatif) => appeler('code:corbeille', cible, relatif),
+    surveiller: (cle, cible) => appeler('code:surveiller', cle, cible),
+    arreterSurveillance: (cle) => appeler('code:arreter-surveillance', cle),
+    surChangements: (rappel) => ecouter('code:changements', rappel), // rappel(cle, [chemins])
+  },
+  // Aide Python (Pyright) : messages du protocole LSP, adresses « file:///<cle>/… ».
+  lsp: {
+    demarrer: (cle, cible) => appeler('lsp:demarrer', cle, cible), // { dejaDemarre }
+    arreter: (cle) => appeler('lsp:arreter', cle),
+    envoyer: (cle, message) => ipcRenderer.send('lsp:envoyer', cle, message),
+    surMessage: (rappel) => ecouter('lsp:message', rappel), // rappel(cle, message)
+    surFin: (rappel) => ecouter('lsp:fin', rappel), // rappel(cle, code)
+  },
   // Recherche globale (Ctrl+K) et notes Markdown.
   recherche: {
     preparer: () => appeler('recherche:preparer'),
@@ -143,5 +166,7 @@ contextBridge.exposeInMainWorld('toolkit', {
     infos: () => appeler('application:infos'),
     redemarrer: () => appeler('application:redemarrer'),
     ouvrirJournal: () => appeler('application:ouvrir-journal'),
+    // Des fichiers ou notes ont des modifications non enregistrées (protège la fermeture).
+    signalerNonEnregistre: (valeur) => ipcRenderer.send('application:non-enregistre', valeur),
   },
 });

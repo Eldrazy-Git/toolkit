@@ -1,7 +1,7 @@
 // Point d'entrée de Toolkit : démarrage, fenêtre principale, zone de notification.
 'use strict';
 
-const { app, BrowserWindow, Menu, nativeTheme, screen } = require('electron');
+const { app, BrowserWindow, Menu, nativeTheme, screen, dialog, ipcMain } = require('electron');
 const fs = require('node:fs/promises');
 const chemins = require('./chemins');
 const journal = require('./journal');
@@ -28,7 +28,23 @@ process.on('unhandledRejection', (raison) => journal.erreur('Promesse rejetée n
 let fenetre = null;
 let enTrainDeQuitter = false;
 
+// Des fichiers ou notes ont des modifications non enregistrées (signalé par l'interface).
+let travailNonEnregistre = false;
+
 function quitter() {
+  if (travailNonEnregistre && fenetre) {
+    afficherFenetre();
+    const choix = dialog.showMessageBoxSync(fenetre, {
+      type: 'warning',
+      title: 'Toolkit',
+      message: 'Des fichiers ont des modifications non enregistrées.',
+      detail: 'Si tu quittes maintenant, ces modifications seront perdues.',
+      buttons: ['Annuler', 'Quitter sans enregistrer'],
+      defaultId: 0,
+      cancelId: 0,
+    });
+    if (choix !== 1) return;
+  }
   enTrainDeQuitter = true;
   app.quit();
 }
@@ -111,8 +127,9 @@ function creerFenetre() {
   fenetre.on('close', (evenement) => {
     memoriserLimites();
     if (enTrainDeQuitter) return;
-    // Un script ou un terminal tourne : on cache seulement la fenêtre.
-    if (activite.estOccupe()) {
+    // Un script ou un terminal tourne, ou du travail n'est pas enregistré : on cache
+    // seulement la fenêtre (rien n'est perdu).
+    if (activite.estOccupe() || travailNonEnregistre) {
       evenement.preventDefault();
       fenetre.hide();
     }
@@ -121,7 +138,11 @@ function creerFenetre() {
 
   fenetre.on('closed', () => {
     fenetre = null;
+    travailNonEnregistre = false;
     projets.arreterSurveillance();
+    // Rien ne doit tourner pour l'éditeur quand la fenêtre est fermée.
+    require('./explorateur').arreterToutesSurveillances();
+    require('./lsp-python').arreterTout();
   });
 
   projets.demarrerSurveillance(() => fenetre?.webContents.send('projets:changes'));
@@ -174,6 +195,8 @@ async function demarrer() {
   require('./ipc/import').enregistrer();
   require('./ipc/git').enregistrer();
   require('./ipc/recherche').enregistrer();
+  require('./ipc/code').enregistrer();
+  ipcMain.on('application:non-enregistre', (_e, valeur) => { travailNonEnregistre = Boolean(valeur); });
 
   zoneNotification.creer({ afficher: afficherFenetre, quitter });
 
@@ -190,12 +213,12 @@ if (!app.requestSingleInstanceLock()) {
     enTrainDeQuitter = true;
     terminal.fermerTous();
     executions.arreterTout();
+    require('./lsp-python').arreterTout();
   });
   // Toutes les fenêtres fermées : Toolkit reste dans la zone de notification.
   app.on('window-all-closed', () => {});
   app.whenReady().then(demarrer).catch((erreur) => {
     journal.erreur('Échec du démarrage :', erreur);
-    const { dialog } = require('electron');
     dialog.showErrorBox('Toolkit n\'a pas pu démarrer', `${erreur.message}\n\nDétails dans donnees/journal.log`);
     app.exit(1);
   });

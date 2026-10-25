@@ -84,6 +84,8 @@ app/
     │   ├── modeles.js           modèles de « Nouvel outil » et création du projet
     │   ├── claude-md.js         génération du CLAUDE.md d'un projet
     │   ├── editeurs.js          détection des éditeurs + « Ouvrir avec… »
+    │   ├── explorateur.js       onglet « Code » : lister, lire, écrire, créer, renommer, Corbeille, surveiller
+    │   ├── lsp-python.js        Pyright (aide Python) : processus, messages LSP, traduction des adresses
     │   ├── outils-html.js       protocole toolkit-outil://, partitions, sécurité des <webview>
     │   ├── outils-donnees.js    export / import localStorage + IndexedDB en JSON
     │   ├── zone-notification.js icône près de l'horloge
@@ -102,7 +104,6 @@ app/
             ├── dom.js           el() pour construire le HTML sans innerHTML
             ├── icones.js        icônes SVG
             ├── dialogue.js      demanderTexte(), confirmer(), choisir(), formulaire(), fenetre(), cocher()
-            ├── groupes.js       groupes de projets de la barre latérale (données, menus, glisser-déposer)
             ├── notifications.js notifier(message, type)
             ├── onglets.js       barre d'onglets + panneaux des outils (<webview>)
             ├── apercu-appareil.js aperçu ordinateur / smartphone / tablette d'un outil
@@ -114,6 +115,10 @@ app/
             ├── actions-git.js   actions Git (commit, push, pull, tout envoyer, dépôt GitHub privé)
             ├── details-git.js   fenêtres de détail : fichiers modifiés + différences, commits
             ├── recherche.js     palette de recherche Ctrl+K
+            ├── code.js          onglet « Code » : arborescence + éditeur Monaco + onglets de fichiers
+            ├── monaco.js        chargement de Monaco (AMD « min »), langages, options
+            ├── lsp-python.js    client LSP minimal (Pyright -> complétion, survol, définition…)
+            ├── groupes.js       groupes de projets de la barre latérale
             ├── note.js          onglet d'une note : lecture, liens, rétroliens, modification
             ├── menu.js          ouvrirMenu(bouton, elements) : menu déroulant
             └── barre-laterale.js, bibliotheque.js, details.js, icone-projet.js
@@ -143,6 +148,7 @@ référence une image déjà dans le projet, sinon la copie en `icone.<ext>` (ou
 | Recherche | minisearch (dans le processus principal) |
 | Markdown | markdown-it (dans le processus principal, + règle maison pour `[[liens]]`) |
 | Git / GitHub | commandes `git` et `gh` du système (child_process) |
+| Éditeur de code | monaco-editor (build AMD `min`, sans compilation), pyright (aide Python) |
 
 N'ajoute une dépendance que si elle est vraiment utile, et privilégie les bibliothèques
 légères sans compilation native.
@@ -260,6 +266,36 @@ dans `docs/projet-json.md`. Points clés :
 - Lecture et écriture limitées aux `.md` de `projets/` et `app/`. L'enregistrement est
   refusé si le fichier a changé depuis l'ouverture (sauf confirmation) ; les fins de ligne
   Windows d'origine sont conservées.
+
+### Éditeur de code (onglet « Code »)
+
+`src/main/explorateur.js` + `src/main/lsp-python.js` + `ipc/code.js` + `composants/code.js`
+/ `monaco.js` / `lsp-python.js`. Ouvert par `actions.ouvrirCode(cible, nom, fichier?)`
+(onglet de genre `code`, id `code:<cle>`, cle = `p-<id>` ou `toolkit`).
+- Chemins relatifs au dossier de la cible, validés (insensible à la casse) ; `.git` caché et
+  refusé. Suppression = `shell.trashItem` après confirmation. Lecture : 5 Mo au plus,
+  binaire détecté (octet nul), images renvoyées en `data:`. Encodage conservé à
+  l'enregistrement (UTF-8, UTF-8 avec BOM, Windows-1252) ; fins de ligne conservées par
+  Monaco. Enregistrement refusé si le fichier a changé depuis la lecture
+  (`{ modifieAilleurs: true }`) sauf choix « écraser ».
+- Surveillance `fs.watch` récursive tant que l'onglet est ouvert (dossiers de
+  compilation ignorés) : fichiers ouverts sans modification rechargés (avec
+  `pushEditOperations` : Ctrl+Z reste possible).
+- Monaco : build AMD `min/vs` de monaco-editor, chargé à la première ouverture (textes
+  français : `nls/lang/fr.js` chargé AVANT `loader.js`, ce n'est pas un module AMD).
+  Workers en `blob:` (CSP `worker-src 'self' blob:`). Modèles d'URI
+  `file:///<cle>/<chemin>` ; les `.js/.ts` du projet sont chargés en modèles (aide entre
+  fichiers). `registerEditorOpener` ouvre la cible d'une définition dans l'onglet.
+- Pyright : `node_modules/pyright/langserver.index.js --stdio`, lancé avec
+  `process.execPath` + `ELECTRON_RUN_AS_NODE=1`, un par onglet, au premier `.py` ouvert,
+  arrêté à la fermeture de l'onglet / de la fenêtre. Textes en français
+  (`VSCODE_NLS_CONFIG`). `processId` de Toolkit transmis à `initialize` (Pyright s'arrête
+  si Toolkit disparaît). Le processus principal traduit les adresses virtuelles <-> vrais
+  chemins et répond lui-même aux questions de Pyright (`workspace/configuration` :
+  `pythonPath` = vrai python.exe, pas `py.exe`).
+- Modifications non enregistrées (onglets `nonEnregistre`) signalées au processus
+  principal (`application:non-enregistre`) : la fenêtre est alors cachée au lieu d'être
+  détruite, et « Quitter » demande confirmation.
 
 ### Compilation (mods Minecraft, APK de debug)
 

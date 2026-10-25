@@ -133,6 +133,33 @@ le dossier `Toolkit`.
 - Toolkit trouve tout seul les éditeurs installés. Si l'un d'eux n'est pas trouvé :
   **Réglages** > **Choisir le programme…**, puis sélectionne son fichier `.exe`.
 
+### L'éditeur de code intégré (bouton « Code »)
+
+Bouton **Code** du panneau de droite (ou clic droit > **Explorer le code**) : un onglet
+s'ouvre avec les fichiers du projet à gauche et l'éditeur de VS Code (Monaco) à droite.
+Il marche aussi pour Toolkit lui-même (bouton **Code** de l'entrée « Toolkit »).
+
+- **Clic** sur un fichier : il s'ouvre dans un onglet. Les images s'affichent.
+- **Clic droit** dans l'arborescence : nouveau fichier, nouveau dossier, renommer (**F2**),
+  mettre à la Corbeille (**Suppr**, toujours avec confirmation ; rien n'est effacé
+  définitivement), copier le chemin.
+- **Ctrl+S** enregistre, **Ctrl+W** ferme le fichier, **Ctrl+P** va à un fichier par son
+  nom, **Ctrl+F** / **Ctrl+H** cherche / remplace, **F1** affiche toutes les commandes.
+- Un point ● signale un fichier pas encore enregistré. Fermer un fichier, l'onglet ou
+  quitter Toolkit demande confirmation s'il reste des modifications.
+- **L'éditeur comprend le code :**
+  - **Python** : erreurs soulignées (en français), suggestions (**Ctrl+Espace**),
+    documentation au survol, aller à la définition (**F12** ou **Ctrl+clic**), références
+    (**Maj+F12**). C'est Pyright, le moteur Python de VS Code, inclus dans Toolkit.
+  - **JavaScript, TypeScript, HTML, CSS, JSON** : la même aide, y compris d'un fichier à
+    l'autre du projet.
+  - **Kotlin, Java, Gradle, Markdown, .bat…** : couleurs et suggestions de mots. Pour la
+    vraie compréhension du Kotlin/Java d'un projet Android, Android Studio reste l'outil.
+- Si Claude (ou un autre programme) modifie un fichier ouvert, l'éditeur le recharge.
+  Si tu avais aussi des changements en cours, Toolkit te demande quelle version garder.
+- Pour que double-cliquer un projet ouvre cet éditeur : **Éditeur par défaut** >
+  « Éditeur de Toolkit » dans le panneau de droite.
+
 ## 6. Lancer les scripts d'un projet (actions) et compiler
 
 Les boutons de la rubrique **Actions** (panneau de droite) lancent les scripts du projet.

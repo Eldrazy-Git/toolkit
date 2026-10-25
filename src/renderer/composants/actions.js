@@ -112,6 +112,15 @@ export async function fermerOnglet(id) {
     return;
   }
   const aFermer = etat.obtenir().onglets.find((o) => o.id === id);
+  if (aFermer?.genre === 'code' && aFermer.nonEnregistre) {
+    const ok = await confirmer({
+      titre: 'Fichiers non enregistrés',
+      message: `Des fichiers de « ${aFermer.nomCible} » ont des modifications non enregistrées. Fermer quand même ?`,
+      bouton: 'Fermer sans enregistrer',
+      danger: true,
+    });
+    if (!ok) return;
+  }
   if (aFermer?.genre === 'note' && aFermer.nonEnregistre) {
     const ok = await confirmer({
       titre: 'Note non enregistrée',
@@ -229,6 +238,7 @@ export function elementsMenuProjet(projet, position) {
   return [
     { libelle: 'Ouvrir', icone: 'lecture', desactive: bloque, action: () => (estOuvrableCommeOutil(projet) ? ouvrirOutil(projet.id) : ouvrirAvec(projet)) },
     { libelle: 'Ouvrir avec…', icone: 'ouvrirAvec', detail: '▸', desactive: bloque, action: () => ouvrirMenu(position, elementsMenuOuvrirAvec(projet)) },
+    { libelle: 'Explorer le code', icone: 'code', action: () => ouvrirCode({ type: 'projet', id: projet.id }, projet.fiche.nom) },
     { libelle: 'Modifier avec Claude', icone: 'claude', desactive: bloque, action: () => modifierAvecClaude(projet) },
     'separateur',
     { libelle: projet.fiche.favori ? 'Retirer des favoris' : 'Ajouter aux favoris', icone: 'etoile', desactive: bloque, action: () => basculerFavori(projet) },
@@ -246,6 +256,23 @@ function elementsRetirerDuGroupe(projet) {
   const groupe = filtre.type === 'groupe' ? groupes.trouver(filtre.valeur) : null;
   if (!groupe?.projets.includes(projet.id)) return [];
   return [{ libelle: `Retirer du groupe « ${groupe.nom} »`, icone: 'croix', action: () => groupes.retirerProjet(groupe.id, projet.id) }];
+}
+
+// Onglet « Code » (explorateur de fichiers + éditeur) d'un projet ou de Toolkit ; fichier :
+// chemin relatif à ouvrir tout de suite (facultatif).
+export function ouvrirCode(cible, nom, fichier = null) {
+  const cle = cible.type === 'projet' ? `p-${cible.id}` : 'toolkit';
+  const id = `code:${cle}`;
+  const { onglets } = etat.obtenir();
+  const demande = fichier ? { chemin: fichier, n: Date.now() } : null;
+  if (onglets.some((o) => o.id === id)) {
+    etat.modifier({ onglets: onglets.map((o) => (o.id === id && demande ? { ...o, demande } : o)), ongletActif: id });
+    return;
+  }
+  etat.modifier({
+    onglets: [...onglets, { id, genre: 'code', nom: `${nom} (code)`, nomCible: nom, cible, cle, projetId: cible.id || null, demande }],
+    ongletActif: id,
+  });
 }
 
 // Double-clic : ouvre l'outil HTML dans un onglet, sinon le projet dans son éditeur par défaut.
@@ -352,11 +379,16 @@ export function editeurParDefaut(fiche) {
 }
 
 export function nomEditeur(id) {
+  if (id === 'toolkit') return 'l\'éditeur de Toolkit';
   return etat.obtenir().editeurs.find((e) => e.id === id)?.nom || id;
 }
 
 // editeurId absent : éditeur par défaut du projet.
 export async function ouvrirAvec(projet, editeurId) {
+  if ((editeurId || editeurParDefaut(projet.fiche)) === 'toolkit') {
+    ouvrirCode({ type: 'projet', id: projet.id }, projet.fiche.nom);
+    return;
+  }
   const nom = await essayer(() => api.editeurs.ouvrirProjet(projet.id, editeurId));
   if (nom) notifier(`Ouverture de « ${projet.fiche.nom} » dans ${nom}…`);
 }
@@ -370,6 +402,7 @@ async function ouvrirToolkitAvec(editeurId) {
 // cible / nomCible : dossier pour l'entrée « Terminal PowerShell ici ».
 function elementsMenuEditeurs(editeurDefaut, ouvrir, cible, nomCible) {
   return [
+    { libelle: 'Éditeur de code de Toolkit', icone: 'code', detail: editeurDefaut === 'toolkit' ? 'par défaut' : 'dans Toolkit', action: () => ouvrirCode(cible, nomCible) },
     ...etat.obtenir().editeurs.map((e) => ({
       libelle: e.nom,
       icone: e.id === 'explorateur' ? 'dossier' : 'ouvrirAvec',

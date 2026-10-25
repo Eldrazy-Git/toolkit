@@ -12,7 +12,13 @@ import * as groupes from './composants/groupes.js';
 import { notifier } from './composants/notifications.js';
 import { ouvrirRecherche } from './composants/recherche.js';
 
+let nonEnregistre = false;
 etat.abonner(() => {
+  const maintenant = etat.obtenir().onglets.some((o) => o.nonEnregistre);
+  if (maintenant !== nonEnregistre) {
+    nonEnregistre = maintenant;
+    window.toolkit.application.signalerNonEnregistre(maintenant);
+  }
   barreLaterale.rendre();
   onglets.rendre();
   bibliotheque.rendre();
@@ -31,6 +37,12 @@ document.addEventListener('keydown', (e) => {
     e.preventDefault();
     actions.activerOnglet(onglets.ID_BIBLIOTHEQUE);
     bibliotheque.focaliserFiltre();
+  } else if (e.ctrlKey && touche === 'p' && document.querySelector('.panneau-code:not(.inactif)')) {
+    // Onglet « Code » affiché : aller à un fichier.
+    e.preventDefault();
+    const champ = document.querySelector('.panneau-code:not(.inactif) .code-recherche');
+    champ.focus();
+    champ.select();
   } else if (e.ctrlKey && touche === 'w') {
     e.preventDefault();
     actions.fermerOngletActif();
