@@ -332,6 +332,10 @@ temporaire, fait `require('src/main/main.js')`, puis pilote l'interface avec
 `capturePage()` (captures d'écran à regarder). Les boîtes de dialogue système se
 remplacent par des fonctions (`dialog.showOpenDialog = async () => …`). Lancer avec
 `env -u ELECTRON_RUN_AS_NODE node_modules/electron/dist/electron.exe test.js`.
+Une fenêtre de test cachée (réduite ou entièrement recouverte par une autre fenêtre) n'est
+pas dessinée par Chromium : un terminal xterm y reste vide (rendu en `requestAnimationFrame`)
+alors que PowerShell a bien répondu. Ce n'est pas un bug ; pour un test fiable, garder la
+fenêtre visible (`w.show(); w.focus()`) ou vérifier les données côté processus principal.
 Pour simuler de vrais clics souris (y compris dans une `<webview>`) : donner le focus
 (`w.show(); w.focus(); w.webContents.focus()`) puis passer par le protocole de débogage
 (`w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', …)`).
