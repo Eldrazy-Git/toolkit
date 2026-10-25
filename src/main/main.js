@@ -145,7 +145,10 @@ function creerFenetre() {
     require('./lsp-python').arreterTout();
   });
 
-  projets.demarrerSurveillance(() => fenetre?.webContents.send('projets:changes'));
+  projets.demarrerSurveillance(() => {
+    fenetre?.webContents.send('projets:changes');
+    require('./contexte-claude').planifier();
+  });
 }
 
 function afficherFenetre() {
@@ -185,6 +188,8 @@ async function demarrer() {
   // Boutons de compilation des mods / applications Android (un peu après le démarrage).
   setTimeout(() => require('./actions-auto').completerProjets()
     .catch((erreur) => journal.erreur('Boutons de compilation :', erreur)), 3000);
+  // Ce que Claude sait des autres projets (projets/CLAUDE.md, sections « Projets liés »).
+  require('./contexte-claude').planifier(5000);
 
   require('./ipc/projets').enregistrer();
   require('./ipc/application').enregistrer({ quitter });

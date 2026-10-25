@@ -11,12 +11,15 @@ const terminal = require('../terminal');
 const git = require('../git');
 const modeles = require('../modeles');
 const { dossierCible } = require('../cibles');
+const contexteClaude = require('../contexte-claude');
 
 function enregistrer() {
   // --- Terminal ---
   gerer('terminal:creer', async (contenu, id, { mode, cible, demande, continuer, colonnes, lignes }) => {
     const dossier = await dossierCible(cible);
-    const resultat = await terminal.creer(id, { mode, dossier, demande, continuer, colonnes, lignes }, contenu);
+    // Claude peut lire les projets liés à celui-ci (voir contexte-claude.js).
+    const dossiersLies = mode === 'claude' && cible.type === 'projet' ? await contexteClaude.dossiersLies(cible.id) : [];
+    const resultat = await terminal.creer(id, { mode, dossier, demande, continuer, colonnes, lignes, dossiersLies }, contenu);
     return { ...resultat, chemin: chemins.versRelatif(dossier) || '.' };
   }, { avecEmetteur: true });
   gerer('terminal:fermer', (id) => terminal.fermer(id));

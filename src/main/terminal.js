@@ -74,7 +74,8 @@ function viderTampon(id) {
 // « continuer » = reprendre la dernière conversation de ce dossier (claude --continue).
 // contenu : webContents de l'interface qui affiche ce terminal.
 // Renvoie { ok: true } ou { ok: false, raison: 'claude-introuvable' }.
-async function creer(id, { mode, dossier, demande, continuer, colonnes, lignes }, contenu) {
+// dossiersLies : dossiers en plus que Claude peut lire et modifier (« --add-dir », projets liés).
+async function creer(id, { mode, dossier, demande, continuer, colonnes, lignes, dossiersLies = [] }, contenu) {
   if (terminaux.has(id)) throw new Error('Ce terminal existe déjà.');
 
   let executable;
@@ -84,6 +85,8 @@ async function creer(id, { mode, dossier, demande, continuer, colonnes, lignes }
     if (!executable) return { ok: false, raison: 'claude-introuvable' };
     if (continuer) args = ['--continue'];
     else args = demande ? [demande] : [];
+    // Après la demande : « --add-dir » prend tous les arguments qui le suivent.
+    if (dossiersLies.length) args.push('--add-dir', ...dossiersLies);
   } else if (mode === 'powershell') {
     executable = 'powershell.exe';
     args = ['-NoLogo'];

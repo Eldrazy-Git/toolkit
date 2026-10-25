@@ -223,6 +223,23 @@ intégré à Toolkit. Aucune clé API n'est utilisée.
 - Dans un terminal : sélectionner du texte puis **Ctrl+C** le copie, **Ctrl+V** colle,
   clic droit copie la sélection ou colle.
 
+### Ce que Claude sait de tes autres projets
+
+- **Tous les projets** : Toolkit tient à jour `projets/CLAUDE.md`, un catalogue de tous tes
+  projets (nom, dossier, type, description, liens, groupes). Claude Code le lit
+  automatiquement quel que soit le projet sur lequel il travaille. Pense à donner une bonne
+  **description** à chaque projet : clique sur la description dans le panneau de droite.
+- **Projets liés** : dans le panneau de droite, section **Projets liés** > « Lier à un
+  projet », choisis l'autre projet et explique en une ou deux phrases comment ils sont liés
+  (ex. « ce script met à jour les icônes et l'index du catalogue de l'appli »). Toolkit ajoute
+  alors une section « Projets liés » dans le CLAUDE.md de **chaque** projet concerné, y
+  compris ceux liés **indirectement** (A ↔ B ↔ C), avec la consigne de vérifier l'impact sur
+  les autres avant une mise à jour.
+- Quand Toolkit lance Claude sur un projet, Claude a aussi **accès aux dossiers des projets
+  liés** pour les lire. Il ne modifie un autre projet que si tu le lui demandes.
+- Ces sections sont mises à jour toutes seules ; le reste des CLAUDE.md n'est jamais touché.
+  « Voir le CLAUDE.md » ouvre celui du projet dans l'éditeur.
+
 ## 8. Importer un projet existant
 
 Bouton **Importer** en haut de la bibliothèque.

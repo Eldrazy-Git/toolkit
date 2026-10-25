@@ -83,6 +83,7 @@ app/
     │   ├── notes.js             notes .md : rendu markdown-it (HTML brut désactivé), lecture, écriture
     │   ├── modeles.js           modèles de « Nouvel outil » et création du projet
     │   ├── claude-md.js         génération du CLAUDE.md d'un projet
+    │   ├── contexte-claude.js   catalogue projets/CLAUDE.md + sections « Projets liés » + --add-dir
     │   ├── editeurs.js          détection des éditeurs + « Ouvrir avec… »
     │   ├── explorateur.js       onglet « Code » : lister, lire, écrire, créer, renommer, Corbeille, surveiller
     │   ├── lsp-python.js        Pyright (aide Python) : processus, messages LSP, traduction des adresses
@@ -203,6 +204,15 @@ Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
 - Claude est lancé **directement** via `claude.exe` (trouvé à partir de `claude.cmd` ou de
   `~/.local/bin`), jamais via `cmd.exe` : la demande initiale peut contenir guillemets et
   symboles. Aucune clé API : c'est la CLI de l'utilisateur, avec sa connexion.
+- Contexte des autres projets (`src/main/contexte-claude.js`) : `projets/CLAUDE.md`
+  (catalogue : tous les projets, liens, groupes ; Claude Code lit les CLAUDE.md des dossiers
+  parents) et, dans le CLAUDE.md de chaque projet relié, une section « Projets liés » (liens
+  directs et indirects, parcours en largeur). Sections entre marqueurs `<!-- toolkit:… -->`,
+  réécrites seulement si elles changent (fins de ligne conservées, fichier créé si absent).
+  Mise à jour au démarrage, après `projets:modifier`, une suppression ou un changement dans
+  `projets/`. Liens dans `projet.json > liens`. Au lancement de Claude sur un projet :
+  `--add-dir` avec les dossiers des projets reliés (placé APRÈS la demande initiale, car
+  l'option prend tous les arguments qui la suivent).
 - « Modifier avec Claude » / « Modifier Toolkit avec Claude » : commit de sauvegarde
   (`sauvegarde:faire`, propose d'activer Git si besoin), puis onglet Claude. Une session
   Claude déjà en cours sur le même dossier est réutilisée. « Reprendre la conversation »

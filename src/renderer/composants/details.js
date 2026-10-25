@@ -176,6 +176,30 @@ function listeGroupes(projet) {
     el('button', { classe: 'etiquette', onClick: () => groupes.choisirGroupesDuProjet(projet) }, icone('plus'), 'Ajouter'));
 }
 
+// Projets liés (directs, déclarés d'un côté ou de l'autre, puis indirects) : Claude en est
+// informé par les CLAUDE.md (voir src/main/contexte-claude.js).
+function projetsLies(projet) {
+  const { projets } = etat.obtenir();
+  const nom = (id) => projets.find((p) => p.id === id)?.fiche.nom || id;
+  const { directs, indirects } = actions.liensDuProjet(projet);
+  return el('div', { classe: 'liste-liens' },
+    directs.length === 0 && indirects.length === 0
+      ? el('p', { classe: 'details-aide' }, 'Aucun. Lier des projets permet à Claude de tenir compte des uns quand il modifie les autres.')
+      : null,
+    directs.map((d) => el('div', { classe: 'lien-projet' },
+      el('div', { classe: 'lien-entete' },
+        el('button', { classe: 'lien-nom', title: 'Afficher ce projet', onClick: () => actions.allerAuProjet(d.autre) }, icone('git'), nom(d.autre)),
+        el('button', { classe: 'bouton-icone', title: 'Retirer ce lien', onClick: () => actions.retirerLien(d.declarePar, d.declarePar === projet.id ? d.autre : projet.id) }, icone('croix'))),
+      el('p', { classe: 'lien-description' }, d.description || '(pas d\'explication)'))),
+    indirects.length
+      ? el('p', { classe: 'details-aide lien-indirects' }, 'Liés indirectement : ',
+        indirects.map((i, n) => [n ? ', ' : '', el('button', { classe: 'lien-nom petit', title: `Via ${i.via.map(nom).join(' → ')}`, onClick: () => actions.allerAuProjet(i.id) }, nom(i.id))]))
+      : null,
+    el('div', { classe: 'details-boutons' },
+      el('button', { classe: 'etiquette', onClick: () => actions.lierProjet(projet) }, icone('plus'), 'Lier à un projet'),
+      el('button', { classe: 'etiquette', title: 'Ouvrir le CLAUDE.md de ce projet dans l\'éditeur', onClick: () => actions.ouvrirCode({ type: 'projet', id: projet.id }, projet.fiche.nom, 'CLAUDE.md') }, icone('note'), 'Voir le CLAUDE.md')));
+}
+
 function rendreProjet(projet) {
   const f = projet.fiche;
   const boutonFavori = el('button', {
@@ -205,7 +229,11 @@ function rendreProjet(projet) {
       [boutonEpingle, boutonFavori]),
     el('div', { classe: 'details-corps' },
       alertes(projet),
-      el('p', { classe: `details-description${f.description ? '' : ' vide'}` }, f.description || 'Aucune description.'),
+      el('p', {
+        classe: `details-description modifiable${f.description ? '' : ' vide'}`,
+        title: projet.erreur ? '' : 'Cliquer pour modifier la description (Claude s\'en sert pour comprendre le rôle du projet)',
+        onClick: () => { if (!projet.erreur) actions.modifierDescription(projet); },
+      }, f.description || 'Aucune description : clique ici pour en écrire une.', projet.erreur ? null : el('span', { classe: 'crayon-description' }, icone('crayon'))),
       el('div', { classe: 'details-boutons' },
         actions.estOuvrableCommeOutil(projet)
           ? el('button', { classe: 'bouton principal', title: 'Ouvrir l\'outil dans un onglet', onClick: () => actions.ouvrirOutil(projet.id) }, icone('lecture'), 'Ouvrir')
@@ -251,6 +279,7 @@ function rendreProjet(projet) {
       section('Éditeur par défaut', selecteurEditeur(projet)),
       section('Tags', tags(projet)),
       section('Groupes', listeGroupes(projet)),
+      section('Projets liés', projetsLies(projet)),
 
       section('Informations',
         el('dl', { classe: 'infos' },

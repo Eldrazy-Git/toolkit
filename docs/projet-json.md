@@ -59,6 +59,7 @@ est conservé tel quel par Toolkit (on peut donc y ranger ses propres notes).
 | `ouvrir_avec` | `toolkit`, `vscode`, `android-studio`, `notepad++`, `explorateur` | aucun | Éditeur proposé par défaut pour « Ouvrir avec… » (`toolkit` = l'onglet « Code » intégré). |
 | `actions` | liste | `[]` | Boutons qui lancent une commande (voir ci-dessous). |
 | `outils_lies` | liste | `[]` | Pages HTML situées dans ce projet, à ouvrir comme des outils (voir ci-dessous). |
+| `liens` | liste | `[]` | Liens vers d'autres projets : `[{ "projet": "<dossier de l'autre projet>", "description": "en quoi ils sont liés" }]`. Un lien vaut dans les deux sens ; Toolkit en informe Claude (CLAUDE.md des projets concernés, liens indirects compris). Se gère dans le panneau du projet > « Projets liés ». |
 | `git.remote` | URL | aucune | Adresse du repo GitHub du projet (indicatif). |
 
 ### `actions`

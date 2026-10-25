@@ -287,6 +287,95 @@ export function ouvrirProjet(projet) {
   else ouvrirAvec(projet);
 }
 
+export async function modifierDescription(projet) {
+  const valeurs = await formulaire({
+    titre: 'Description du projet',
+    message: 'Ce que fait le projet, en une ou deux phrases. Elle apparaît dans Toolkit et Claude s\'en sert pour comprendre ce projet et ses liens avec les autres.',
+    champs: [{ id: 'description', libelle: 'Description', type: 'zone', valeur: projet.fiche.description }],
+    bouton: 'Enregistrer',
+  });
+  if (!valeurs) return;
+  remplacerProjet(await essayer(() => api.projets.modifier(projet.id, { description: valeurs.description })));
+}
+
+// --- Liens entre projets (contexte de Claude) -------------------------------------------------
+// Rangés dans projet.json du projet qui déclare le lien (« liens ») ; un lien vaut dans les
+// deux sens. Le processus principal met ensuite à jour les CLAUDE.md concernés.
+
+export async function lierProjet(projet) {
+  const autres = etat.obtenir().projets.filter((p) => p.id !== projet.id && !p.erreur)
+    .sort((a, b) => a.fiche.nom.localeCompare(b.fiche.nom, 'fr', { sensitivity: 'base' }));
+  if (!autres.length) {
+    notifier('Il n\'y a pas d\'autre projet à lier.', 'erreur');
+    return;
+  }
+  const valeurs = await formulaire({
+    titre: `Lier « ${projet.fiche.nom} » à un autre projet`,
+    message: 'Claude sera prévenu de ce lien dans les deux projets (leurs CLAUDE.md), ainsi que des projets liés indirectement. Il pourra aussi lire l\'autre projet quand tu le lances depuis Toolkit.',
+    champs: [
+      { id: 'projet', libelle: 'Projet lié', type: 'choix', options: autres.map((p) => ({ valeur: p.id, libelle: p.fiche.nom })) },
+      {
+        id: 'description',
+        libelle: 'En quoi sont-ils liés ?',
+        type: 'zone',
+        obligatoire: true,
+        exemple: 'Par exemple : ce projet met à jour les icônes et l\'index du catalogue de l\'application (fichiers app/src/main/assets/catalogue/).',
+        aide: 'Une ou deux phrases : ce que l\'un fournit ou utilise de l\'autre (fichiers, formats, données…). Plus c\'est précis, mieux Claude fera les mises à jour.',
+      },
+    ],
+    bouton: 'Lier',
+  });
+  if (!valeurs) return;
+  const liens = [...projet.fiche.liens.filter((l) => l.projet !== valeurs.projet), { projet: valeurs.projet, description: valeurs.description }];
+  const nouveau = await essayer(() => api.projets.modifier(projet.id, { liens }));
+  if (!nouveau) return;
+  remplacerProjet(nouveau);
+  notifier('Lien enregistré : les CLAUDE.md des projets concernés sont mis à jour.', 'succes');
+}
+
+// Retire le lien déclaré par sourceId vers cibleId.
+export async function retirerLien(sourceId, cibleId) {
+  const source = etat.obtenir().projets.find((p) => p.id === sourceId);
+  if (!source) return;
+  const autre = etat.obtenir().projets.find((p) => p.id === cibleId);
+  const ok = await confirmer({
+    titre: 'Retirer le lien',
+    message: `Retirer le lien entre « ${source.fiche.nom} » et « ${autre?.fiche.nom || cibleId} » ?\nLes projets eux-mêmes ne sont pas touchés ; leurs CLAUDE.md seront mis à jour.`,
+    bouton: 'Retirer le lien',
+  });
+  if (!ok) return;
+  remplacerProjet(await essayer(() => api.projets.modifier(sourceId, { liens: source.fiche.liens.filter((l) => l.projet !== cibleId) })));
+}
+
+// Liens d'un projet vus des deux côtés : [{ autre, description, declarePar }] + indirects.
+export function liensDuProjet(projet) {
+  const { projets } = etat.obtenir();
+  const parId = new Map(projets.map((p) => [p.id, p]));
+  const voisins = (id) => [
+    ...(parId.get(id)?.fiche.liens || []).filter((l) => parId.has(l.projet)).map((l) => ({ autre: l.projet, description: l.description, declarePar: id })),
+    ...projets.flatMap((p) => p.fiche.liens.filter((l) => l.projet === id).map((l) => ({ autre: p.id, description: l.description, declarePar: p.id }))),
+  ].filter((v) => v.autre !== id);
+  const directs = voisins(projet.id);
+  // Liens indirects : parcours en largeur à partir des voisins directs.
+  const vus = new Set([projet.id, ...directs.map((d) => d.autre)]);
+  const indirects = [];
+  let file = directs.map((d) => ({ id: d.autre, via: [] }));
+  while (file.length) {
+    const suivants = [];
+    for (const { id, via } of file) {
+      for (const v of voisins(id)) {
+        if (vus.has(v.autre)) continue;
+        vus.add(v.autre);
+        const chemin = [...via, id];
+        indirects.push({ id: v.autre, via: chemin });
+        suivants.push({ id: v.autre, via: chemin });
+      }
+    }
+    file = suivants;
+  }
+  return { directs, indirects };
+}
+
 // --- Suppression d'un projet -----------------------------------------------------------------
 // Le dossier part à la Corbeille de Windows (récupérable). Confirmation explicite : il faut
 // retaper le nom du projet. Refusé si un script, un terminal ou Claude tourne dans ce projet.

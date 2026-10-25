@@ -1667,3 +1667,20 @@ mark { background: rgba(229, 192, 73, 0.3); color: var(--texte-fort); border-rad
 .av-inconnu { outline: 1px dashed #b3261e; outline-offset: -1px; }
 .av-remplacant-texte { padding: 6px; font-size: 11px; color: #b3261e; }
 .av:hover { outline: 1px solid rgba(103, 80, 164, 0.6); outline-offset: -1px; }
+
+/* Projets liés (panneau de détails) */
+.liste-liens { display: flex; flex-direction: column; gap: 8px; }
+.lien-projet { padding: 8px 10px; border: 1px solid var(--bordure); border-radius: var(--rayon); background: var(--fond-element); }
+.lien-entete { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.lien-entete .bouton-icone { width: 22px; height: 22px; }
+.lien-nom { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: none; background: none; color: var(--accent-texte); font: inherit; font-weight: 600; cursor: pointer; text-align: left; }
+.lien-nom.petit { font-weight: 400; }
+.lien-nom:hover { text-decoration: underline; }
+.lien-nom .ico { width: 13px; height: 13px; }
+.lien-description { margin: 4px 0 0; font-size: 12px; color: var(--texte); white-space: pre-line; }
+.lien-indirects { margin: 0; }
+.details-description.modifiable { position: relative; padding-right: 22px; cursor: pointer; border-radius: 4px; }
+.details-description.modifiable:hover { background: var(--fond-survol); }
+.crayon-description { position: absolute; top: 2px; right: 2px; display: none; color: var(--texte-faible); }
+.crayon-description .ico { width: 13px; height: 13px; }
+.details-description.modifiable:hover .crayon-description { display: inline-flex; }

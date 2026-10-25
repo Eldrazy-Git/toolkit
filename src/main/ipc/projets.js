@@ -6,10 +6,17 @@ const path = require('node:path');
 const { gerer } = require('./gerer');
 const projets = require('../projets');
 const chemins = require('../chemins');
+const contexteClaude = require('../contexte-claude');
 
 function enregistrer() {
   gerer('projets:lister', () => projets.listerProjets());
-  gerer('projets:modifier', (id, changements) => projets.modifierFiche(id, changements || {}));
+  // Nom, description ou liens changés : le contexte de Claude (CLAUDE.md) suit.
+  gerer('projets:modifier', async (id, changements) => {
+    const projet = await projets.modifierFiche(id, changements || {});
+    contexteClaude.planifier(300);
+    return projet;
+  });
+  gerer('projets:contexte-claude', () => contexteClaude.toutMettreAJour());
   gerer('projets:renommer-categorie', (ancienne, nouvelle) => projets.renommerCategorie(ancienne, nouvelle));
   gerer('projets:renommer-tag', (ancien, nouveau) => projets.renommerTag(ancien, nouveau));
 
@@ -22,6 +29,7 @@ function enregistrer() {
     const dossier = path.join(chemins.projets(), nom);
     try {
       await shell.trashItem(dossier);
+      contexteClaude.planifier();
     } catch {
       throw new Error('Windows refuse de déplacer le dossier : un programme l\'utilise encore (VS Code, Android Studio, l\'Explorateur, un terminal…). Ferme-le puis réessaie.');
     }

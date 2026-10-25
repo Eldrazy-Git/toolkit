@@ -42,6 +42,16 @@ function listeDeTextes(valeur) {
   return [...new Set(valeur.filter((v) => typeof v === 'string').map((v) => v.trim()).filter(Boolean))];
 }
 
+// Liens vers d'autres projets : [{ projet: id du dossier, description }] (voir contexte-claude.js).
+function normaliserLiens(valeur) {
+  if (!Array.isArray(valeur)) return [];
+  const vus = new Set();
+  return valeur
+    .filter((l) => l && typeof l.projet === 'string' && l.projet.trim())
+    .map((l) => ({ projet: l.projet.trim(), description: texte(l.description) || '' }))
+    .filter((l) => !vus.has(l.projet) && vus.add(l.projet));
+}
+
 // Rend une fiche utilisable par l'interface, même incomplète, et liste les problèmes.
 // La fiche d'origine sur le disque n'est jamais réécrite par cette fonction.
 function normaliserFiche(brut, id) {
@@ -62,6 +72,7 @@ function normaliserFiche(brut, id) {
     actions: [],
     outils_lies: [],
     git: { remote: texte(b.git?.remote) || null },
+    liens: normaliserLiens(b.liens),
   };
 
   if (!texte(b.nom)) problemes.push('Le champ « nom » est vide : le nom du dossier est utilisé.');
@@ -265,6 +276,10 @@ async function modifierFiche(id, changements) {
   }
 
   if ('favori' in changements) brut.favori = changements.favori === true;
+  if ('description' in changements) {
+    if (texte(changements.description)) brut.description = texte(changements.description);
+    else delete brut.description;
+  }
   if ('categorie' in changements) {
     const categorie = texte(changements.categorie);
     if (categorie && categorie !== SANS_CATEGORIE) brut.categorie = categorie;
@@ -280,6 +295,11 @@ async function modifierFiche(id, changements) {
   if ('ouvrir_avec' in changements) {
     if (EDITEURS.includes(changements.ouvrir_avec)) brut.ouvrir_avec = changements.ouvrir_avec;
     else delete brut.ouvrir_avec;
+  }
+  if ('liens' in changements) {
+    const liens = normaliserLiens(changements.liens).filter((l) => l.projet !== id);
+    if (liens.length) brut.liens = liens;
+    else delete brut.liens;
   }
 
   await ecrireJson(chemin, brut);
