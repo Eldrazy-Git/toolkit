@@ -104,7 +104,8 @@ export async function verifierConflits(notifier) {
   try { dejaSignales = JSON.parse(localStorage.getItem('toolkit:raccourcis:signales') || '[]'); } catch { /* aucun */ }
   const nouveaux = pris.filter((p) => !dejaSignales.includes(p));
   if (!nouveaux.length) return;
-  notifier(`Raccourci(s) pris par un autre programme du PC : ${nouveaux.map((p) => `${afficher(p)} (${parCombinaison.get(p).join(', ')})`).join(' ; ')}. Ils ne marcheront pas dans Toolkit : change-les dans Réglages > Raccourcis.`);
+  const proprietaires = await window.toolkit.application.proprietairesRaccourcis(nouveaux).catch(() => ({}));
+  notifier(`Raccourci(s) pris par un autre programme du PC : ${nouveaux.map((p) => `${afficher(p)} (${parCombinaison.get(p).join(', ')}${proprietaires[p] ? ` — utilisé par ${proprietaires[p]}` : ''})`).join(' ; ')}. Ils ne marcheront pas dans Toolkit : change-les dans Réglages > Raccourcis.`);
   try { localStorage.setItem('toolkit:raccourcis:signales', JSON.stringify([...dejaSignales, ...nouveaux])); } catch { /* sans importance */ }
 }
 

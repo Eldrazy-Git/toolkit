@@ -87,6 +87,9 @@ function enregistrer({ quitter }) {
     }
   }));
 
+  // Quel programme a réservé ces raccourcis (AMD Radeon Software, PowerToys…) -> { combinaison: description | null }
+  gerer('raccourcis:proprietaires', (combinaisons) => require('../proprietaires-raccourcis').proprietaires(combinaisons));
+
   // Disposition du clavier (pour les raccourcis pressés dans un outil HTML).
   ipcMain.on('application:disposition', (_e, carte) => require('../outils-html').definirDisposition(carte));
 

@@ -143,9 +143,10 @@ function capturer(commande, rafraichir) {
     fin();
     // Combinaison réservée par un autre programme du PC : elle n'arriverait jamais à Toolkit.
     if (combi && (await window.toolkit.application.raccourcisPris([combi]).catch(() => [])).length) {
+      const proprietaire = (await window.toolkit.application.proprietairesRaccourcis([combi]).catch(() => ({})))[combi];
       const quandMeme = await confirmer({
         titre: 'Raccourci pris par un autre programme',
-        message: `${raccourcis.afficher(combi)} est déjà utilisé par un autre programme de ton PC (par exemple AMD Radeon Software, PowerToys, Logi Options+…). Windows le lui donne avant Toolkit : il ne fonctionnerait donc pas ici.\n\nChoisis plutôt une autre combinaison, ou désactive ce raccourci dans l'autre programme.`,
+        message: `${raccourcis.afficher(combi)} est déjà utilisé par ${proprietaire ? `« ${proprietaire} »` : 'un autre programme de ton PC (par exemple AMD Radeon Software, PowerToys, Logi Options+…)'}. Windows le lui donne avant Toolkit : il ne fonctionnerait donc pas ici.\n\nChoisis plutôt une autre combinaison, ou désactive ce raccourci dans l'autre programme.`,
         bouton: 'L\'enregistrer quand même',
       });
       if (!quandMeme) return;
@@ -195,10 +196,14 @@ export function pageRaccourcis(rafraichir) {
   };
   // Après l'affichage : signale les raccourcis réservés par un autre programme du PC.
   const combinaisons = [...new Set(raccourcis.COMMANDES.map((c) => raccourcis.touche(c.id)).filter(Boolean))];
-  window.toolkit.application.raccourcisPris(combinaisons).then((pris) => {
+  window.toolkit.application.raccourcisPris(combinaisons).then(async (pris) => {
+    const proprietaires = pris.length ? await window.toolkit.application.proprietairesRaccourcis(pris).catch(() => ({})) : {};
     document.querySelectorAll('.ligne-raccourci').forEach((l) => {
       const marque = l.querySelector('.raccourci-pris');
-      if (marque) marque.hidden = !pris.includes(l.dataset.combinaison);
+      if (!marque) return;
+      marque.hidden = !pris.includes(l.dataset.combinaison);
+      const proprietaire = proprietaires[l.dataset.combinaison];
+      if (proprietaire) marque.lastChild.textContent = `déjà pris par ${proprietaire}`;
     });
   }).catch(() => {});
   return [

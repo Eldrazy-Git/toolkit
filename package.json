@@ -1,7 +1,7 @@
 {
   "name": "toolkit",
   "productName": "Toolkit",
-  "version": "1.12.2",
+  "version": "1.12.3",
   "private": true,
   "description": "Application de bureau qui centralise mes projets et intègre Claude Code.",
   "main": "src/main/main.js",

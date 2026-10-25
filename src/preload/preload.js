@@ -196,5 +196,7 @@ contextBridge.exposeInMainWorld('toolkit', {
     disposition: (carte) => ipcRenderer.send('application:disposition', carte),
     // Combinaisons déjà réservées par un autre programme du PC -> [combinaisons prises]
     raccourcisPris: (combinaisons) => appeler('raccourcis:pris', combinaisons),
+    // Programme qui a réservé chaque raccourci, quand on peut le savoir -> { combinaison: texte | null }
+    proprietairesRaccourcis: (combinaisons) => appeler('raccourcis:proprietaires', combinaisons),
   },
 });

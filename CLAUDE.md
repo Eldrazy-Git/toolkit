@@ -83,6 +83,7 @@ app/
     │   ├── notes.js             notes .md : rendu markdown-it (HTML brut désactivé), lecture, écriture
     │   ├── modeles.js           modèles de « Nouvel outil » et création du projet
     │   ├── claude-md.js         génération du CLAUDE.md d'un projet
+    │   ├── proprietaires-raccourcis.js quel programme (AMD, PowerToys) a réservé un raccourci
     │   ├── mises-a-jour.js      versions (registre npm, npm audit, programmes) et script d'installation
     │   ├── contexte-claude.js   catalogue projets/CLAUDE.md + sections « Projets liés » + --add-dir
     │   ├── editeurs.js          détection des éditeurs + « Ouvrir avec… »
@@ -455,7 +456,11 @@ local `git init --bare`).
 - Un raccourci réservé par un AUTRE programme du PC (Radeon Software, PowerToys…) n'arrive
   jamais à Toolkit : `raccourcis:pris` le détecte (tentative de `globalShortcut.register`
   aussitôt annulée) ; signalé au démarrage (une fois), dans Réglages > Raccourcis et au
-  moment d'en choisir un. Les tests de Toolkit par événements simulés ne le voient pas. Les touches pressées dans un
+  moment d'en choisir un. Les tests de Toolkit par événements simulés ne le voient pas.
+  Windows ne dit pas QUI l'a réservé : `proprietaires-raccourcis.js` cherche (lecture seule)
+  dans les réglages d'AMD Radeon Software (registre `HKCU\Software\AMD\DVR` et
+  `%LOCALAPPDATA%\AMD\CN\Analytics\RadeonAnalytics_BugTool.JSON`) et de PowerToys
+  (`settings.json` des modules). Les touches pressées dans un
   outil (webview) sont captées par `outils-html.js` (`RACCOURCIS_DANS_OUTILS`, mêmes règles).
   Commandes de zone « editeur » envoyées au panneau Code par l'événement DOM `commande`.
 - Notification Claude : `terminal.js > suivreClaude()` (sortie continue ≥ 3 s puis silence de
