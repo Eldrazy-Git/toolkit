@@ -1,7 +1,7 @@
 // Canaux IPC « application:* » et « reglages:* » : infos sur Toolkit, réglages, redémarrage.
 'use strict';
 
-const { app, dialog, shell, BrowserWindow } = require('electron');
+const { app, dialog, shell, BrowserWindow, ipcMain } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -71,6 +71,9 @@ function enregistrer({ quitter }) {
     }
     return resultat;
   });
+
+  // Disposition du clavier (pour les raccourcis pressés dans un outil HTML).
+  ipcMain.on('application:disposition', (_e, carte) => require('../outils-html').definirDisposition(carte));
 
   // Mises à jour de Toolkit (voir mises-a-jour.js).
   gerer('mises-a-jour:verifier', () => misesAJour.verifier());

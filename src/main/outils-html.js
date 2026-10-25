@@ -209,15 +209,28 @@ const RACCOURCIS_DANS_OUTILS = {
   palette: 'Ctrl+Shift+P', recherche: 'Ctrl+K', fermerOnglet: 'Ctrl+W', ongletSuivant: 'Ctrl+Tab', ongletPrecedent: 'Ctrl+Shift+Tab', bibliotheque: 'Ctrl+Shift+B',
 };
 
+// Disposition du clavier (position -> caractère sans Maj), envoyée par l'interface.
+let disposition = {};
+function definirDisposition(carte) {
+  if (carte && typeof carte === 'object') disposition = carte;
+}
+
+// Même règle que renderer/composants/raccourcis.js > nomTouche.
+function nomTouche(code, key) {
+  const caractere = disposition[code];
+  if (/^Digit\d$/.test(code)) return caractere === '-' || caractere === '=' ? caractere : code.slice(-1);
+  if (/^Numpad\d$/.test(code)) return code.slice(-1);
+  if (code === 'NumpadAdd') return '=';
+  if (code === 'NumpadSubtract') return '-';
+  if (code === 'Space' || key === ' ') return 'Espace';
+  const brut = caractere || (key.length === 1 ? key : null);
+  if (brut) return /^[a-z]$/i.test(brut) ? brut.toUpperCase() : brut;
+  return key;
+}
+
 function combinaison(t) {
-  if (['Control', 'Shift', 'Alt', 'Meta'].includes(t.key)) return null;
-  let cle;
-  if (/^[a-z]$/i.test(t.key)) cle = t.key.toUpperCase();
-  else if (/^[0-9]$/.test(t.key)) cle = t.key;
-  else if (/^[=\-+,.;:/\'`[\]*!?]$/.test(t.key)) cle = t.key === '+' ? '=' : t.key;
-  else if (/^(Digit|Numpad)\d$/.test(t.code)) cle = t.code.slice(-1);
-  else cle = t.key.length === 1 ? t.key.toUpperCase() : t.key;
-  return [t.control && 'Ctrl', t.alt && 'Alt', t.shift && 'Shift', cle].filter(Boolean).join('+');
+  if (['Control', 'Shift', 'Alt', 'Meta', 'AltGraph'].includes(t.key)) return null;
+  return [t.control && 'Ctrl', t.alt && 'Alt', t.shift && 'Shift', nomTouche(t.code, t.key)].filter(Boolean).join('+');
 }
 
 function raccourciToolkit(touche) {
@@ -295,6 +308,7 @@ module.exports = {
   enregistrerSchema,
   preparer,
   preparerApercu,
+  definirDisposition,
   attacher,
   contenuOutil,
   fenetreDe,

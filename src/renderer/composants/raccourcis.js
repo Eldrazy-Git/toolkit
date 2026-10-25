@@ -37,24 +37,35 @@ export const RACCOURCIS_EDITEUR = [
   ['F1', 'Toutes les commandes de l\'éditeur'],
 ];
 
-const NOMS_CODES = { Equal: '=', Minus: '-', Comma: ',', Period: '.', Slash: '/', Semicolon: ';', Quote: '\'', BracketLeft: '[', BracketRight: ']', Backslash: '\\', Backquote: '`', Space: 'Espace' };
+// Disposition du clavier de l'utilisateur (AZERTY, QWERTY…) : position de la touche ->
+// caractère écrit SANS Maj (ex. « Quote » -> « ù » en AZERTY). Transmise aussi au processus
+// principal, qui capte les raccourcis pressés dans un outil HTML.
+let disposition = null;
+navigator.keyboard?.getLayoutMap?.().then((carte) => {
+  disposition = carte;
+  window.toolkit.application.disposition?.(Object.fromEntries(carte));
+}).catch(() => { /* touches nommées d'après e.key */ });
 
-// Combinaison d'un événement clavier : « Ctrl+Shift+P » (null pour une touche seule de modificateur).
+// Nom d'une touche, tel qu'il est écrit sur le clavier de l'utilisateur (sans Maj).
+// (Même règle dans src/main/outils-html.js > nomTouche.)
+export function nomTouche(code, key) {
+  const caractere = disposition?.get(code);
+  // Rangée des chiffres : le chiffre (Ctrl+0 marche aussi en AZERTY, où la touche porte « à »),
+  // sauf les signes utiles aux raccourcis par défaut (« - » de la touche 6 en AZERTY).
+  if (/^Digit\d$/.test(code)) return caractere === '-' || caractere === '=' ? caractere : code.slice(-1);
+  if (/^Numpad\d$/.test(code)) return code.slice(-1);
+  if (code === 'NumpadAdd') return '=';
+  if (code === 'NumpadSubtract') return '-';
+  if (code === 'Space' || key === ' ') return 'Espace';
+  const brut = caractere || (key.length === 1 ? key : null);
+  if (brut) return /^[a-z]$/i.test(brut) ? brut.toUpperCase() : brut;
+  return key; // Tab, F1, Entrée, flèches…
+}
+
+// Combinaison d'un événement clavier : « Ctrl+Shift+ù » (null pour une touche seule de modificateur).
 export function combinaison(e) {
-  if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return null;
-  // Lettres et signes : d'après le caractère (clavier AZERTY comme QWERTY) ; chiffres de la
-  // rangée du haut (« à » sur AZERTY) : d'après la position de la touche.
-  let touche;
-  if (/^[a-z]$/i.test(e.key)) touche = e.key.toUpperCase();
-  else if (/^[0-9]$/.test(e.key)) touche = e.key;
-  else if (e.key === ' ') touche = 'Espace';
-  else if (/^[=\-+,.;:/\\'`[\]*!?]$/.test(e.key)) touche = e.key === '+' ? '=' : e.key;
-  else if (/^(Digit|Numpad)\d$/.test(e.code)) touche = e.code.slice(-1);
-  else if (e.code === 'NumpadAdd') touche = '=';
-  else if (e.code === 'NumpadSubtract') touche = '-';
-  else if (NOMS_CODES[e.code]) touche = NOMS_CODES[e.code];
-  else touche = e.key.length === 1 ? e.key.toUpperCase() : e.key;
-  return [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', touche].filter(Boolean).join('+');
+  if (['Control', 'Shift', 'Alt', 'Meta', 'AltGraph'].includes(e.key)) return null;
+  return [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', nomTouche(e.code, e.key)].filter(Boolean).join('+');
 }
 
 export function touche(id) {

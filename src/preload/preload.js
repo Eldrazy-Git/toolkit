@@ -192,5 +192,7 @@ contextBridge.exposeInMainWorld('toolkit', {
     ouvrirJournal: () => appeler('application:ouvrir-journal'),
     // Des fichiers ou notes ont des modifications non enregistrées (protège la fermeture).
     signalerNonEnregistre: (valeur) => ipcRenderer.send('application:non-enregistre', valeur),
+    // Disposition du clavier (AZERTY…) : { position de touche: caractère }.
+    disposition: (carte) => ipcRenderer.send('application:disposition', carte),
   },
 });

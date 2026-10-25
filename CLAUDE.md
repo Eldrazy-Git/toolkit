@@ -447,8 +447,11 @@ local `git init --bare`).
   donc lue pour app/ et pour projets/ ; fichier supprimé si la section est vide) ; modèle
   (`--model`) et autonomie (`--permission-mode`, jamais bypassPermissions) ajoutés par
   `terminal.creer`.
-- Raccourcis : TOUJOURS passer par `raccourcis.js` (`commandeDe`, `correspond`) ; lettres et
-  signes d'après `e.key` (AZERTY), chiffres d'après la position. Les touches pressées dans un
+- Raccourcis : TOUJOURS passer par `raccourcis.js` (`commandeDe`, `correspond`). Nom d'une
+  touche = caractère écrit SANS Maj sur le clavier de l'utilisateur
+  (`navigator.keyboard.getLayoutMap()`, ex. « Ctrl+Shift+ù » en AZERTY), chiffres d'après la
+  position (Ctrl+0 = touche « à » en AZERTY), sauf « - » et « = ». Disposition transmise au
+  processus principal (`application:disposition`). Les touches pressées dans un
   outil (webview) sont captées par `outils-html.js` (`RACCOURCIS_DANS_OUTILS`, mêmes règles).
   Commandes de zone « editeur » envoyées au panneau Code par l'événement DOM `commande`.
 - Notification Claude : `terminal.js > suivreClaude()` (sortie continue ≥ 3 s puis silence de
