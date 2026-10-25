@@ -97,11 +97,14 @@ function section(titre, ...contenu) {
   return el('section', { classe: 'details-section' }, el('h3', {}, titre), contenu);
 }
 
+// Les boutons (épingle, favori) sont sur la ligne du type, sous le nom : le nom garde ainsi
+// toute la largeur, même quand le panneau est étroit.
 function entete(visuel, nom, sousTitre, boutons) {
   return el('header', { classe: 'details-entete' },
     visuel,
-    el('div', { classe: 'details-titre' }, el('h2', {}, nom), sousTitre),
-    boutons,
+    el('div', { classe: 'details-titre' },
+      el('h2', {}, nom),
+      el('div', { classe: 'details-sous-titre' }, sousTitre, boutons)),
     el('button', { classe: 'bouton-icone', title: 'Fermer (Échap)', onClick: () => actions.selectionner(null) }, icone('croix')));
 }
 

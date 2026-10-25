@@ -52,11 +52,13 @@ const contenu = el('div', { classe: 'contenu-bibliotheque' });
 conteneur.append(
   el('header', { classe: 'barre-outils' },
     titre,
-    el('label', { classe: 'champ-filtre' }, icone('recherche'), champFiltre),
-    el('label', { classe: 'champ-tri', title: 'Trier les projets' }, icone('tri'), choixTri),
+    // Filtre + tri regroupés : dans une zone étroite, ils passent ensemble à la ligne.
+    el('div', { classe: 'groupe-filtre-tri' },
+      el('label', { classe: 'champ-filtre' }, icone('recherche'), champFiltre),
+      el('label', { classe: 'champ-tri', title: 'Trier les projets' }, icone('tri'), choixTri)),
     el('div', { classe: 'groupe-boutons' }, boutonGrille, boutonListe),
-    el('button', { classe: 'bouton', title: 'Importer un projet existant (dossier du PC ou dépôt GitHub)', onClick: actions.ouvrirImport }, icone('importer'), 'Importer'),
-    el('button', { classe: 'bouton principal', title: 'Créer un nouvel outil avec Claude Code', onClick: actions.nouvelOutil }, icone('plus'), 'Nouvel outil')),
+    el('button', { classe: 'bouton', title: 'Importer un projet existant (dossier du PC ou dépôt GitHub)', onClick: actions.ouvrirImport }, icone('importer'), el('span', { classe: 'texte-bouton' }, 'Importer')),
+    el('button', { classe: 'bouton principal', title: 'Créer un nouvel outil avec Claude Code', onClick: actions.nouvelOutil }, icone('plus'), el('span', { classe: 'texte-bouton' }, 'Nouvel outil'))),
   contenu,
 );
 
@@ -136,7 +138,7 @@ function menuContextuel(projet) {
   return (e) => {
     e.preventDefault();
     actions.selectionner(projet.id);
-    ouvrirMenu({ x: e.clientX, y: e.clientY }, actions.elementsMenuProjet(projet));
+    ouvrirMenu({ x: e.clientX, y: e.clientY }, actions.elementsMenuProjet(projet, { x: e.clientX, y: e.clientY }));
   };
 }
 

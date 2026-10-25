@@ -4,6 +4,7 @@ import * as etat from './etat.js';
 import { notifier } from './notifications.js';
 import { demanderTexte, confirmer, choisir, formulaire } from './dialogue.js';
 import * as actionsGit from './actions-git.js';
+import { ouvrirMenu } from './menu.js';
 
 const api = window.toolkit;
 
@@ -220,11 +221,13 @@ export function elementsMenuIcone(projet) {
   ];
 }
 
-// Menu du clic droit sur un projet de la bibliothèque.
-export function elementsMenuProjet(projet) {
+// Menu du clic droit sur un projet. position : { x, y } du clic, où s'ouvre le second
+// menu « Ouvrir avec… » (le menu n'a pas de sous-menus).
+export function elementsMenuProjet(projet, position) {
   const bloque = Boolean(projet.erreur);
   return [
     { libelle: 'Ouvrir', icone: 'lecture', desactive: bloque, action: () => (estOuvrableCommeOutil(projet) ? ouvrirOutil(projet.id) : ouvrirAvec(projet)) },
+    { libelle: 'Ouvrir avec…', icone: 'ouvrirAvec', detail: '▸', desactive: bloque, action: () => ouvrirMenu(position, elementsMenuOuvrirAvec(projet)) },
     { libelle: 'Modifier avec Claude', icone: 'claude', desactive: bloque, action: () => modifierAvecClaude(projet) },
     'separateur',
     { libelle: projet.fiche.favori ? 'Retirer des favoris' : 'Ajouter aux favoris', icone: 'etoile', desactive: bloque, action: () => basculerFavori(projet) },

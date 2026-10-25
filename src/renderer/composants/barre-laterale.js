@@ -55,7 +55,7 @@ function projetsEpingles(projets, selection, ongletActif) {
       onKeydown: (e) => { if (e.key === 'Enter') actions.allerAuProjet(projet.id); },
       onContextmenu: (e) => {
         e.preventDefault();
-        ouvrirMenu({ x: e.clientX, y: e.clientY }, actions.elementsMenuProjet(projet));
+        ouvrirMenu({ x: e.clientX, y: e.clientY }, actions.elementsMenuProjet(projet, { x: e.clientX, y: e.clientY }));
       },
     },
     iconeProjet(projet, 18),

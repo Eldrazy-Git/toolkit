@@ -141,7 +141,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   color: var(--texte-faible);
 }
 .titre-groupe span { font-weight: 400; }
-.ligne-date { width: 110px; text-align: right; }
+.ligne-colonne.ligne-date { width: 110px; text-align: right; }
 .bouton-icone:disabled { opacity: 0.4; cursor: default; }
 
 /* --- Barre latérale --------------------------------------------------------------- */
@@ -226,6 +226,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   flex-direction: column;
   flex: 1;
   min-width: 0;
+  overflow: hidden; /* rien ne doit déborder sur le panneau de droite */
 }
 
 .barre-onglets {
@@ -377,19 +378,57 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .bibliotheque {
   display: flex;
   flex-direction: column;
+  /* Les règles @container ci-dessous s'adaptent à la largeur de la zone centrale (qui
+     dépend de la fenêtre ET du panneau de droite), pas à celle de la fenêtre. */
+  container-type: inline-size;
+  container-name: bibliotheque;
 }
 
+/* Zone centrale moyenne : boutons réduits à leur icône (le titre au survol les décrit). */
+@container bibliotheque (max-width: 1000px) {
+  .barre-outils .texte-bouton { display: none; }
+  .barre-outils .bouton { padding: 0 8px; }
+}
+
+.groupe-filtre-tri { display: flex; gap: 12px; flex: 0 1 auto; min-width: 0; }
+
+/* Zone centrale étroite : 1re ligne = titre + boutons, 2e ligne = filtre + tri côte à côte. */
+@container bibliotheque (max-width: 720px) {
+  .bibliotheque .barre-outils h1 { flex: 1 1 0; }
+  .groupe-filtre-tri { order: 10; flex: 1 1 100%; }
+  .groupe-filtre-tri .champ-filtre { flex: 1 1 100px; min-width: 80px; }
+  .groupe-filtre-tri .champ-tri { flex: 0 1 180px; min-width: 0; }
+  .groupe-filtre-tri .choix-tri { width: 100%; min-width: 0; }
+}
+
+/* Zone centrale très étroite : le titre prend toute la 1re ligne, les boutons la 2e. */
+@container bibliotheque (max-width: 380px) {
+  .bibliotheque .barre-outils h1 { flex: 1 1 100%; }
+}
+
+/* Vue liste étroite : on garde le nom, on retire les colonnes secondaires. */
+@container bibliotheque (max-width: 640px) {
+  .ligne-colonne:not(.ligne-date) { display: none; }
+}
+@container bibliotheque (max-width: 440px) {
+  .ligne-colonne.ligne-date { display: none; }
+}
+
+/* Barre d'outils de la bibliothèque : si la fenêtre est étroite, les éléments passent à
+   la ligne au lieu de déborder sous le panneau de droite. */
 .barre-outils {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  height: 52px;
-  padding: 0 18px;
+  gap: 8px 12px;
+  min-height: 52px;
+  padding: 10px 18px;
   border-bottom: 1px solid var(--bordure);
   flex-shrink: 0;
 }
 .barre-outils h1 {
-  flex: 1;
+  flex: 1 1 110px;
+  min-width: 0;
   margin: 0;
   font-size: 16px;
   font-weight: 600;
@@ -404,7 +443,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
   display: flex;
   align-items: center;
   gap: 6px;
-  width: 260px;
+  flex: 0 1 260px; /* rétrécit jusqu'à 140 px avant de passer à la ligne */
+  min-width: 140px;
   height: 30px;
   padding: 0 8px;
   border: 1px solid var(--bordure-forte);
@@ -563,7 +603,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .details {
   display: flex;
   flex-direction: column;
-  width: 360px;
+  width: clamp(280px, 30vw, 360px); /* plus étroit dans une petite fenêtre */
   flex-shrink: 0;
   background: var(--fond-barre);
   border-left: 1px solid var(--bordure);
@@ -581,8 +621,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
   margin: 2px 0 6px;
   font-size: 17px;
   color: var(--texte-fort);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word; /* coupe un mot seulement s'il est trop long pour la ligne */
 }
+.details-sous-titre { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.details-sous-titre .etiquette { margin-right: 4px; }
 
 .details-corps {
   flex: 1;
