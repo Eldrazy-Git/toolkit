@@ -99,8 +99,8 @@ function creerPanneauOutil(o) {
     el('div', { classe: 'barre-outil' },
       el('button', { classe: 'bouton-icone', title: 'Recharger (F5)', onClick: () => webview.reloadIgnoringCache() }, icone('redemarrer')),
       apercu.boutons,
-      el('button', { classe: 'bouton petit', onClick: () => actions.exporterDonnees(o, idContenu()) }, icone('exporter'), el('span', { classe: 'texte-bouton' }, 'Exporter les données')),
-      el('button', { classe: 'bouton petit', onClick: () => actions.importerDonnees(o, idContenu()) }, icone('importer'), el('span', { classe: 'texte-bouton' }, 'Importer les données')),
+      el('button', { classe: 'bouton petit', title: 'Exporter les données de l\'outil dans un fichier .json', onClick: () => actions.exporterDonnees(o, idContenu()) }, icone('exporter'), el('span', { classe: 'texte-bouton' }, 'Exporter les données')),
+      el('button', { classe: 'bouton petit', title: 'Importer les données de l\'outil depuis un fichier .json', onClick: () => actions.importerDonnees(o, idContenu()) }, icone('importer'), el('span', { classe: 'texte-bouton' }, 'Importer les données')),
       el('button', { classe: 'bouton petit', title: 'Outils de développement (F12)', onClick: () => webview.openDevTools() }, icone('code'), 'F12'),
       el('code', { classe: 'chemin-outil', title: o.chemin }, o.chemin)),
     conteneur);
