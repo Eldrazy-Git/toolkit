@@ -262,7 +262,7 @@ dans `docs/projet-json.md`. Points clés :
   vérifié (le faux raccourci du Microsoft Store est ignoré, repli sur `py`) ;
 - sortie décodée en UTF-8 (repli windows-1252), Python forcé en UTF-8 sans tampon ;
   stdin fermé (un script qui attend une saisie ne bloque pas) ;
-- « Arrêter » = `taskkill /T /F` (arbre de processus, ex. Java lancé par Gradle) ;
+- « Arrêter » = `taskkill /T /F` (tout l'arbre de processus) ;
 - onglet de genre `console` ; recliquer l'action relance dans le même onglet
   (`onglet.lancement` incrémenté, lu par `mettreAJour()` du panneau).
 
@@ -394,14 +394,11 @@ emplacements habituels), jamais enregistrée : elle se refait d'elle-même sur u
 
 ## Comment ajouter une fonctionnalité
 
-Exemple : un bouton qui affiche le nombre de fichiers d'un projet.
-
 1. **Logique** dans `src/main/<domaine>.js` : une fonction claire, qui lance
    `new Error('message en français')` en cas de problème prévu (ce message est montré tel
    quel à l'utilisateur ; un bug imprévu donne un message générique + la trace au journal).
 2. **Canal IPC** dans `src/main/ipc/<domaine>.js` avec `gerer('<domaine>:<action>', fonction)`
-   (voir `ipc/gerer.js`). Nommage : `domaine:action` en kebab-case, ex.
-   `projets:compter-fichiers`. Un nouveau fichier `ipc/` s'enregistre dans `main.js`
+   (voir `ipc/gerer.js`). Nommage : `domaine:action` en kebab-case. Un nouveau fichier `ipc/` s'enregistre dans `main.js`
    (`demarrer()`). L'interface ne transmet jamais de chemin : utiliser une « cible »
    (`cibles.js`) ou un identifiant de projet.
 3. **Pont** dans `src/preload/preload.js` : ajouter la fonction sous
@@ -528,8 +525,8 @@ local `git init --bare`).
   `terminal.creer`.
 - Raccourcis : TOUJOURS passer par `raccourcis.js` (`commandeDe`, `correspond`). Nom d'une
   touche : une LETTRE = la lettre tapée (`e.key`) ; un signe = caractère écrit SANS Maj sur
-  le clavier de l'utilisateur (`navigator.keyboard.getLayoutMap()`, ex. « Ctrl+Shift+ù » en
-  AZERTY) ; chiffres d'après la position (Ctrl+0 = touche « à » en AZERTY), sauf « - » et « = ». Disposition transmise au
+  le clavier de l'utilisateur (`navigator.keyboard.getLayoutMap()`) ; chiffres d'après la position de la
+  touche, sauf « - » et « = ». Disposition transmise au
   processus principal (`application:disposition`).
 - Un raccourci réservé par un AUTRE programme du PC (Radeon Software, PowerToys…) n'arrive
   jamais à Toolkit : `raccourcis:pris` le détecte (tentative de `globalShortcut.register`
@@ -592,7 +589,7 @@ globale = action de l'utilisateur).
   l'outil Edit, puis vérifier la syntaxe :
   `node --check --input-type=module < fichier.js` (interface) ou `node --check fichier.js`.
 - **Ne jamais modifier l'état pendant un rendu** : un composant créé pendant `rendre()`
-  (ex. panneau de terminal) qui appelle `etat.modifier()` relance le rendu en plein milieu
+  qui appelle `etat.modifier()` relance le rendu en plein milieu
   (création en double). Différer avec `queueMicrotask()`.
 - **Tester pendant que Toolkit de l'utilisateur est ouvert** : le verrou d'instance unique
   ferme aussitôt toute 2ᵉ copie. Pour un test automatique, utiliser un autre dossier

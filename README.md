@@ -127,8 +127,7 @@ Pour utiliser Claude : ouvre PowerShell, tape `claude` une fois et connecte-toi 
   panneau de droite. Il faut retaper le nom du projet. Le dossier part à la **Corbeille de
   Windows** (récupérable tant qu'elle n'est pas vidée) ; son dépôt GitHub n'est jamais
   supprimé.
-- **Groupes** (barre latérale) : rassemble des projets qui vont ensemble, par exemple une
-  application et ses outils annexes. Les groupes peuvent contenir des sous-groupes, et un
+- **Groupes** (barre latérale) : rassemble des projets qui vont ensemble. Les groupes peuvent contenir des sous-groupes, et un
   projet peut être dans plusieurs groupes. Les dossiers des projets ne bougent jamais.
   - créer : bouton 📁+ à droite du titre « Groupes » ;
   - remplir : glisse un projet de la bibliothèque sur un groupe, ou clic droit sur le
@@ -151,8 +150,7 @@ Pour utiliser Claude : ouvre PowerShell, tape `claude` une fois et connecte-toi 
 - **Sauvegarder ses données :** bouton **Exporter les données** au-dessus de l'outil
   (crée un fichier `.json`). **Importer les données** remet les données d'un tel fichier
   (elles remplacent les données actuelles). À faire avant de renommer le dossier d'un outil.
-- **Outils liés :** les pages HTML rangées à l'intérieur d'un autre projet (par exemple dans
-  les `assets` d'une appli Android) s'ouvrent aussi dans Toolkit, sans être copiées.
+- **Outils liés :** les pages HTML rangées à l'intérieur d'un autre projet s'ouvrent aussi dans Toolkit, sans être copiées.
 - **Vue smartphone / tablette :** les boutons 🖥 📱 au-dessus de l'outil l'affichent comme
   sur un ordinateur, un smartphone (390 × 844) ou une tablette (820 × 1180) ; le bouton
   ⟳ à côté pivote en paysage. L'outil se comporte comme sur un vrai téléphone (largeur
@@ -259,8 +257,7 @@ intégré à Toolkit. Aucune clé API n'est utilisée.
   automatiquement quel que soit le projet sur lequel il travaille. Pense à donner une bonne
   **description** à chaque projet : clique sur la description dans le panneau de droite.
 - **Projets liés** : dans le panneau de droite, section **Projets liés** > « Lier à un
-  projet », choisis l'autre projet et explique en une ou deux phrases comment ils sont liés
-  (ex. « ce script génère les fichiers de données que l'appli lit au démarrage »). Toolkit ajoute
+  projet », choisis l'autre projet et explique en une ou deux phrases comment ils sont liés. Toolkit ajoute
   alors une section « Projets liés » dans le CLAUDE.md de **chaque** projet concerné, y
   compris ceux liés **indirectement** (A ↔ B ↔ C), avec la consigne de vérifier l'impact sur
   les autres avant une mise à jour.
@@ -349,8 +346,7 @@ plusieurs comptes peuvent être connectés : « Utiliser ce compte » choisit ce
 **Claude** :
 - **Tes consignes pour Claude** : ce que tu écris ici s'applique à TOUS tes projets et à
   Toolkit (Toolkit l'écrit dans `Toolkit/CLAUDE.md`, que Claude Code lit tout seul, même
-  lancé depuis VS Code). Exemple : « commente le code en français », « demande avant de
-  supprimer un fichier ».
+  lancé depuis VS Code).
 - **Modèle** (Fable, Opus, Sonnet, Haiku) et **Autonomie** (demander avant chaque
   modification, modifier les fichiers sans demander, automatique, plan d'abord) quand
   Toolkit lance Claude.
@@ -371,8 +367,7 @@ nouvelle combinaison) ; ↺ remet celui par défaut.
 
 ### Palette de commandes (Ctrl+Maj+P)
 
-Tape ce que tu veux faire : « code mon-projet », « commit mon-projet », « réglages »,
-« claude », « historique »… puis Entrée. Elle contient toutes les commandes de Toolkit et,
+Tape ce que tu veux faire, puis Entrée. Elle contient toutes les commandes de Toolkit et,
 pour chaque projet : ouvrir, afficher, code, Claude, historique, commit, push, et ses
 actions (boutons de projet.json).
 
