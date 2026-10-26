@@ -11,7 +11,11 @@ const os = require('node:os');
 const pty = require('node-pty');
 const activite = require('./activite');
 const journal = require('./journal');
+const crypto = require('node:crypto');
 const { environnementPropre, sortieDe } = require('./processus');
+const { ID_SESSION } = require('./sessions-claude');
+
+const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
 
 const DELAI_ENVOI = 8;
 
@@ -106,24 +110,42 @@ function viderTampon(id) {
 // mode : 'claude' ou 'powershell'. Pour Claude : « demande » = consigne initiale ;
 // « continuer » = reprendre la dernière conversation de ce dossier (claude --continue).
 // contenu : webContents de l'interface qui affiche ce terminal.
-// Renvoie { ok: true } ou { ok: false, raison: 'claude-introuvable' }.
+// « reprendre » = id d'une conversation précise (claude --resume) ; « nouvelleSession » = id
+// imposé à une nouvelle conversation ; « modele » et « effort »
+// choisis dans l'onglet remplacent ceux des Réglages (undefined = Réglages, '' = Claude Code).
+// Renvoie { ok: true, idSession } ou { ok: false, raison: 'claude-introuvable' } ;
+// idSession = conversation utilisée (null si inconnue : « --continue » sans session trouvée).
 // dossiersLies : dossiers en plus que Claude peut lire et modifier (« --add-dir », projets liés).
 // mode 'commande' : un programme précis (ex. connexion à un compte), voir comptes.js.
-async function creer(id, { mode, dossier, demande, continuer, colonnes, lignes, dossiersLies = [], commande = null }, contenu) {
+async function creer(id, { mode, dossier, demande, continuer, reprendre, nouvelleSession, modele, effort, colonnes, lignes, dossiersLies = [], commande = null }, contenu) {
   if (terminaux.has(id)) throw new Error('Ce terminal existe déjà.');
 
   let executable;
   let args;
+  let idSession = null;
   if (mode === 'claude') {
     executable = await trouverClaude();
     if (!executable) return { ok: false, raison: 'claude-introuvable' };
-    // Préférences (Réglages > Claude) : modèle et autonomie.
+    // Préférences (Réglages > Claude) : modèle, effort et autonomie.
     const pref = require('./reglages').obtenir().preferences?.claude || {};
+    const modeleChoisi = modele === undefined ? pref.modele : modele;
+    const effortChoisi = effort === undefined ? pref.effort : effort;
     const options = [];
-    if (/^[a-z0-9.-]+$/i.test(pref.modele || '')) options.push('--model', pref.modele);
+    if (/^[a-z0-9.\[\]-]+$/i.test(modeleChoisi || '')) options.push('--model', modeleChoisi);
+    if (EFFORTS.includes(effortChoisi)) options.push('--effort', effortChoisi);
     if (['manual', 'acceptEdits', 'auto', 'plan'].includes(pref.autonomie)) options.push('--permission-mode', pref.autonomie);
-    if (continuer) args = [...options, '--continue'];
-    else args = demande ? [...options, demande] : options;
+    if (ID_SESSION.test(reprendre || '')) {
+      idSession = reprendre;
+      args = [...options, '--resume', reprendre];
+    } else if (continuer) {
+      args = [...options, '--continue'];
+    } else {
+      // Id choisi par Toolkit : le terminal sait quelle conversation il affiche (pour la
+      // reprendre avec un autre modèle ou effort).
+      idSession = ID_SESSION.test(nouvelleSession || '') ? nouvelleSession : crypto.randomUUID();
+      args = [...options, '--session-id', idSession];
+      if (demande) args.push(demande);
+    }
     // Après la demande : « --add-dir » prend tous les arguments qui le suivent.
     if (dossiersLies.length) args.push('--add-dir', ...dossiersLies);
   } else if (mode === 'commande' && commande?.executable) {
@@ -168,7 +190,7 @@ async function creer(id, { mode, dossier, demande, continuer, colonnes, lignes, 
     terminaux.delete(id);
     activite.fin();
   });
-  return { ok: true };
+  return { ok: true, idSession };
 }
 
 function ecrire(id, donnees) {

@@ -9,6 +9,7 @@ export const DEFAUTS = {
   claude: {
     consignes: '', // ajoutées pour tous les projets (CLAUDE.md à la racine de Toolkit)
     modele: '', // '' = celui de Claude Code ; 'fable' | 'opus' | 'sonnet' | 'haiku'
+    effort: '', // '' = celui de Claude Code ; 'low' | 'medium' | 'high' | 'xhigh' | 'max'
     autonomie: '', // '' = réglage de Claude Code ; 'manual' | 'acceptEdits' | 'auto' | 'plan'
     notifications: true, // prévenir quand Claude a fini / attend une réponse
   },

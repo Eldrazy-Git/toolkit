@@ -106,6 +106,7 @@ app/
     │   ├── publication.js       « Publier une nouvelle version » (copie de développement seulement)
     │   ├── mises-a-jour.js      versions (registre npm, npm audit, programmes) et script d'installation
     │   ├── contexte-claude.js   catalogue projets/CLAUDE.md + sections « Projets liés » + --add-dir
+    │   ├── sessions-claude.js   conversations Claude Code d'un dossier (~/.claude/projects, lecture seule)
     │   ├── editeurs.js          détection des éditeurs + « Ouvrir avec… »
     │   ├── explorateur.js       onglet « Code » : lister, lire, écrire, créer, renommer, Corbeille, surveiller
     │   ├── lsp-python.js        Pyright (aide Python) : processus, messages LSP, traduction des adresses
@@ -187,7 +188,7 @@ référence une image déjà dans le projet, sinon la copie en `icone.<ext>` (ou
 | Besoin | Bibliothèque |
 |---|---|
 | Application | electron |
-| Terminal | @xterm/xterm + @xterm/addon-fit, node-pty 1.1.0 (binaires Windows précompilés, pas besoin de Visual Studio Build Tools) |
+| Terminal | @xterm/xterm + @xterm/addon-fit + @xterm/addon-unicode11, node-pty 1.1.0 (binaires Windows précompilés, pas besoin de Visual Studio Build Tools) |
 | Recherche | minisearch (dans le processus principal) |
 | Markdown | markdown-it (dans le processus principal, + règle maison pour `[[liens]]`) |
 | Git / GitHub | commandes `git` et `gh` du système (child_process) |
@@ -231,6 +232,24 @@ Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
   sortie regroupée toutes les 8 ms (`terminal:donnees`), fin (`terminal:fin`).
 - L'interface ne transmet jamais de chemin : une « cible » (`{ type: 'projet', id }`,
   `{ type: 'toolkit' }`, `{ type: 'racine' }`) est résolue dans `ipc/claude.js`.
+- Affichage (`composants/terminal.js`) : xterm est ouvert dans `.hote-terminal`, SANS marge
+  intérieure (FitAddon mesure le parent marges comprises avec `box-sizing: border-box` : une
+  marge donnait une colonne / ligne de trop, cachée, et la saisie de Claude débordait sur les
+  traits du cadre) ; Unicode 11 (largeur des symboles comme Claude Code) ;
+  `windowsPty: { backend: 'conpty', buildNumber }` (ConPTY redessine lui-même au
+  redimensionnement : xterm ne réorganise pas les lignes) ; taille transmise au pty après
+  60 ms de stabilité. Maj+Entrée = retour à la ligne dans la demande (Échap + Entrée).
+- Barre du terminal Claude : bouton **modèle · effort** (pour cet onglet : `--model` /
+  `--effort` ; défauts dans Réglages > Claude) et **Conversations** (`terminal:sessions` =
+  `sessions-claude.lister()` : 15 dernières, titre « custom-title » / « ai-title » / première
+  demande). Changer de modèle, d'effort ou de conversation = arrêter Claude puis le relancer
+  dans le même onglet (`--resume <id>`), après confirmation s'il tourne. Chaque onglet connaît
+  sa conversation : nouvelle = `--session-id <uuid>` choisi par Toolkit ; « Reprendre » =
+  `--resume` de la plus récente du dossier (`--continue` si aucune) ; une conversation encore
+  vide (pas de .jsonl) est recommencée avec le même id (Claude refuserait de la reprendre).
+- `processus.environnementPropre()` retire aussi les marqueurs d'une session Claude parente
+  (`CLAUDECODE`, `CLAUDE_CODE_CHILD_SESSION`, `CLAUDE_EFFORT`…) : Toolkit lancé depuis Claude
+  ne doit pas les transmettre (conversations non enregistrées, effort imposé).
 - Claude est lancé **directement** via `claude.exe` (trouvé à partir de `claude.cmd` ou de
   `~/.local/bin`), jamais via `cmd.exe` : la demande initiale peut contenir guillemets et
   symboles. Aucune clé API : c'est la CLI de l'utilisateur, avec sa connexion.
@@ -531,7 +550,7 @@ local `git init --bare`).
   enregistre et émet `toolkit:preferences` (l'éditeur applique `updateOptions` en direct).
 - Claude : consignes -> section `<!-- toolkit:consignes -->` de `Toolkit/CLAUDE.md` (racine,
   donc lue pour app/ et pour projets/ ; fichier supprimé si la section est vide) ; modèle
-  (`--model`) et autonomie (`--permission-mode`, jamais bypassPermissions) ajoutés par
+  (`--model`), effort (`--effort`) et autonomie (`--permission-mode`, jamais bypassPermissions) ajoutés par
   `terminal.creer`.
 - Raccourcis : TOUJOURS passer par `raccourcis.js` (`commandeDe`, `correspond`). Nom d'une
   touche : une LETTRE = la lettre tapée (`e.key`) ; un signe = caractère écrit SANS Maj sur

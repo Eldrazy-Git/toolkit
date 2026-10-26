@@ -422,10 +422,25 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .message-outil p { max-width: 520px; color: var(--texte-faible); overflow-wrap: anywhere; }
 
 /* Terminal (Claude Code, PowerShell) */
-.panneau-terminal { display: flex; flex-direction: column; background: #1e1e1e; }
-.conteneur-terminal { flex: 1; min-height: 0; padding: 6px 0 0 10px; }
-.conteneur-terminal .xterm { height: 100%; }
-.panneau-terminal .statut { margin-right: 4px; }
+.panneau-terminal { display: flex; flex-direction: column; background: #1e1e1e; container-type: inline-size; container-name: terminal; }
+/* Les marges sont sur .conteneur-terminal, JAMAIS sur .hote-terminal (parent direct de xterm) :
+   FitAddon calcule la taille à partir de ce parent, marges comprises (voir terminal.js). */
+.conteneur-terminal { display: flex; flex: 1; min-height: 0; padding: 8px 4px 4px 12px; }
+.hote-terminal { flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
+.hote-terminal .xterm { height: 100%; }
+/* Reste sous la dernière ligne (hauteur non multiple d'une ligne) : même fond que le terminal. */
+.hote-terminal .xterm-viewport { background-color: #1e1e1e !important; }
+.panneau-terminal .statut { margin-right: 4px; white-space: nowrap; }
+.panneau-terminal .barre-outil .bouton { flex-shrink: 0; }
+.choix-claude { max-width: 260px; }
+.choix-claude .texte-bouton { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fleche-menu { font-size: 10px; color: var(--texte-faible); }
+@container terminal (max-width: 760px) {
+  .panneau-terminal .barre-outil .texte-bouton { display: none; }
+}
+@container terminal (max-width: 480px) {
+  .panneau-terminal .barre-outil .chemin-outil { display: none; }
+}
 .statut.termine { color: var(--texte-faible); }
 
 /* Console d'une action (script) */
@@ -785,6 +800,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border-radius: var(--rayon);
   background: #252526;
   box-shadow: var(--ombre);
+  max-width: min(460px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
   animation: apparition 0.1s ease-out;
 }
 .menu-element {
@@ -802,9 +820,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .menu-element:hover:not(:disabled), .menu-element:focus-visible { background: var(--accent); color: #fff; outline: none; }
 .menu-element:disabled { opacity: 0.45; cursor: default; }
-.menu-libelle { flex: 1; }
+.menu-libelle { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .menu-detail { font-size: 11px; color: var(--texte-faible); }
 .menu-element:hover:not(:disabled) .menu-detail { color: #dfefff; }
+.menu-titre { padding: 6px 10px 2px; font-size: 11px; font-weight: 600; color: var(--texte-faible); text-transform: uppercase; letter-spacing: 0.04em; }
+.menu-detail { flex-shrink: 0; }
 .menu-separateur { height: 1px; margin: 4px 6px; background: var(--bordure-forte); }
 
 /* --- Réglages ------------------------------------------------------------------------------- */

@@ -52,7 +52,15 @@ export function pageClaude() {
         ['opus', 'Opus — très capable'],
         ['sonnet', 'Sonnet — équilibré et rapide'],
         ['haiku', 'Haiku — le plus rapide, pour les petites tâches'],
-      ], 'Selon ton abonnement, certains modèles peuvent ne pas être disponibles ou consommer ton quota plus vite.'),
+      ], 'Selon ton abonnement, certains modèles peuvent ne pas être disponibles ou consommer ton quota plus vite. Modifiable aussi pour un seul onglet, avec le bouton du terminal de Claude.'),
+      choix('claude', 'effort', 'Effort', [
+        ['', 'Celui choisi dans Claude Code (par défaut)'],
+        ['low', 'Faible — réponses rapides, pour les petites tâches'],
+        ['medium', 'Moyen'],
+        ['high', 'Élevé'],
+        ['xhigh', 'Très élevé'],
+        ['max', 'Maximum — réfléchit le plus longtemps'],
+      ], 'Plus l\'effort est élevé, plus Claude réfléchit avant d\'agir : meilleur sur les tâches difficiles, mais plus lent et consomme plus de quota.'),
       choix('claude', 'autonomie', 'Autonomie', [
         ['', 'Celle réglée dans Claude Code (par défaut)'],
         ['manual', 'Me demander avant chaque modification et chaque commande'],

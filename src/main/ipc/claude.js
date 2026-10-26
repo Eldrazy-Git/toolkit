@@ -12,10 +12,11 @@ const git = require('../git');
 const modeles = require('../modeles');
 const { dossierCible } = require('../cibles');
 const contexteClaude = require('../contexte-claude');
+const sessionsClaude = require('../sessions-claude');
 
 function enregistrer() {
   // --- Terminal ---
-  gerer('terminal:creer', async (contenu, id, { mode, cible, demande, continuer, colonnes, lignes, connexion }) => {
+  gerer('terminal:creer', async (contenu, id, { mode, cible, demande, continuer, reprendre, modele, effort, colonnes, lignes, connexion }) => {
     // Connexion à un compte (Claude, GitHub) : programme officiel, dans le dossier personnel.
     if (mode === 'connexion') {
       const commande = await require('../comptes').commandeConnexion(connexion);
@@ -25,9 +26,21 @@ function enregistrer() {
     const dossier = await dossierCible(cible);
     // Claude peut lire les projets liés à celui-ci (voir contexte-claude.js).
     const dossiersLies = mode === 'claude' && cible.type === 'projet' ? await contexteClaude.dossiersLies(cible.id) : [];
-    const resultat = await terminal.creer(id, { mode, dossier, demande, continuer, colonnes, lignes, dossiersLies }, contenu);
+    // « Reprendre la conversation » : la plus récente de ce dossier, désignée par son id
+    // (le terminal sait alors laquelle il affiche) ; « --continue » si aucune n'est trouvée.
+    if (mode === 'claude' && continuer && !reprendre) reprendre = (await sessionsClaude.lister(dossier))[0]?.id;
+    // Conversation encore vide (aucune demande envoyée) : rien à reprendre, Claude refuserait.
+    // On en recommence une avec le même id.
+    let nouvelleSession;
+    if (mode === 'claude' && reprendre && !(await sessionsClaude.existe(dossier, reprendre))) {
+      nouvelleSession = reprendre;
+      reprendre = undefined;
+      continuer = false;
+    }
+    const resultat = await terminal.creer(id, { mode, dossier, demande, continuer, reprendre, nouvelleSession, modele, effort, colonnes, lignes, dossiersLies }, contenu);
     return { ...resultat, chemin: chemins.versRelatif(dossier) || '.' };
   }, { avecEmetteur: true });
+  gerer('terminal:sessions', async (cible) => sessionsClaude.lister(await dossierCible(cible)));
   gerer('terminal:fermer', (id) => terminal.fermer(id));
 
   // Claude a fini ou attend : notification Windows (un clic ramène sur son onglet) et

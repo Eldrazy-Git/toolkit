@@ -50,12 +50,15 @@ contextBridge.exposeInMainWorld('toolkit', {
   },
   // Terminal intégré. cible : { type: 'projet', id } | { type: 'toolkit' } | { type: 'racine' }
   terminal: {
-    // options : { mode: 'claude' | 'powershell', cible, demande?, colonnes, lignes }
+    // options : { mode: 'claude' | 'powershell', cible, demande?, continuer?, reprendre?, modele?, effort?, colonnes, lignes }
     // Renvoie { ok, raison?, chemin }.
     creer: (id, options) => appeler('terminal:creer', id, options),
     ecrire: (id, donnees) => ipcRenderer.send('terminal:ecrire', id, donnees),
     redimensionner: (id, colonnes, lignes) => ipcRenderer.send('terminal:redimensionner', id, colonnes, lignes),
     fermer: (id) => appeler('terminal:fermer', id),
+    sessions: (cible) => appeler('terminal:sessions', cible), // [{ id, titre, demande, date }] : conversations Claude récentes
+    // Numéro de version de Windows (ex. 26100) : xterm.js s'adapte au fonctionnement de ConPTY.
+    buildWindows: Number(String(process.getSystemVersion?.() || '').split('.')[2]) || 0,
     surDonnees: (rappel) => ecouter('terminal:donnees', rappel), // rappel(id, donnees)
     surFin: (rappel) => ecouter('terminal:fin', rappel), // rappel(id, codeDeSortie)
     surClaudeAttend: (rappel) => ecouter('terminal:claude-attend', rappel), // rappel(id)

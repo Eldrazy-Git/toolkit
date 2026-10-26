@@ -17,6 +17,15 @@ function environnementPropre(supplement = {}) {
   }
   Object.assign(env, supplement);
   delete env.ELECTRON_RUN_AS_NODE;
+  // Toolkit lancé depuis une session Claude Code (ex. « npm start » demandé à Claude) : ces
+  // marqueurs de LA session parente ne doivent pas passer aux programmes lancés. Sinon un
+  // Claude ouvert dans Toolkit se croit « enfant » (conversation non enregistrée) et
+  // reprend l'effort de la session parente.
+  for (const cle of ['CLAUDECODE', 'CLAUDE_PID', 'CLAUDE_EFFORT', 'CLAUDE_CODE_CHILD_SESSION', 'CLAUDE_CODE_SESSION_ID',
+    'CLAUDE_CODE_SESSION_ATTENDED', 'CLAUDE_CODE_ENTRYPOINT', 'CLAUDE_CODE_EXECPATH', 'CLAUDE_CODE_MESSAGING_SOCKET',
+    'CLAUDE_CODE_MESSAGING_TOKEN']) {
+    delete env[cle];
+  }
   return env;
 }
 
