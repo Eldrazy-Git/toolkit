@@ -29,7 +29,7 @@ const AIDE_CLAUDE_INTROUVABLE = 'Claude Code est introuvable sur ce PC.\n\n'
   + '1. Ouvre PowerShell (menu Démarrer > tape « PowerShell »).\n'
   + '2. Tape cette commande puis Entrée :\n    irm https://claude.ai/install.ps1 | iex\n'
   + '3. Ferme PowerShell, rouvre-le et tape : claude\n'
-  + '   Connecte-toi avec ton compte Claude Pro quand il te le demande.\n'
+  + '   Connecte-toi avec ton compte Claude (abonnement Pro, Max…) quand il te le demande.\n'
   + '4. Redémarre Toolkit (Toolkit > Redémarrer Toolkit).';
 
 // onglet : { id, mode: 'claude' | 'powershell', cible, demande?, chemin? }

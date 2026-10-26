@@ -22,12 +22,32 @@ les modifier avec Claude Code, sans quitter l'application.
 13. [Déplacer le dossier Toolkit](#13-déplacer-le-dossier-toolkit)
 14. [Sauvegardes](#14-sauvegardes)
 15. [En cas de problème](#15-en-cas-de-problème)
+16. [Limites, sécurité et licence](#16-limites-sécurité-et-licence)
 
 ---
 
 ## 1. Installer Toolkit
 
-### Ce qu'il faut installer avant
+### Avec l'installateur (le plus simple)
+
+1. Récupère Toolkit : sur la page GitHub du projet, bouton vert **Code** > **Download ZIP**,
+   puis décompresse le fichier (clic droit > Extraire tout).
+2. Dans le dossier obtenu, double-clique sur **`Installer Toolkit.cmd`**.
+3. L'installateur :
+   - vérifie les logiciels nécessaires (Node.js, Git) et utiles (Claude Code, GitHub CLI,
+     Python) et **propose d'installer ceux qui manquent** (il te demande à chaque fois) ;
+   - installe Toolkit dans `C:\Users\<toi>\Toolkit` (dossiers `app`, `projets`, `donnees`) ;
+   - crée un raccourci **Toolkit** sur le Bureau et dans le menu Démarrer.
+4. Pour utiliser Claude : ouvre PowerShell, tape `claude` une fois et connecte-toi avec
+   **ton** compte Claude (abonnement Pro, Max…).
+
+Toolkit est installé **sous forme de sources** : il reste modifiable à tout moment (avec
+« Modifier Toolkit avec Claude » ou dans ton éditeur), sans rien réinstaller. Tu peux
+ensuite supprimer le dossier décompressé de l'étape 1.
+
+### À la main
+
+#### Ce qu'il faut installer avant
 
 | Logiciel | À quoi il sert | Obligatoire ? |
 |---|---|---|
@@ -49,7 +69,7 @@ les modifier avec Claude Code, sans quitter l'application.
    ```
 4. Chaque ligne affiche `[OK]` ou explique exactement quoi faire.
 
-### Installer (une seule fois)
+#### Installer (une seule fois)
 
 Dans la même fenêtre PowerShell, dans le dossier `Toolkit\app` :
 
@@ -207,7 +227,7 @@ Les boutons de la rubrique **Actions** (panneau de droite) lancent les scripts d
 
 ## 7. Claude Code dans Toolkit
 
-Tout passe par **ta** commande `claude` (ton abonnement Claude Pro), dans un terminal
+Tout passe par **ta** commande `claude` (ton propre compte Claude : abonnement Pro, Max…), dans un terminal
 intégré à Toolkit. Aucune clé API n'est utilisée.
 
 - **Modifier avec Claude** (panneau d'un projet) : Toolkit fait d'abord une **sauvegarde
@@ -337,7 +357,7 @@ nouvelle combinaison) ; ↺ remet celui par défaut.
 
 ### Palette de commandes (Ctrl+Maj+P)
 
-Tape ce que tu veux faire : « code catalogue », « commit lacitadelle », « réglages »,
+Tape ce que tu veux faire : « code catalogue », « commit mon-projet », « réglages »,
 « claude », « historique »… puis Entrée. Elle contient toutes les commandes de Toolkit et,
 pour chaque projet : ouvrir, afficher, code, Claude, historique, commit, push, et ses
 actions (boutons de projet.json).
@@ -389,6 +409,9 @@ Tout suit automatiquement : projets, réglages, données des outils, démarrage 
   envoyé sur GitHub nulle part. Pour le sauvegarder, copie-le simplement ailleurs.
 - Le code de l'application (`app\`) a son propre dépôt Git : en le récupérant ailleurs
   (puis `npm install`), on obtient un Toolkit vide, sans tes projets.
+- Une copie installée avec l'installateur n'est pas reliée au dépôt GitHub d'origine pour
+  les envois (il est gardé en lecture seule sous le nom « officiel ») : tes commits restent
+  chez toi, et tu peux créer ton propre dépôt (panneau Git > ligne Toolkit > ⋯).
 
 ## 15. En cas de problème
 
@@ -402,3 +425,24 @@ Tout suit automatiquement : projets, réglages, données des outils, démarrage 
 | Une erreur s'est produite | **Réglages > Ouvrir le journal des erreurs** : tu peux copier ce texte à Claude. |
 | `npm` n'est pas reconnu | Node.js n'est pas installé : lance `npm run verifier` pour obtenir la marche à suivre. |
 | Après une modification par Claude, Toolkit ne démarre plus | Ouvre PowerShell dans `Toolkit\app` (barre d'adresse > `powershell`), tape `claude`, puis demande-lui : « Toolkit ne démarre plus depuis ta dernière modification : regarde `git log` et corrige ou annule-la. » Chaque modification de Toolkit par Claude est précédée d'une sauvegarde Git : on peut toujours revenir en arrière. |
+
+## 16. Limites, sécurité et licence
+
+- **Windows uniquement**, interface en **français**.
+- **Claude** : Toolkit n'est pas un produit d'Anthropic. Il lance simplement la commande
+  `claude` (Claude Code) installée sur le PC, connectée au compte Claude de chaque
+  utilisateur. Toolkit ne contient et ne stocke aucune clé, aucun mot de passe ni jeton.
+- **GitHub** : Toolkit utilise la commande `gh` connectée au compte de chacun ; les dépôts
+  qu'il crée sont toujours privés et il n'envoie jamais rien sans qu'on le demande.
+- **Alerte `npm audit`** pendant l'installation (DOMPurify, « critical ») : elle concerne une
+  copie de DOMPurify incluse dans l'éditeur Monaco, utilisée d'une façon que ces failles ne
+  touchent pas ; le risque est quasi nul pour Toolkit, et une prochaine version de Monaco la
+  corrigera (Réglages > Mises à jour). Ne lance pas `npm audit fix --force` : il installerait
+  une version plus ancienne de l'éditeur.
+- **Licence** : Toolkit est un logiciel libre sous licence **GNU GPL version 3 ou
+  ultérieure** (fichier `LICENSE`). Tu peux l'utiliser, l'étudier, le modifier et le
+  redistribuer ; si tu distribues une version modifiée, elle doit rester sous la même
+  licence, avec son code source. Copyright © 2026 Eldrazy-Git.
+- Bibliothèques utilisées (licences libres compatibles) : Electron, Monaco Editor, Pyright,
+  xterm.js, node-pty, markdown-it et MiniSearch (MIT) ; leurs licences sont fournies avec
+  elles dans `node_modules`.

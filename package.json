@@ -1,7 +1,7 @@
 {
   "name": "toolkit",
   "productName": "Toolkit",
-  "version": "1.12.3",
+  "version": "1.13.0",
   "private": true,
   "description": "Application de bureau qui centralise mes projets et intègre Claude Code.",
   "main": "src/main/main.js",
@@ -11,7 +11,8 @@
     "postinstall": "node node_modules/electron/install.js && node scripts/creer-lanceur.js",
     "icones": "node scripts/generer-icones.js"
   },
-  "license": "UNLICENSED",
+  "license": "GPL-3.0-or-later",
+  "author": "Eldrazy-Git",
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",

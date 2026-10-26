@@ -13,7 +13,7 @@ Le cahier des charges complet est dans `../CAHIER_DES_CHARGES.md`.
 - **Demande confirmation** avant toute action risquée : déplacement ou suppression de
   fichiers, push ou toute opération sur un repo distant, installation globale.
 - Ne supprime jamais un projet ou un fichier de projet sans son accord explicite.
-- Abonnement Claude Pro : **aucune clé API Anthropic**. Toute intégration Claude passe par
+- Abonnement Claude (Pro, Max…) de chaque utilisateur : **aucune clé API Anthropic**. Toute intégration Claude passe par
   la CLI `claude` lancée dans un terminal.
 
 ## Emplacement des dossiers
@@ -410,6 +410,21 @@ entrée dans `actions` de son `projet.json`.
   une application vierge de tout projet.
 - Commits locaux réguliers avec des messages clairs en français. **Jamais de push sans
   l'accord de l'utilisateur.**
+
+## Installateur et diffusion
+
+- Licence GPL-3.0-or-later (`LICENSE`, `package.json`). Toolkit est diffusé SOUS FORME DE
+  SOURCES (pas d'electron-builder / asar) : il doit rester modifiable par Claude.
+- `Installer Toolkit.cmd` -> `scripts/installer.ps1` (enregistré en UTF-8 AVEC BOM : sinon
+  PowerShell 5.1 abîme les accents) : vérifie / propose d'installer (winget, avec une
+  question à chaque fois) Node.js >= 20, Git, gh, Python, et Claude Code (installateur
+  officiel) ; copie les sources dans `<Destination>\app` (sans node_modules), crée
+  `projets` et `donnees`, renomme le remote `origin` en `officiel` (envoi désactivé), lance
+  `npm install` (le postinstall crée le lanceur), crée les raccourcis Bureau / menu Démarrer.
+  Options de test : `-Destination`, `-SansRaccourcis`, `-NePasLancer`, `-SansQuestions`.
+- Rien de personnel dans le dépôt (vérifier avant publication : `git grep` de son nom,
+  e-mail, chemins). Les textes parlent du « compte Claude » de l'utilisateur, jamais d'un
+  compte précis.
 
 ## Lancer et tester
 

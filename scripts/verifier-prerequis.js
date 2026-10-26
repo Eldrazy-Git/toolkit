@@ -79,7 +79,7 @@ const verifications = [
       return {
         ok: r.ok,
         detail: r.ok ? premiereLigne(r.sortie) : 'introuvable',
-        solution: 'Installe Claude Code. Dans PowerShell :\n    irm https://claude.ai/install.ps1 | iex\n  Puis tape « claude » une fois pour te connecter avec ton compte Claude Pro.',
+        solution: 'Installe Claude Code. Dans PowerShell :\n    irm https://claude.ai/install.ps1 | iex\n  Puis tape « claude » une fois pour te connecter avec ton compte Claude (abonnement Pro, Max…).',
       };
     },
   },
