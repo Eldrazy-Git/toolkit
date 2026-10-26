@@ -510,6 +510,9 @@ local `git init --bare`).
   écriture, commit « Mise à jour de Toolkit … ». Puis redémarrage, ou `npm install` Toolkit
   fermé si les dépendances changent (script de mises-a-jour.js). `donnees/` et `projets/`
   ne sont jamais touchés.
+- Procédure complète pour l'utilisateur (et pour toi s'il demande de « préparer une version ») :
+  `docs/PROTOCOLE-MISE-A-JOUR.md`. Tu prépares (numéro, notes, commit) ; c'est lui qui lance
+  la publication (`npm run publier`, envoi sur GitHub).
 - Publication : `npm run publier` (scripts/publier-version.js) : vérifie, fabrique
   l'installateur, puis APRÈS CONFIRMATION pousse, crée l'étiquette et la Release (notes :
   `docs/notes-de-version/<version>.md`, installateur joint).
