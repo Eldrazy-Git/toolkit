@@ -25,6 +25,7 @@ export const DEFAUTS = {
     zoom: 100,
     restaurerOnglets: true,
     sectionsMasquees: [], // 'recents' | 'epingles' | 'groupes' | 'categories' | 'tags'
+    bienvenueVue: false, // écran de bienvenue déjà montré (voir bienvenue.js)
   },
   raccourcis: {}, // id de commande -> combinaison (ex. 'Ctrl+Shift+P'), '' = désactivé
 };

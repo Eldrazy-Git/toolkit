@@ -90,6 +90,16 @@ function enregistrer({ quitter }) {
   // Quel programme a réservé ces raccourcis (AMD Radeon Software, PowerToys…) -> { combinaison: description | null }
   gerer('raccourcis:proprietaires', (combinaisons) => require('../proprietaires-raccourcis').proprietaires(combinaisons));
 
+  // Comptes Claude et GitHub (voir comptes.js).
+  const comptes = require('../comptes');
+  gerer('comptes:etat', async () => {
+    const [claude, github] = await Promise.all([comptes.etatClaude(), comptes.etatGithub()]);
+    return { claude, github };
+  });
+  gerer('comptes:deconnecter-claude', () => comptes.deconnecterClaude());
+  gerer('comptes:changer-github', (nom) => comptes.changerCompteGithub(nom));
+  gerer('comptes:deconnecter-github', (nom) => comptes.deconnecterGithub(nom));
+
   // Disposition du clavier (pour les raccourcis pressés dans un outil HTML).
   ipcMain.on('application:disposition', (_e, carte) => require('../outils-html').definirDisposition(carte));
 

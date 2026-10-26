@@ -55,7 +55,7 @@ function onglet({ id, titre, visuel, actif, fermable, attention = false }) {
 }
 
 function visuelOutil(o) {
-  if (o.genre === 'terminal') return icone(o.mode === 'claude' ? 'claude' : 'terminal');
+  if (o.genre === 'terminal') return icone({ claude: 'claude', connexion: 'utilisateur' }[o.mode] || 'terminal');
   if (o.genre === 'console') return icone('lecture');
   if (o.genre === 'note') return icone('note');
   if (o.genre === 'code') return icone('code');

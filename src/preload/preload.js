@@ -178,6 +178,13 @@ contextBridge.exposeInMainWorld('toolkit', {
     choisirDossierProjets: () => appeler('reglages:choisir-dossier-projets'),
     dossierProjetsDefaut: () => appeler('reglages:dossier-projets-defaut'),
   },
+  // Comptes Claude et GitHub (connexion = terminal de genre « connexion », voir actions.js).
+  comptes: {
+    etat: () => appeler('comptes:etat'), // { claude: { installe, connecte, email, abonnement }, github: { installe, comptes: [{ nom, actif }] } }
+    deconnecterClaude: () => appeler('comptes:deconnecter-claude'),
+    changerGithub: (nom) => appeler('comptes:changer-github', nom),
+    deconnecterGithub: (nom) => appeler('comptes:deconnecter-github', nom),
+  },
   // Mises à jour des bibliothèques et programmes utilisés par Toolkit.
   misesAJour: {
     verifier: () => appeler('mises-a-jour:verifier'), // { date, paquets, audit, programmes }

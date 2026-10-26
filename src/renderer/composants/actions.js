@@ -795,6 +795,22 @@ export function marquerTerminal(id, enCours) {
   etat.modifier({ onglets: onglets.map((o) => (o.id === id ? { ...o, enCours } : o)) });
 }
 
+// Connexion à un compte (service : 'claude' | 'github') dans un terminal : l'outil officiel
+// ouvre le navigateur ; Toolkit ne voit jamais le mot de passe.
+export function connecterCompte(service) {
+  const onglet = {
+    id: `terminal-${crypto.randomUUID()}`,
+    genre: 'terminal',
+    mode: 'connexion',
+    connexion: service,
+    cible: { type: 'racine' },
+    nomCible: service === 'claude' ? 'Claude' : 'GitHub',
+    nom: `Connexion · ${service === 'claude' ? 'Claude' : 'GitHub'}`,
+    enCours: true,
+  };
+  etat.modifier({ onglets: [...etat.obtenir().onglets, onglet], ongletActif: onglet.id });
+}
+
 export function ouvrirPowerShell(cible, nomCible) {
   ouvrirTerminal({ mode: 'powershell', cible, nomCible });
 }

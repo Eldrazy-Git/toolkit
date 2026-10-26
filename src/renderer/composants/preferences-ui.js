@@ -8,13 +8,13 @@ import * as raccourcis from './raccourcis.js';
 
 // --- Petits contrôles ---------------------------------------------------------------------------
 
-function caseACocher(groupe, cle, libelle, aide) {
+export function caseACocher(groupe, cle, libelle, aide) {
   const c = el('input', { type: 'checkbox', onChange: () => preferences.modifier(groupe, { [cle]: c.checked }) });
   c.checked = Boolean(preferences.lire(groupe)[cle]);
   return el('label', { classe: 'champ-formulaire champ-case' }, c, el('span', { classe: 'champ-libelle' }, libelle), aide ? el('span', { classe: 'champ-aide' }, aide) : null);
 }
 
-function choix(groupe, cle, libelle, options, aide, convertir = (v) => v) {
+export function choix(groupe, cle, libelle, options, aide, convertir = (v) => v) {
   const s = el('select', { onChange: () => preferences.modifier(groupe, { [cle]: convertir(s.value) }) },
     options.map(([valeur, texte]) => el('option', { value: String(valeur) }, texte)));
   s.value = String(preferences.lire(groupe)[cle]);

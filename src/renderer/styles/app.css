@@ -1741,3 +1741,36 @@ mark { background: rgba(229, 192, 73, 0.3); color: var(--texte-fort); border-rad
 .raccourci-pris { display: inline-flex; align-items: center; gap: 4px; margin-left: 10px; font-size: 12px; color: #f0a35c; }
 .raccourci-pris[hidden] { display: none; }
 .raccourci-pris .ico { width: 13px; height: 13px; }
+
+/* Réglages > Comptes */
+.bloc-compte { display: flex; flex-direction: column; gap: 8px; }
+.bloc-compte > .statut { font-size: 14px; }
+.liste-comptes { display: flex; flex-direction: column; gap: 4px; }
+.ligne-compte { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--bordure); border-radius: var(--rayon); }
+.ligne-compte.actif { border-color: var(--accent); background: rgba(0, 120, 212, 0.08); }
+.ligne-compte .ico { width: 15px; height: 15px; color: var(--texte-faible); }
+.ligne-compte.actif .ico { color: var(--succes); }
+.ligne-compte .espace { flex: 1; }
+
+/* Écran de bienvenue */
+.dialogue.bienvenue { width: min(720px, calc(100vw - 48px)); }
+.corps-bienvenue { display: flex; flex-direction: column; gap: 10px; min-height: 320px; max-height: 64vh; overflow-y: auto; }
+.corps-bienvenue h2 { font-size: 18px; }
+.corps-bienvenue p { margin: 0; }
+.corps-bienvenue textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--bordure-forte); border-radius: var(--rayon); background: var(--fond-champ); color: var(--texte-fort); font: inherit; resize: vertical; }
+.bienvenue-logo { width: 64px; height: 64px; align-self: center; }
+.bienvenue-liste { margin: 4px 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.bienvenue-liste li { display: flex; align-items: center; gap: 10px; }
+.bienvenue-liste .ico { color: var(--accent-texte); flex-shrink: 0; }
+.points-bienvenue { display: flex; justify-content: center; gap: 6px; margin-top: 12px; }
+.points-bienvenue .point { width: 8px; height: 8px; border-radius: 50%; background: var(--bordure-forte); }
+.points-bienvenue .point.actif { background: var(--accent); }
+.dialogue.bienvenue .dialogue-boutons .espace { flex: 1; }
+.dialogue.bienvenue .section-reglages { margin-bottom: 14px; }
+.cartes-bienvenue { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.carte-bienvenue { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px; border: 1px solid var(--bordure-forte); border-radius: 8px; background: var(--fond-element); color: var(--texte); font: inherit; text-align: left; cursor: pointer; }
+.carte-bienvenue:hover { border-color: var(--accent); }
+.carte-bienvenue .ico { width: 22px; height: 22px; color: var(--accent-texte); }
+.carte-bienvenue strong { color: var(--texte-fort); }
+.carte-bienvenue span { font-size: 12px; color: var(--texte-faible); }
+.page-reglages > .details-aide, .page-reglages > p { margin: 0 0 18px; line-height: 1.5; }

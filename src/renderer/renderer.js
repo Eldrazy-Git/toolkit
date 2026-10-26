@@ -105,6 +105,7 @@ async function demarrer() {
   await actions.chargerEditeurs();
   await session.restaurer(sessionSauvee);
   raccourcis.verifierConflits(notifier);
+  (await import('./composants/bienvenue.js')).ouvrirSiPremierLancement();
 }
 
 demarrer();

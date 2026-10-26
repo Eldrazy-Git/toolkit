@@ -123,6 +123,8 @@ export function creerPanneauTerminal(onglet, parent) {
     idProcessus = null;
     term.write(`\r\n\x1b[90m[Terminé — code ${code}. Clique sur « ${boutonRelancer.textContent} » pour recommencer.]\x1b[0m\r\n`);
     afficherEtat(false, code);
+    // Connexion à un compte terminée : la page « Comptes » se met à jour.
+    if (onglet.mode === 'connexion') window.dispatchEvent(new CustomEvent('toolkit:comptes'));
   }
 
   // premier lancement : avec la demande initiale ; relance : reprend la conversation.
@@ -136,6 +138,7 @@ export function creerPanneauTerminal(onglet, parent) {
       const resultat = await api.creer(id, {
         mode: onglet.mode,
         cible: onglet.cible,
+        connexion: onglet.connexion,
         demande: continuer ? undefined : onglet.demande,
         continuer,
         colonnes: term.cols,

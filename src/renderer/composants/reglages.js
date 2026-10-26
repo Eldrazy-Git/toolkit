@@ -8,6 +8,7 @@ import * as etat from './etat.js';
 import * as actions from './actions.js';
 import * as misesAJour from './mises-a-jour.js';
 import { pageClaude, pageEditeur, pageInterface, pageRaccourcis } from './preferences-ui.js';
+import { pageComptes } from './comptes-ui.js';
 
 export const ID_REGLAGES = 'reglages';
 
@@ -140,6 +141,7 @@ function sectionsFinales() {
 
 const ONGLETS_REGLAGES = [
   ['general', 'Général', 'reglages'],
+  ['comptes', 'Comptes', 'utilisateur'],
   ['claude', 'Claude', 'claude'],
   ['editeur', 'Éditeur', 'code'],
   ['interface', 'Interface', 'grille'],
@@ -154,12 +156,13 @@ let pageAffichee = null;
 export function rendre() {
   const { reglagesOuverts, ongletReglages = 'general' } = etat.obtenir();
   if (!reglagesOuverts) return;
-  const pagesFigees = ['claude', 'editeur', 'interface', 'raccourcis'];
+  const pagesFigees = ['comptes', 'claude', 'editeur', 'interface', 'raccourcis'];
   if (pagesFigees.includes(ongletReglages) && pageAffichee === ongletReglages && panneau.firstChild) return;
   pageAffichee = ongletReglages;
   const rafraichir = () => { pageAffichee = null; rendre(); };
   const contenu = {
     general: () => pageGenerale(),
+    comptes: pageComptes,
     claude: pageClaude,
     editeur: pageEditeur,
     interface: pageInterface,

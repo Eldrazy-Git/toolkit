@@ -20,3 +20,7 @@ local.properties
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Installateur fabriqué (npm run installateur)
+/build/
+/dist/

@@ -83,6 +83,7 @@ app/
     │   ├── notes.js             notes .md : rendu markdown-it (HTML brut désactivé), lecture, écriture
     │   ├── modeles.js           modèles de « Nouvel outil » et création du projet
     │   ├── claude-md.js         génération du CLAUDE.md d'un projet
+    │   ├── comptes.js           comptes Claude / GitHub : état, changement, déconnexion
     │   ├── proprietaires-raccourcis.js quel programme (AMD, PowerToys) a réservé un raccourci
     │   ├── mises-a-jour.js      versions (registre npm, npm audit, programmes) et script d'installation
     │   ├── contexte-claude.js   catalogue projets/CLAUDE.md + sections « Projets liés » + --add-dir
@@ -132,6 +133,8 @@ app/
             ├── commandes.js     exécution des raccourcis + liste de la palette
             ├── palette.js       palette de commandes (Ctrl+Maj+P)
             ├── session.js       onglets de la dernière fois (interface.session)
+            ├── comptes-ui.js    page Réglages > Comptes (Claude, GitHub)
+            ├── bienvenue.js     écran de bienvenue (premier lancement)
             ├── note.js          onglet d'une note : lecture, liens, rétroliens, modification
             ├── menu.js          ouvrirMenu(bouton, elements) : menu déroulant
             └── barre-laterale.js, bibliotheque.js, details.js, icone-projet.js
@@ -415,6 +418,22 @@ entrée dans `actions` de son `projet.json`.
 
 - Licence GPL-3.0-or-later (`LICENSE`, `package.json`). Toolkit est diffusé SOUS FORME DE
   SOURCES (pas d'electron-builder / asar) : il doit rester modifiable par Claude.
+- **Installateur graphique** `install.exe` : `installateur/Installateur.cs` (WinForms, C# 5),
+  fabriqué par `npm run installateur` (`scripts/construire-installateur.js`) avec le
+  compilateur C# de Windows (.NET Framework 4, rien à installer) ; sources = `git archive
+  HEAD` (le DERNIER COMMIT) incluses en ressource `app.zip` ; sortie `dist/` (ignoré par Git,
+  à publier dans les Releases). Étapes : bienvenue, dossier + raccourcis (+ nom Git si
+  absent), logiciels (winget / installateur officiel de Claude, cases cochées), installation
+  (journal), fin. Inscrit Toolkit dans « Applications installées » (HKCU), copie de lui-même
+  en « Désinstaller Toolkit.exe » (`/desinstaller` : app + lanceur + raccourcis à la
+  Corbeille, projets et donnees GARDÉS sauf case cochée). `/auto <dossier> <journal>` :
+  installation sans clic (tests). Non signé : avertissement SmartScreen.
+- Premier lancement : `composants/bienvenue.js` (si aucun projet et
+  `preferences.interface.bienvenueVue` faux) : comptes, préférences, consignes, premier projet.
+- Comptes : `src/main/comptes.js` (`claude auth status --json` / `logout`, `gh auth status /
+  switch / logout`) ; la CONNEXION se fait dans un terminal de mode `connexion`
+  (`claude auth login --claudeai`, `gh auth login --web`) ; page Réglages > Comptes
+  (`composants/comptes-ui.js`). Toolkit ne lit jamais de mot de passe ni de jeton.
 - `Installer Toolkit.cmd` -> `scripts/installer.ps1` (enregistré en UTF-8 AVEC BOM : sinon
   PowerShell 5.1 abîme les accents) : vérifie / propose d'installer (winget, avec une
   question à chaque fois) Node.js >= 20, Git, gh, Python, et Claude Code (installateur

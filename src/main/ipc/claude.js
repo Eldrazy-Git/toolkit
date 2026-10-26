@@ -15,7 +15,13 @@ const contexteClaude = require('../contexte-claude');
 
 function enregistrer() {
   // --- Terminal ---
-  gerer('terminal:creer', async (contenu, id, { mode, cible, demande, continuer, colonnes, lignes }) => {
+  gerer('terminal:creer', async (contenu, id, { mode, cible, demande, continuer, colonnes, lignes, connexion }) => {
+    // Connexion à un compte (Claude, GitHub) : programme officiel, dans le dossier personnel.
+    if (mode === 'connexion') {
+      const commande = await require('../comptes').commandeConnexion(connexion);
+      const resultat = await terminal.creer(id, { mode: 'commande', commande, dossier: require('node:os').homedir(), colonnes, lignes }, contenu);
+      return { ...resultat, chemin: connexion === 'claude' ? 'claude auth login' : 'gh auth login' };
+    }
     const dossier = await dossierCible(cible);
     // Claude peut lire les projets liés à celui-ci (voir contexte-claude.js).
     const dossiersLies = mode === 'claude' && cible.type === 'projet' ? await contexteClaude.dossiersLies(cible.id) : [];

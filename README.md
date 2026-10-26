@@ -30,10 +30,20 @@ les modifier avec Claude Code, sans quitter l'application.
 
 ### Avec l'installateur (le plus simple)
 
-1. Récupère Toolkit : sur la page GitHub du projet, bouton vert **Code** > **Download ZIP**,
-   puis décompresse le fichier (clic droit > Extraire tout).
-2. Dans le dossier obtenu, double-clique sur **`Installer Toolkit.cmd`**.
-3. L'installateur :
+1. Télécharge **`Installer-Toolkit-<version>.exe`** (page GitHub du projet > **Releases**)
+   et double-clique dessus. Windows peut afficher « Windows a protégé votre ordinateur »
+   (l'installateur n'est pas signé) : clique sur **Informations complémentaires** >
+   **Exécuter quand même**.
+2. Suis l'assistant : dossier d'installation, raccourcis, logiciels à installer (cases
+   cochées pour toi), puis **Installer** et **Terminer**.
+3. Au premier lancement, Toolkit t'accueille : connexion à ton compte Claude (et GitHub si
+   tu veux), préférences, consignes pour Claude, puis ton premier projet.
+4. Pour le désinstaller : Paramètres Windows > **Applications** > Toolkit. Tes projets et
+   tes réglages sont gardés (sauf si tu demandes de les supprimer : ils vont alors à la
+   Corbeille).
+
+Sans l'installateur `.exe` (depuis le ZIP du code : bouton vert **Code** > **Download
+ZIP**, puis décompresser) : double-clique sur **`Installer Toolkit.cmd`**. Il :
    - vérifie les logiciels nécessaires (Node.js, Git) et utiles (Claude Code, GitHub CLI,
      Python) et **propose d'installer ceux qui manquent** (il te demande à chaque fois) ;
    - installe Toolkit dans `C:\Users\<toi>\Toolkit` (dossiers `app`, `projets`, `donnees`) ;
@@ -331,6 +341,11 @@ de passe. Si GitHub n'est pas connecté, le panneau explique comment faire.
   projets existants ne sont pas déplacés automatiquement.
 - **Éditeurs** et **Programmes pour les scripts** : ce que Toolkit a trouvé sur ton PC.
 - **Ouvrir le journal des erreurs** : les détails techniques des problèmes rencontrés.
+
+**Comptes** : le compte Claude et le(s) compte(s) GitHub utilisés. « Se connecter » ou
+« Changer de compte » ouvre un onglet où l'outil officiel lance ton navigateur (ton mot de
+passe est saisi sur le site de Claude ou de GitHub, jamais dans Toolkit). Pour GitHub,
+plusieurs comptes peuvent être connectés : « Utiliser ce compte » choisit celui de Toolkit.
 
 **Claude** :
 - **Tes consignes pour Claude** : ce que tu écris ici s'applique à TOUS tes projets et à

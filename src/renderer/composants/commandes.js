@@ -75,6 +75,8 @@ export function listePalette() {
     { titre: 'Préférences de l\'éditeur de code', groupe: 'Réglages', icone: 'code', action: () => actions.ouvrirReglages('editeur') },
     { titre: 'Préférences de l\'interface (zoom, démarrage…)', groupe: 'Réglages', icone: 'grille', action: () => actions.ouvrirReglages('interface') },
     { titre: 'Raccourcis clavier', groupe: 'Réglages', icone: 'reglages', action: () => actions.ouvrirReglages('raccourcis') },
+    { titre: 'Comptes Claude et GitHub', groupe: 'Réglages', icone: 'utilisateur', action: () => actions.ouvrirReglages('comptes') },
+    { titre: 'Assistant de bienvenue', groupe: 'Toolkit', icone: 'info', action: () => import('./bienvenue.js').then((b) => b.ouvrirBienvenue()) },
     { titre: 'Vérifier les mises à jour', groupe: 'Réglages', icone: 'redemarrer', action: () => actions.ouvrirReglages('mises-a-jour', { verifier: true }) },
     { titre: 'Agrandir l\'interface', groupe: 'Affichage', icone: 'plus', raccourci: r('zoomPlus'), action: () => zoomer(1) },
     { titre: 'Réduire l\'interface', groupe: 'Affichage', icone: 'croix', raccourci: r('zoomMoins'), action: () => zoomer(-1) },
