@@ -3,7 +3,19 @@
 Toolkit est une application de bureau Windows (Electron) qui centralise les projets de
 l'utilisateur (outils HTML, scripts Python/Node, mods Minecraft, application Android) et
 intègre Claude Code. Ce dossier `app/` contient **uniquement le code de l'application**.
-Le cahier des charges complet est dans `../CAHIER_DES_CHARGES.md`.
+Ce fichier est la référence complète (le cahier des charges initial y a été intégré).
+
+## Principes de conception
+
+1. **Simple et minimaliste** : interface sombre inspirée de VS Code / Android Studio, sans
+   fioritures. L'utilisateur ne doit jamais se perdre (peu de boutons visibles à la fois,
+   textes clairs, une seule façon évidente de faire chaque chose).
+2. **Portable** : le dossier Toolkit se déplace n'importe où (voir « Règles absolues »).
+3. **Léger** : démarrage discret possible avec Windows, aucune tâche de fond fenêtre fermée.
+4. **Modifiable par Claude** : code clair, modulaire et documenté (voir « Comment ajouter une
+   fonctionnalité »).
+5. **Robuste** : un outil ou un script qui plante ne fait jamais planter Toolkit ; erreurs
+   compréhensibles par un non-développeur.
 
 ## L'utilisateur
 
