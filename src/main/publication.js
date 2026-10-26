@@ -28,10 +28,13 @@ const ENTRETIEN = /documentation|readme|claude\.md|ménage|menage|nettoyage|comm
 
 let enCours = false;
 
+// env : variables ajoutées APRÈS le nettoyage (environnementPropre() retire
+// ELECTRON_RUN_AS_NODE : sans elle, electron.exe lancerait le script comme une 2ᵉ application
+// qui ne se termine jamais, et la publication resterait bloquée).
 function lancer(programme, args, { env = {}, delai = 120000 } = {}) {
   return new Promise((resoudre) => {
     execFile(programme, args, {
-      cwd: chemins.app, env: environnementPropre(env), windowsHide: true, maxBuffer: 20 * 1024 * 1024, timeout: delai,
+      cwd: chemins.app, env: { ...environnementPropre(), ...env }, windowsHide: true, maxBuffer: 20 * 1024 * 1024, timeout: delai,
     }, (erreur, sortie, sortieErreur) => resoudre({
       introuvable: erreur?.code === 'ENOENT',
       code: erreur ? (typeof erreur.code === 'number' ? erreur.code : 1) : 0,
