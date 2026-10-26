@@ -18,7 +18,7 @@ function etapeAccueil() {
     titre: 'Bienvenue dans Toolkit',
     contenu: [
       infosApp ? el('img', { classe: 'bienvenue-logo', src: infosApp.icone, alt: '' }) : null,
-      el('p', {}, 'Toolkit rassemble tous tes projets au même endroit : outils HTML, scripts Python ou Node, mods Minecraft, applications Android…'),
+      el('p', {}, 'Toolkit rassemble tous tes projets au même endroit'),
       el('ul', { classe: 'bienvenue-liste' },
         el('li', {}, icone('lecture'), 'les ouvrir et les lancer en un clic ;'),
         el('li', {}, icone('claude'), 'les créer et les modifier avec Claude, en lui parlant simplement ;'),

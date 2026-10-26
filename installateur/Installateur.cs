@@ -313,9 +313,9 @@ namespace InstallateurToolkit
         {
             titre.Text = "Bienvenue";
             sousTitre.Text = "Cet assistant installe Toolkit " + Infos.Version + " sur ton PC.";
-            Texte("Toolkit rassemble tous tes projets au même endroit (outils HTML, scripts, mods Minecraft, applications Android…) et te permet de les créer et de les modifier avec Claude.", 0, 48);
+            Texte("Toolkit rassemble tous tes projets au même endroit et te permet de les créer et de les modifier avec Claude.", 0, 48);
             Texte("L'installation :\n  • vérifie les logiciels nécessaires et propose d'installer ceux qui manquent ;\n  • copie Toolkit dans le dossier de ton choix ;\n  • crée les raccourcis.\n\nToolkit reste modifiable après l'installation (il est installé avec son code), sans rien réinstaller.", 56, 140);
-            Texte("Toolkit est un logiciel libre, sous licence GNU GPL version 3. Il n'est pas édité par Anthropic : pour utiliser Claude, il faut ton propre compte Claude (abonnement Pro ou Max).", 210, 60);
+            Texte("Toolkit est un logiciel libre, sous licence GNU GPL version 3. Il n'est pas édité par Anthropic : pour utiliser Claude, il faut un compte Claude (abonnement Pro ou Max).", 210, 60);
             Texte("Une connexion Internet est nécessaire (environ 200 Mo à télécharger).", 280, 24).ForeColor = Color.DimGray;
         }
 
