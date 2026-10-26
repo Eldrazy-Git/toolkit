@@ -1774,3 +1774,6 @@ mark { background: rgba(229, 192, 73, 0.3); color: var(--texte-fort); border-rad
 .carte-bienvenue strong { color: var(--texte-fort); }
 .carte-bienvenue span { font-size: 12px; color: var(--texte-faible); }
 .page-reglages > .details-aide, .page-reglages > p { margin: 0 0 18px; line-height: 1.5; }
+.connexion-github p { margin: 0 0 10px; }
+.code-connexion { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 6px 0 16px; padding: 14px; border: 1px dashed var(--accent); border-radius: 8px; font: 600 28px var(--police-code); letter-spacing: 3px; color: var(--texte-fort); user-select: text; }
+.dialogue.large:has(.connexion-github) { width: min(560px, calc(100vw - 48px)); }

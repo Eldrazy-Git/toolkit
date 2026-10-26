@@ -184,6 +184,9 @@ contextBridge.exposeInMainWorld('toolkit', {
     deconnecterClaude: () => appeler('comptes:deconnecter-claude'),
     changerGithub: (nom) => appeler('comptes:changer-github', nom),
     deconnecterGithub: (nom) => appeler('comptes:deconnecter-github', nom),
+    connecterGithub: () => appeler('comptes:connecter-github'), // { code, url }
+    annulerGithub: () => appeler('comptes:annuler-github'),
+    surFinGithub: (rappel) => ecouter('comptes:github-fin', rappel), // rappel({ reussi, erreur })
   },
   // Mises à jour des bibliothèques et programmes utilisés par Toolkit.
   misesAJour: {

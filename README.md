@@ -47,7 +47,8 @@ ZIP**, puis décompresser) : double-clique sur **`Installer Toolkit.cmd`**. Il :
    - vérifie les logiciels nécessaires (Node.js, Git) et utiles (Claude Code, GitHub CLI,
      Python) et **propose d'installer ceux qui manquent** (il te demande à chaque fois) ;
    - installe Toolkit dans `C:\Users\<toi>\Toolkit` (dossiers `app`, `projets`, `donnees`) ;
-   - crée un raccourci **Toolkit** sur le Bureau et dans le menu Démarrer.
+   - crée un raccourci **Toolkit** sur le Bureau et dans le menu Démarrer (il pointe vers
+     `Toolkit.exe`, dans le dossier d'installation).
 4. Pour utiliser Claude : ouvre PowerShell, tape `claude` une fois et connecte-toi avec
    **ton** compte Claude (abonnement Pro, Max…).
 

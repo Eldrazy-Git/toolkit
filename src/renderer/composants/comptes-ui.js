@@ -4,7 +4,7 @@
 import { el } from './dom.js';
 import { icone } from './icones.js';
 import { notifier } from './notifications.js';
-import { confirmer } from './dialogue.js';
+import { confirmer, fenetre } from './dialogue.js';
 import * as actions from './actions.js';
 
 const api = window.toolkit.comptes;
@@ -91,6 +91,46 @@ function blocGithub(g, recharger) {
       }, 'Se déconnecter')))),
     el('div', { classe: 'details-boutons' }, ajouter),
   ];
+}
+
+// Connexion à GitHub dans une fenêtre simple (pas de terminal) : code à usage unique déjà
+// copié, bouton pour ouvrir la page de GitHub ; la fenêtre se ferme toute seule à la fin.
+export async function connecterGithub() {
+  let infos;
+  try {
+    infos = await api.connecterGithub();
+  } catch (erreur) {
+    notifier(erreur.message, 'erreur');
+    return;
+  }
+  navigator.clipboard.writeText(infos.code).catch(() => {});
+  let fermerFenetre = null;
+  let fini = false;
+  const arreter = api.surFinGithub(({ reussi, erreur }) => {
+    fini = true;
+    arreter();
+    fermerFenetre?.();
+    notifier(reussi ? 'Connecté à GitHub.' : `La connexion à GitHub n'a pas abouti (${erreur}).`, reussi ? 'succes' : 'erreur');
+    window.dispatchEvent(new CustomEvent('toolkit:comptes'));
+  });
+  const ouvrirPage = () => window.toolkit.liens.ouvrirExterne(infos.url).catch(() => {});
+  await fenetre({
+    titre: 'Se connecter à GitHub',
+    corps: el('div', { classe: 'connexion-github' },
+      el('p', {}, '1. Ouvre la page de GitHub (bouton ci-dessous) et connecte-toi si besoin.'),
+      el('p', {}, '2. Saisis ce code (il est déjà copié : colle-le avec Ctrl+V) :'),
+      el('div', { classe: 'code-connexion' }, infos.code,
+        el('button', { classe: 'bouton petit', onClick: () => navigator.clipboard.writeText(infos.code).then(() => notifier('Code copié.')).catch(() => {}) }, 'Copier')),
+      el('p', {}, '3. Clique sur « Authorize » (Autoriser) sur GitHub. Cette fenêtre se fermera toute seule.'),
+      el('p', { classe: 'details-aide' }, 'Ton mot de passe est saisi sur github.com uniquement : Toolkit ne le voit jamais.')),
+    boutons: [{ libelle: 'Ouvrir la page de GitHub', style: 'principal', action: ouvrirPage }],
+    surOuverture: (fermer) => { fermerFenetre = () => fermer(null); },
+  });
+  // Fenêtre fermée avant la fin : connexion annulée.
+  if (!fini) {
+    arreter();
+    api.annulerGithub().catch(() => {});
+  }
 }
 
 // Contenu rempli de façon asynchrone ; se met à jour après une connexion (événement « toolkit:comptes »).

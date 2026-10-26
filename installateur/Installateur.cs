@@ -44,7 +44,39 @@ namespace InstallateurToolkit
                 Application.Run(auto);
                 Environment.Exit(auto.Reussie ? 0 : 1);
             }
+            // Le même programme a trois rôles selon son nom de fichier : l'installateur
+            // (Installer-Toolkit-x.exe), le lanceur (Toolkit.exe, à la racine du dossier) et le
+            // désinstallateur (Désinstaller Toolkit.exe), même lancé d'un simple double-clic.
+            string nom = Path.GetFileNameWithoutExtension(Application.ExecutablePath);
+            if (nom.Equals("Toolkit", StringComparison.OrdinalIgnoreCase)) { Lanceur.Lancer(args); return; }
+            if (nom.StartsWith("Désinstaller", StringComparison.OrdinalIgnoreCase) || nom.StartsWith("Desinstaller", StringComparison.OrdinalIgnoreCase)) desinstaller = true;
             Application.Run(desinstaller ? (Form)new Desinstallateur() : new Assistant(null, null));
+        }
+    }
+
+    // --- Lanceur (Toolkit.exe) ----------------------------------------------------------------
+    // Lance Electron sur le dossier app voisin, sans fenêtre de console (comme
+    // « Lancer Toolkit.vbs »). Si Toolkit est déjà ouvert, Electron affiche sa fenêtre.
+    static class Lanceur
+    {
+        public static void Lancer(string[] args)
+        {
+            string racine = Path.GetDirectoryName(Application.ExecutablePath);
+            string app = Path.Combine(racine, "app");
+            string electron = Path.Combine(app, "node_modules", "electron", "dist", "electron.exe");
+            if (!File.Exists(electron))
+            {
+                MessageBox.Show("Toolkit n'est pas installé complètement (Electron est introuvable).\n\nRelance l'installateur de Toolkit, ou, dans PowerShell, dans le dossier « app », tape : npm install",
+                    "Toolkit", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            var arguments = new StringBuilder("\"" + app + "\"");
+            foreach (var a in args) arguments.Append(" \"").Append(a.Replace("\"", "")).Append('"');
+            var info = new ProcessStartInfo(electron, arguments.ToString());
+            info.UseShellExecute = false;
+            info.WorkingDirectory = app;
+            info.EnvironmentVariables.Remove("ELECTRON_RUN_AS_NODE");
+            Process.Start(info);
         }
     }
 
@@ -515,6 +547,9 @@ namespace InstallateurToolkit
                 // L'installateur lui-même, pour la désinstallation.
                 string desinstallateur = Path.Combine(dossier, "Désinstaller Toolkit.exe");
                 File.Copy(Application.ExecutablePath, desinstallateur, true);
+                // Et comme lanceur (Toolkit.exe, avec l'icône de Toolkit) : les raccourcis pointent dessus.
+                string lanceurExe = Path.Combine(dossier, "Toolkit.exe");
+                File.Copy(Application.ExecutablePath, lanceurExe, true);
 
                 Etape("Téléchargement des bibliothèques (npm install)");
                 int codeNpm = Outils.Executer("cmd.exe", "/d /c npm install --no-fund --no-audit", app, Ecrire, 1800000);
@@ -523,10 +558,9 @@ namespace InstallateurToolkit
                 if (!File.Exists(lanceur)) throw new Exception("Le lanceur « Lancer Toolkit.vbs » n'a pas été créé.");
 
                 Etape("Raccourcis");
-                string wscript = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "wscript.exe");
                 string icone = Path.Combine(app, "assets", "icone.ico");
-                if (bureau) Outils.Raccourci(Path.Combine(Outils.Bureau(), "Toolkit.lnk"), wscript, "\"" + lanceur + "\"", dossier, icone);
-                if (menu) Outils.Raccourci(Path.Combine(Outils.MenuDemarrer(), "Toolkit.lnk"), wscript, "\"" + lanceur + "\"", dossier, icone);
+                if (bureau) Outils.Raccourci(Path.Combine(Outils.Bureau(), "Toolkit.lnk"), lanceurExe, "", dossier, icone);
+                if (menu) Outils.Raccourci(Path.Combine(Outils.MenuDemarrer(), "Toolkit.lnk"), lanceurExe, "", dossier, icone);
 
                 // « Applications installées » de Windows (désinstallation).
                 using (var cle = Registry.CurrentUser.CreateSubKey(Outils.CleDesinstallation))
@@ -594,8 +628,7 @@ namespace InstallateurToolkit
         {
             if (installationReussie && caseLancer.Checked)
             {
-                string lanceur = Path.Combine(champDossier.Text.Trim(), "Lancer Toolkit.vbs");
-                try { Process.Start("wscript.exe", "\"" + lanceur + "\""); } catch { }
+                try { Process.Start(Path.Combine(champDossier.Text.Trim(), "Toolkit.exe")); } catch { }
             }
             Close();
         }
@@ -640,7 +673,7 @@ namespace InstallateurToolkit
                 var erreurs = new List<string>();
                 foreach (var lien in new[] { Path.Combine(Outils.Bureau(), "Toolkit.lnk"), Path.Combine(Outils.MenuDemarrer(), "Toolkit.lnk") })
                     try { if (File.Exists(lien)) File.Delete(lien); } catch (Exception x) { erreurs.Add(x.Message); }
-                var aRetirer = new List<string> { Path.Combine(dossier, "app"), Path.Combine(dossier, "Lancer Toolkit.vbs") };
+                var aRetirer = new List<string> { Path.Combine(dossier, "app"), Path.Combine(dossier, "Lancer Toolkit.vbs"), Path.Combine(dossier, "Toolkit.exe") };
                 if (tout.Checked) { aRetirer.Add(Path.Combine(dossier, "projets")); aRetirer.Add(Path.Combine(dossier, "donnees")); }
                 foreach (var chemin in aRetirer)
                 {

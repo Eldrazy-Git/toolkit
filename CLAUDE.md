@@ -426,13 +426,19 @@ entrée dans `actions` de son `projet.json`.
   absent), logiciels (winget / installateur officiel de Claude, cases cochées), installation
   (journal), fin. Inscrit Toolkit dans « Applications installées » (HKCU), copie de lui-même
   en « Désinstaller Toolkit.exe » (`/desinstaller` : app + lanceur + raccourcis à la
-  Corbeille, projets et donnees GARDÉS sauf case cochée). `/auto <dossier> <journal>` :
+  Corbeille, projets et donnees GARDÉS sauf case cochée). Le même exe a 3 rôles selon son
+  NOM de fichier : installateur, `Toolkit.exe` (lanceur à la racine : lance
+  `app\node_modules\electron\dist\electron.exe app`, cible des raccourcis) et
+  `Désinstaller Toolkit.exe` (désinstallation, même sans argument). `/auto <dossier> <journal>` :
   installation sans clic (tests). Non signé : avertissement SmartScreen.
 - Premier lancement : `composants/bienvenue.js` (si aucun projet et
   `preferences.interface.bienvenueVue` faux) : comptes, préférences, consignes, premier projet.
 - Comptes : `src/main/comptes.js` (`claude auth status --json` / `logout`, `gh auth status /
-  switch / logout`) ; la CONNEXION se fait dans un terminal de mode `connexion`
-  (`claude auth login --claudeai`, `gh auth login --web`) ; page Réglages > Comptes
+  switch / logout`). Connexion Claude : terminal de mode `connexion` (`claude auth login
+  --claudeai`). Connexion GitHub : SANS terminal (`gh auth login --web` lancé sans console ne
+  pose aucune question) : fenêtre avec le code à usage unique et le bouton vers
+  github.com/login/device ; fermer la fenêtre arrête gh. node-pty exige le CHEMIN COMPLET du
+  programme (`where gh`), sinon « File not found » ; page Réglages > Comptes
   (`composants/comptes-ui.js`). Toolkit ne lit jamais de mot de passe ni de jeton.
 - `Installer Toolkit.cmd` -> `scripts/installer.ps1` (enregistré en UTF-8 AVEC BOM : sinon
   PowerShell 5.1 abîme les accents) : vérifie / propose d'installer (winget, avec une

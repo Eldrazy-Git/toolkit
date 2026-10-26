@@ -94,9 +94,54 @@ async function commandeConnexion(service) {
     return { executable: exe, args: ['auth', 'login', '--claudeai'] };
   }
   if (service === 'github') {
-    return { executable: 'gh', args: ['auth', 'login', '--hostname', 'github.com', '--git-protocol', 'https', '--web'] };
+    // Le terminal (node-pty) exige le chemin complet du programme : on le cherche.
+    const trouves = (await lancer('where', ['gh'])).sortie.split(/\r?\n/).map((l) => l.trim()).filter((l) => /\.exe$/i.test(l));
+    if (!trouves.length) throw new Error('GitHub CLI (gh) est introuvable : installe-le (dans PowerShell : winget install GitHub.cli), puis redémarre Toolkit.');
+    return { executable: trouves[0], args: ['auth', 'login', '--hostname', 'github.com', '--git-protocol', 'https', '--web'] };
   }
   throw new Error('Service inconnu.');
 }
 
-module.exports = { etatClaude, deconnecterClaude, etatGithub, changerCompteGithub, deconnecterGithub, commandeConnexion };
+// Connexion à GitHub SANS terminal : « gh auth login --web » lancé sans console ne pose
+// aucune question ; il donne un code à usage unique et attend qu'on le saisisse sur
+// github.com/login/device. surCode({ code, url }) dès que le code est connu ;
+// surFin(reussi) quand gh s'arrête. Renvoie une fonction pour annuler.
+let connexionGithub = null;
+
+async function connecterGithub(surCode, surFin) {
+  annulerConnexionGithub();
+  const { executable, args } = await commandeConnexion('github');
+  const { spawn } = require('node:child_process');
+  const enfant = spawn(executable, args, { env: environnementPropre(), windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
+  connexionGithub = enfant;
+  let texte = '';
+  let codeEnvoye = false;
+  const lire = (morceau) => {
+    texte += morceau.toString();
+    const code = /one-time code[^A-Z0-9]*([A-Z0-9]{4}-[A-Z0-9]{4})/i.exec(texte)?.[1];
+    const url = /(https:\/\/github\.com\/login\/device\S*)/.exec(texte)?.[1];
+    if (code && url && !codeEnvoye) {
+      codeEnvoye = true;
+      surCode({ code, url });
+    }
+  };
+  enfant.stdout.on('data', lire);
+  enfant.stderr.on('data', lire);
+  enfant.on('error', () => surFin(false, 'GitHub CLI n\'a pas pu démarrer.'));
+  enfant.on('exit', (code) => {
+    if (connexionGithub === enfant) connexionGithub = null;
+    surFin(code === 0, code === 0 ? null : (texte.trim().split('\n').pop() || 'connexion interrompue'));
+  });
+}
+
+function annulerConnexionGithub() {
+  if (connexionGithub && connexionGithub.exitCode === null) {
+    try { connexionGithub.kill(); } catch { /* déjà terminé */ }
+  }
+  connexionGithub = null;
+}
+
+module.exports = {
+  etatClaude, deconnecterClaude, etatGithub, changerCompteGithub, deconnecterGithub, commandeConnexion,
+  connecterGithub, annulerConnexionGithub,
+};

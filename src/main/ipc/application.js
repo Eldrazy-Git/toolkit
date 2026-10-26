@@ -99,6 +99,18 @@ function enregistrer({ quitter }) {
   gerer('comptes:deconnecter-claude', () => comptes.deconnecterClaude());
   gerer('comptes:changer-github', (nom) => comptes.changerCompteGithub(nom));
   gerer('comptes:deconnecter-github', (nom) => comptes.deconnecterGithub(nom));
+  // Connexion à GitHub : renvoie { code, url } ; la fin arrive par « comptes:github-fin ».
+  gerer('comptes:connecter-github', (contenu) => new Promise((resoudre, rejeter) => {
+    let repondu = false;
+    comptes.connecterGithub((infos) => {
+      repondu = true;
+      resoudre(infos);
+    }, (reussi, erreur) => {
+      if (!repondu) rejeter(new Error(`La connexion à GitHub n'a pas pu démarrer : ${erreur}`));
+      else if (!contenu.isDestroyed()) contenu.send('comptes:github-fin', { reussi, erreur });
+    }).catch(rejeter);
+  }), { avecEmetteur: true });
+  gerer('comptes:annuler-github', () => comptes.annulerConnexionGithub());
 
   // Disposition du clavier (pour les raccourcis pressés dans un outil HTML).
   ipcMain.on('application:disposition', (_e, carte) => require('../outils-html').definirDisposition(carte));

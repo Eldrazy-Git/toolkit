@@ -798,6 +798,11 @@ export function marquerTerminal(id, enCours) {
 // Connexion à un compte (service : 'claude' | 'github') dans un terminal : l'outil officiel
 // ouvre le navigateur ; Toolkit ne voit jamais le mot de passe.
 export function connecterCompte(service) {
+  // GitHub : fenêtre avec le code à saisir sur github.com (voir comptes-ui.js).
+  if (service === 'github') {
+    import('./comptes-ui.js').then((c) => c.connecterGithub());
+    return;
+  }
   const onglet = {
     id: `terminal-${crypto.randomUUID()}`,
     genre: 'terminal',
