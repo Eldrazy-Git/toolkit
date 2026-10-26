@@ -382,9 +382,6 @@ version, les deux sont combinés ; quand ce n'est pas possible, ta version est g
 Claude te propose d'y intégrer les nouveautés. Une sauvegarde est faite avant : tout reste
 annulable avec l'historique (panneau Git, ligne Toolkit).
 
-*Pour publier une nouvelle version (si c'est toi qui fais évoluer Toolkit) : suis
-l'aide-mémoire pas à pas [docs/PROTOCOLE-MISE-A-JOUR.md](docs/PROTOCOLE-MISE-A-JOUR.md).*
-
 **Réglages > Mises à jour** : « Vérifier maintenant » (et automatiquement une fois par
 semaine au démarrage, désactivable).
 - **Bibliothèques de Toolkit** : les mises à jour sûres (même version majeure, publiées depuis

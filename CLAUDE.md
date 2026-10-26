@@ -72,7 +72,7 @@ app/
 ├── assets/                  icône de Toolkit (générée par scripts/generer-icones.js)
 ├── docs/
 │   ├── projet-json.md           format complet de la fiche projet.json
-│   ├── PROTOCOLE-MISE-A-JOUR.md procédure pour publier une nouvelle version
+│   ├── PROTOCOLE-MISE-A-JOUR.md procédure pour publier une nouvelle version (local, non versionné)
 │   └── notes-de-version/        nouveautés de chaque version (<version>.md, montrées aux utilisateurs)
 ├── installateur/Installateur.cs installateur graphique / lanceur Toolkit.exe / désinstallateur
 ├── scripts/                 prérequis, lanceur, icônes, construction de l'installateur, publication
@@ -508,7 +508,8 @@ local `git init --bare`).
   fermé si les dépendances changent (script de mises-a-jour.js). `donnees/` et `projets/`
   ne sont jamais touchés.
 - Procédure complète pour l'utilisateur (et pour toi s'il demande de « préparer une version ») :
-  `docs/PROTOCOLE-MISE-A-JOUR.md`. Tu prépares (numéro, notes, commit) ; c'est lui qui lance
+  `docs/PROTOCOLE-MISE-A-JOUR.md` (fichier personnel, ignoré par Git : il n'existe que sur
+  le PC de la personne qui publie). Tu prépares (numéro, notes, commit) ; c'est lui qui lance
   la publication (`npm run publier`, envoi sur GitHub).
 - Publication : `npm run publier` (scripts/publier-version.js) : vérifie, fabrique
   l'installateur, puis APRÈS CONFIRMATION pousse, crée l'étiquette et la Release (notes :

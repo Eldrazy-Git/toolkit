@@ -27,3 +27,6 @@ desktop.ini
 
 # Mise à jour de Toolkit en cours (versions officielles téléchargées)
 /.mise-a-jour/
+
+# Aide-mémoire personnel de publication (gardé sur le PC, pas sur GitHub)
+/docs/PROTOCOLE-MISE-A-JOUR.md
