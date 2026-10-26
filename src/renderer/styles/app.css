@@ -373,7 +373,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .cadre-appareil { position: absolute; inset: 0; }
 
 /* Mode smartphone / tablette : cadre centré de la taille de l'appareil, réduit (--echelle)
-   si la place manque. La webview garde la taille réelle de l'appareil. */
+   si la place manque. La webview garde la taille réelle de l'appareil : la bordure est
+   AJOUTÉE autour (content-box), sinon elle mange 20 px de l'écran simulé et le contenu
+   paraît coupé à droite et en bas. */
 .conteneur-webview.mode-appareil {
   background: radial-gradient(circle at center, #2a2a2a, #161616);
 }
@@ -383,6 +385,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   left: 50%;
   width: var(--largeur);
   height: var(--hauteur);
+  box-sizing: content-box;
   border: 10px solid #0d0d0d;
   border-radius: 34px;
   box-shadow: 0 0 0 1px #3c3c3c, 0 18px 50px rgba(0, 0, 0, 0.6);
