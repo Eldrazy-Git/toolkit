@@ -122,6 +122,9 @@ function enregistrer({ quitter }) {
     automatique: reglages.obtenir().misesAJour?.automatique !== false,
     derniereVerification: reglages.obtenir().misesAJour?.derniereVerification || null,
   }));
+  // Mise à jour de Toolkit lui-même : analyse (rien n'est modifié), puis application.
+  gerer('toolkit-maj:analyser', () => require('../mise-a-jour-toolkit').analyser());
+  gerer('toolkit-maj:appliquer', () => require('../mise-a-jour-toolkit').appliquer());
   gerer('mises-a-jour:automatique', (actif) => reglages.modifier({ misesAJour: { automatique: Boolean(actif) } }));
   // Installation : le script attend que Toolkit soit fermé, installe, puis le relance.
   gerer('mises-a-jour:installer', async (paquets) => {

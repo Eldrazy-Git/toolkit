@@ -381,6 +381,19 @@ actions (boutons de projet.json).
 
 ### Mises à jour
 
+**Nouvelle version de Toolkit** : en haut de **Réglages > Mises à jour** (et par une
+notification, une fois par semaine), Toolkit indique quand une nouvelle version existe, avec
+ses nouveautés. « Installer la mise à jour… » montre d'abord ce qui va se passer, puis installe
+et redémarre. **Tes projets et tes réglages ne sont jamais touchés**, et ce que tu as
+toi-même ajouté ou modifié dans Toolkit est **gardé** : s'il a aussi changé dans la nouvelle
+version, les deux sont combinés ; quand ce n'est pas possible, ta version est gardée et
+Claude te propose d'y intégrer les nouveautés. Une sauvegarde est faite avant : tout reste
+annulable avec l'historique (panneau Git, ligne Toolkit).
+
+*Pour publier une nouvelle version (si c'est toi qui fais évoluer Toolkit) : change le
+numéro dans `package.json`, écris ses nouveautés dans `docs/notes-de-version/<version>.md`,
+fais un commit, puis dans PowerShell, dans `Toolkit\app` : `npm run publier`.*
+
 **Réglages > Mises à jour** : « Vérifier maintenant » (et automatiquement une fois par
 semaine au démarrage, désactivable).
 - **Bibliothèques de Toolkit** : les mises à jour sûres (même version majeure, publiées depuis

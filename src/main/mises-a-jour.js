@@ -182,14 +182,26 @@ async function etatProgrammes() {
 
 let dernierResultat = null;
 
+// Nouvelle version de Toolkit lui-même (voir mise-a-jour-toolkit.js), notes rendues en HTML sûr.
+async function etatToolkit() {
+  try {
+    const infos = await require('./mise-a-jour-toolkit').verifier();
+    if (infos.derniere?.notes) infos.derniere.notesHtml = require('./notes').rendre(infos.derniere.notes, 'notes-de-version.md');
+    return infos;
+  } catch (erreur) {
+    return { erreur: erreur.message };
+  }
+}
+
 async function verifier() {
   const paquet = JSON.parse(await fs.readFile(path.join(chemins.app, 'package.json'), 'utf8'));
-  const [paquets, audit, programmes] = await Promise.all([
+  const [paquets, audit, programmes, toolkit] = await Promise.all([
     Promise.all(Object.entries(paquet.dependencies || {}).map(([nom, plage]) => etatPaquet(nom, plage))),
     failles(),
     etatProgrammes(),
+    etatToolkit(),
   ]);
-  dernierResultat = { date: Date.now(), paquets, audit, programmes };
+  dernierResultat = { date: Date.now(), toolkit, paquets, audit, programmes };
   await reglages.modifier({ misesAJour: { derniereVerification: dernierResultat.date } });
   return dernierResultat;
 }
@@ -205,7 +217,7 @@ async function verifierSiBesoin() {
   if (r.automatique === false) return null;
   if (r.derniereVerification && Date.now() - r.derniereVerification < 7 * JOUR) return null;
   const resultat = await verifier();
-  const aSignaler = resultat.paquets.some((p) => p.sure || p.aInstaller)
+  const aSignaler = resultat.toolkit?.disponible || resultat.paquets.some((p) => p.sure || p.aInstaller)
     || resultat.audit?.some((f) => ['high', 'critical'].includes(f.gravite) && !f.remarque);
   return aSignaler ? resultat : null;
 }

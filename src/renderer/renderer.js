@@ -46,8 +46,10 @@ document.addEventListener('keydown', (e) => {
 
 // Ctrl+W pressé à l'intérieur d'un outil (les touches n'arrivent pas jusqu'ici).
 // Vérification hebdomadaire (au démarrage) : des mises à jour sont proposées.
-window.toolkit.misesAJour.surDisponibles(() => {
-  notifier('Des mises à jour sont disponibles pour Toolkit : Réglages > Mises à jour.');
+window.toolkit.misesAJour.surDisponibles((infos) => {
+  notifier(infos?.toolkit
+    ? `Toolkit ${infos.toolkit} est disponible : Réglages > Mises à jour pour l'installer (tes réglages et tes modifications sont gardés).`
+    : 'Des mises à jour sont disponibles pour Toolkit : Réglages > Mises à jour.');
 });
 
 // Claude a fini ou attend une réponse (voir src/main/terminal.js) : si on regarde ailleurs,
@@ -106,6 +108,7 @@ async function demarrer() {
   await session.restaurer(sessionSauvee);
   raccourcis.verifierConflits(notifier);
   (await import('./composants/bienvenue.js')).ouvrirSiPremierLancement();
+  (await import('./composants/mises-a-jour.js')).proposerFinDeFusion();
 }
 
 demarrer();

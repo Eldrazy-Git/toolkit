@@ -3,7 +3,7 @@
 import { el, ilYA } from './dom.js';
 import { icone } from './icones.js';
 import { notifier } from './notifications.js';
-import { confirmer } from './dialogue.js';
+import { confirmer, fenetre } from './dialogue.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
 
@@ -143,6 +143,91 @@ function ligneProgramme(p) {
             }, icone('note'))]));
 }
 
+// --- Nouvelle version de Toolkit lui-même --------------------------------------------------------
+
+const liste = (titre, fichiers, aide) => (fichiers.length
+  ? el('div', { classe: 'groupe-maj-toolkit' }, el('strong', {}, `${titre} (${fichiers.length})`), aide ? el('p', { classe: 'details-aide' }, aide) : null,
+    el('ul', {}, fichiers.slice(0, 30).map((f) => el('li', {}, el('code', {}, f))), fichiers.length > 30 ? el('li', {}, `… et ${fichiers.length - 30} autre(s)`) : null))
+  : null);
+
+// Claude finit la fusion des fichiers modifiés des deux côtés (proposé après le redémarrage).
+export function demanderFusionAClaude(version, fichiers) {
+  actions.modifierToolkitAvecClaude(`Toolkit vient d'être mis à jour vers la version ${version}. Ces fichiers avaient été modifiés à la fois par moi et dans la version officielle, et n'ont pas pu être fusionnés automatiquement : ${fichiers.join(', ')}. `
+    + `C'est MA version qui est en place. La version officielle d'avant est dans .mise-a-jour/${version}/base/ et la nouvelle dans .mise-a-jour/${version}/nouveau/ (mêmes chemins). `
+    + 'Pour chaque fichier, intègre dans mon fichier les changements faits par la version officielle (compare base et nouveau), SANS retirer mes propres ajouts ni changer mes réglages. '
+    + 'Explique-moi simplement ce que tu fais, vérifie la syntaxe, puis fais un commit. Je redémarrerai Toolkit ensuite.');
+}
+
+async function installerToolkit() {
+  const { onglets } = etat.obtenir();
+  if (onglets.some((o) => o.nonEnregistre)) {
+    notifier('Enregistre d\'abord tes fichiers et notes : Toolkit va devoir redémarrer.', 'erreur');
+    return;
+  }
+  notifier('Préparation de la mise à jour (téléchargement et comparaison avec tes modifications)…');
+  let plan;
+  try {
+    plan = await api.analyserToolkit();
+  } catch (erreur) {
+    notifier(erreur.message, 'erreur');
+    return;
+  }
+  const corps = el('div', { classe: 'resume-maj-toolkit' },
+    el('p', {}, `Toolkit ${plan.actuelle} → ${plan.version}. Tes projets et tes réglages ne sont pas touchés, et une sauvegarde Git est faite avant (tout reste annulable avec l'historique).`),
+    el('p', {}, `${plan.misAJour} fichier(s) de Toolkit seront mis à jour.`),
+    liste('Tes modifications gardées telles quelles', plan.gardes, 'Fichiers que tu as modifiés et que la nouvelle version ne change pas.'),
+    liste('Fusionnés automatiquement', plan.fusionnes, 'Modifiés par toi ET par la nouvelle version : les deux sont combinés.'),
+    liste('À finir avec Claude', plan.conflits, 'Modifiés des deux côtés au même endroit : TA version est gardée. Après le redémarrage, Claude pourra y intégrer les nouveautés officielles.'),
+    liste('Gardés bien que retirés de la version officielle', plan.gardesMalgreRetrait, 'Tu les avais modifiés : ils ne sont pas supprimés.'),
+    plan.dependancesChangees ? el('p', { classe: 'details-aide' }, 'Les bibliothèques changent : une fenêtre noire les installera pendant le redémarrage (une à deux minutes).') : null);
+  let confirme = false;
+  await fenetre({
+    titre: `Installer Toolkit ${plan.version} ?`,
+    corps,
+    boutons: [{ libelle: 'Installer et redémarrer', style: 'principal', action: (fermer) => { confirme = true; fermer(null); } }],
+  });
+  if (!confirme) return;
+  try {
+    const r = await api.appliquerToolkit();
+    if (r.conflits.length) {
+      try { localStorage.setItem('toolkit:maj:conflits', JSON.stringify({ version: r.version, fichiers: r.conflits })); } catch { /* proposé seulement maintenant */ }
+    }
+    if (r.dependancesChangees) await api.installer([]);
+    else await window.toolkit.application.redemarrer();
+  } catch (erreur) {
+    notifier(erreur.message, 'erreur');
+  }
+}
+
+// Après le redémarrage : proposer à Claude de finir les fusions restantes.
+export async function proposerFinDeFusion() {
+  let attente = null;
+  try {
+    attente = JSON.parse(localStorage.getItem('toolkit:maj:conflits') || 'null');
+    localStorage.removeItem('toolkit:maj:conflits');
+  } catch { /* rien en attente */ }
+  if (!attente?.fichiers?.length) return;
+  const ok = await confirmer({
+    titre: `Toolkit ${attente.version} est installé`,
+    message: `${attente.fichiers.length} fichier(s) que tu avais modifiés ont aussi changé dans la nouvelle version : ta version est gardée pour l'instant.\n\nDemander à Claude d'y intégrer les nouveautés officielles, en gardant tes ajouts ?`,
+    bouton: 'Demander à Claude',
+  });
+  if (ok) demanderFusionAClaude(attente.version, attente.fichiers);
+}
+
+function blocToolkit(t) {
+  if (!t) return null;
+  if (t.erreur) return el('p', { classe: 'details-aide' }, `Nouvelles versions de Toolkit : vérification impossible (${t.erreur}).`);
+  if (!t.disponible) return el('p', {}, badge('à jour', 'neutre'), ` Toolkit ${t.actuelle} est la dernière version.`);
+  const notes = el('article', { classe: 'markdown notes-version' });
+  notes.innerHTML = t.derniere.notesHtml || ''; // rendu par le processus principal, HTML brut désactivé
+  return el('div', { classe: 'carte-maj-toolkit' },
+    el('div', { classe: 'titre-maj-toolkit' }, icone('redemarrer'), el('strong', {}, `Toolkit ${t.derniere.version} est disponible`), el('span', { classe: 'details-aide' }, `(tu as la ${t.actuelle})`)),
+    t.derniere.notesHtml ? notes : null,
+    el('p', { classe: 'details-aide' }, 'Tes projets, tes réglages et ce que tu as ajouté ou modifié dans Toolkit sont gardés.'),
+    el('button', { classe: 'bouton principal', onClick: installerToolkit }, icone('importer'), 'Installer la mise à jour…'));
+}
+
 export function section() {
   if (!demandeFaite) {
     demandeFaite = true;
@@ -167,6 +252,8 @@ export function section() {
       infos?.derniereVerification ? el('span', { classe: 'details-aide' }, `Dernière vérification : ${ilYA(infos.derniereVerification)}`) : null),
     erreur ? el('p', { classe: 'dialogue-erreur' }, erreur) : null,
     r ? [
+      el('h3', {}, 'Toolkit'),
+      blocToolkit(r.toolkit),
       el('h3', {}, 'Bibliothèques de Toolkit'),
       r.paquets.map(lignePaquet),
       el('p', { classe: 'details-aide' }, 'Electron : décision notée dans CLAUDE.md (passer à une nouvelle version majeure seulement quand elle a quelques correctifs).'),

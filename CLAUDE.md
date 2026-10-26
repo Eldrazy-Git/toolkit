@@ -97,6 +97,7 @@ app/
     │   ├── claude-md.js         génération du CLAUDE.md d'un projet
     │   ├── comptes.js           comptes Claude / GitHub : état, changement, déconnexion
     │   ├── proprietaires-raccourcis.js quel programme (AMD, PowerToys) a réservé un raccourci
+    │   ├── mise-a-jour-toolkit.js nouvelle version de Toolkit : vérification, fusion à 3 versions
     │   ├── mises-a-jour.js      versions (registre npm, npm audit, programmes) et script d'installation
     │   ├── contexte-claude.js   catalogue projets/CLAUDE.md + sections « Projets liés » + --add-dir
     │   ├── editeurs.js          détection des éditeurs + « Ouvrir avec… »
@@ -490,6 +491,28 @@ Règles : ne jamais modifier les vrais projets de l'utilisateur (créer un proje
 temporaire et le supprimer), ne jamais envoyer de demande à Claude (quota de
 l'utilisateur), ne jamais créer de dépôt GitHub ni pousser (tester avec un dépôt distant
 local `git init --bare`).
+
+## Mise à jour de Toolkit lui-même
+
+`src/main/mise-a-jour-toolkit.js` + Réglages > Mises à jour (bloc « Toolkit »).
+- Versions = Releases GitHub du dépôt de `package.json > repository` (étiquettes vX.Y.Z) ;
+  API GitHub sans compte (dépôt public), sinon `gh api` (dépôt privé de son propriétaire).
+  Tests : `TOOLKIT_SOURCE_MAJ=<dossier>` (releases.json + <tag>.zip).
+- Fusion à TROIS versions, fichier par fichier : base = sources de la version INSTALLÉE
+  (téléchargées par son étiquette : chaque version publiée doit le rester), sienne = app/,
+  nouvelle = sources de la dernière Release. Non modifié par l'utilisateur -> nouvelle
+  version ; modifié par lui seul -> gardé ; des deux côtés -> `git merge-file`, sinon SA
+  version gardée + fichier signalé (Claude finit la fusion, versions officielles dans
+  `app/.mise-a-jour/<version>/{base,nouveau}`, ignoré par Git) ; ses fichiers ajoutés ou
+  supprimés : respectés. `package.json` : nouvelle version + ses ajouts (dépendances,
+  scripts) ; `package-lock.json` : nouvelle version (npm install le recalcule).
+- Application : commit de sauvegarde (dépôt créé si besoin, identité « Toolkit » par défaut),
+  écriture, commit « Mise à jour de Toolkit … ». Puis redémarrage, ou `npm install` Toolkit
+  fermé si les dépendances changent (script de mises-a-jour.js). `donnees/` et `projets/`
+  ne sont jamais touchés.
+- Publication : `npm run publier` (scripts/publier-version.js) : vérifie, fabrique
+  l'installateur, puis APRÈS CONFIRMATION pousse, crée l'étiquette et la Release (notes :
+  `docs/notes-de-version/<version>.md`, installateur joint).
 
 ## Préférences, raccourcis, palette, notifications
 

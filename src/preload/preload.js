@@ -194,7 +194,10 @@ contextBridge.exposeInMainWorld('toolkit', {
     etat: () => appeler('mises-a-jour:etat'), // { resultat, automatique, derniereVerification }
     automatique: (actif) => appeler('mises-a-jour:automatique', actif),
     installer: (paquets) => appeler('mises-a-jour:installer', paquets), // Toolkit quitte puis redémarre
-    surDisponibles: (rappel) => ecouter('mises-a-jour:disponibles', rappel),
+    surDisponibles: (rappel) => ecouter('mises-a-jour:disponibles', rappel), // rappel({ toolkit: version | null })
+    // Nouvelle version de Toolkit : analyse (aucune modification) puis application.
+    analyserToolkit: () => appeler('toolkit-maj:analyser'),
+    appliquerToolkit: () => appeler('toolkit-maj:appliquer'), // { version, conflits, dependancesChangees }
   },
   application: {
     infos: () => appeler('application:infos'),

@@ -24,3 +24,6 @@ desktop.ini
 # Installateur fabriqué (npm run installateur)
 /build/
 /dist/
+
+# Mise à jour de Toolkit en cours (versions officielles téléchargées)
+/.mise-a-jour/
