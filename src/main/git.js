@@ -552,6 +552,8 @@ module.exports = {
   pousser,
   recuperer,
   verifierEnLigne,
+  gitReseau,
+  messageErreurReseau,
   urlWeb,
   git,
   gitDisponible,

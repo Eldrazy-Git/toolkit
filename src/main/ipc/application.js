@@ -125,6 +125,12 @@ function enregistrer({ quitter }) {
   // Mise à jour de Toolkit lui-même : analyse (rien n'est modifié), puis application.
   gerer('toolkit-maj:analyser', () => require('../mise-a-jour-toolkit').analyser());
   gerer('toolkit-maj:appliquer', () => require('../mise-a-jour-toolkit').appliquer());
+  // Publication d'une nouvelle version (copie de développement seulement, voir publication.js).
+  gerer('publication:developpement', () => require('../publication').estDeveloppement());
+  gerer('publication:preparer', () => require('../publication').preparer());
+  gerer('publication:publier', (contenu, choix) => require('../publication').publier(choix || {}, (texte) => {
+    if (!contenu.isDestroyed()) contenu.send('publication:etape', texte);
+  }), { avecEmetteur: true });
   gerer('mises-a-jour:automatique', (actif) => reglages.modifier({ misesAJour: { automatique: Boolean(actif) } }));
   // Installation : le script attend que Toolkit soit fermé, installe, puis le relance.
   gerer('mises-a-jour:installer', async (paquets) => {

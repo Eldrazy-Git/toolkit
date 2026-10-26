@@ -199,6 +199,13 @@ contextBridge.exposeInMainWorld('toolkit', {
     analyserToolkit: () => appeler('toolkit-maj:analyser'),
     appliquerToolkit: () => appeler('toolkit-maj:appliquer'), // { version, conflits, dependancesChangees }
   },
+  // Publier une nouvelle version de Toolkit (copie de développement seulement).
+  publication: {
+    developpement: () => appeler('publication:developpement'), // true / false
+    preparer: () => appeler('publication:preparer'), // { reprise, notes } ou { derniere, commits, versions, suggestion, raison, notes }
+    publier: (choix) => appeler('publication:publier', choix), // choix { version, notes } -> { version, url }
+    surEtape: (rappel) => ecouter('publication:etape', rappel), // rappel(texte)
+  },
   application: {
     infos: () => appeler('application:infos'),
     redemarrer: () => appeler('application:redemarrer'),

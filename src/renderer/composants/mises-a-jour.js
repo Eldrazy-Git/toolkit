@@ -3,7 +3,7 @@
 import { el, ilYA } from './dom.js';
 import { icone } from './icones.js';
 import { notifier } from './notifications.js';
-import { confirmer, fenetre } from './dialogue.js';
+import { confirmer, fenetre, formulaire } from './dialogue.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
 
@@ -16,6 +16,7 @@ let enCours = false;
 let erreur = null;
 const coches = new Set(); // noms des bibliothèques à installer
 let demandeFaite = false;
+let developpement = false; // copie de développement : bouton « Publier une nouvelle version »
 
 const redessiner = () => etat.modifier({});
 
@@ -23,6 +24,7 @@ async function charger() {
   try {
     infos = await api.etat();
     if (infos.resultat) preparerCoches(infos.resultat);
+    developpement = await window.toolkit.publication.developpement().catch(() => false);
   } catch (e) {
     erreur = e.message;
   }
@@ -228,6 +230,93 @@ function blocToolkit(t) {
     el('button', { classe: 'bouton principal', onClick: installerToolkit }, icone('importer'), 'Installer la mise à jour…'));
 }
 
+// --- Publier une nouvelle version (copie de développement seulement) ---------------------------
+
+const NIVEAUX = [['correctif', 'corrections seulement'], ['nouveautes', 'nouveautés'], ['majeure', 'très gros changement (refonte…)']];
+let publicationEnCours = false;
+
+// Choix du numéro (conseillé d'après les commits) et des notes, confirmation, puis publication
+// avec l'avancement affiché étape par étape.
+async function publierVersion() {
+  if (publicationEnCours) return;
+  notifier('Préparation : vérification de GitHub et des changements depuis la dernière version…');
+  let p;
+  try {
+    p = await window.toolkit.publication.preparer();
+  } catch (e) {
+    notifier(e.message, 'erreur');
+    return;
+  }
+  let choix;
+  if (p.reprise) {
+    const ok = await confirmer({
+      titre: `Terminer la publication de Toolkit ${p.reprise} ?`,
+      message: `La publication de la version ${p.reprise} a été commencée mais n'est pas allée jusqu'au bout (pas encore de Release sur GitHub).\n\nToolkit va refabriquer l'installateur, envoyer les commits et créer la Release.`,
+      bouton: 'Terminer la publication',
+    });
+    if (!ok) return;
+    choix = { version: p.reprise, notes: p.notes || `Toolkit ${p.reprise}` };
+  } else {
+    const liste = p.commits.slice(0, 10).map((c) => `• ${c}`).join('\n') + (p.commits.length > 10 ? `\n… et ${p.commits.length - 10} autre(s)` : '');
+    choix = await formulaire({
+      titre: 'Publier une nouvelle version de Toolkit',
+      message: `${p.commits.length} changement(s) depuis la version ${p.derniere} :\n${liste}\n\nConseil : ${p.raison}`,
+      champs: [
+        {
+          id: 'version',
+          libelle: 'Numéro de la nouvelle version',
+          type: 'choix',
+          valeur: p.versions[p.suggestion],
+          options: NIVEAUX.map(([niveau, libelle]) => ({ valeur: p.versions[niveau], libelle: `${p.versions[niveau]} : ${libelle}${niveau === p.suggestion ? ' (conseillé)' : ''}` })),
+        },
+        {
+          id: 'notes',
+          libelle: 'Notes de version',
+          type: 'zone',
+          valeur: p.notes,
+          obligatoire: true,
+          aide: 'Montrées aux utilisateurs avant d\'installer. Une ligne « - … » par changement, en phrases simples (tu peux reformuler).',
+        },
+      ],
+      bouton: 'Continuer',
+    });
+    if (!choix) return;
+    const ok = await confirmer({
+      titre: `Publier Toolkit ${choix.version} ?`,
+      message: `Toolkit va :\n• noter le numéro ${choix.version} et les notes de version (commit) ;\n• fabriquer l'installateur ;\n• envoyer les commits sur GitHub, créer l'étiquette v${choix.version} et la Release.\n\n`
+        + 'Tous les Toolkit installés verront cette version dans Réglages > Mises à jour. Une version publiée ne doit plus être retirée : publie seulement ce que tu as essayé.',
+      bouton: 'Publier',
+    });
+    if (!ok) return;
+  }
+
+  publicationEnCours = true;
+  const etapes = el('ul', { classe: 'etapes-publication' });
+  const fin = el('div');
+  const arreterEcoute = window.toolkit.publication.surEtape((texte) => etapes.append(el('li', {}, texte)));
+  fenetre({ titre: `Publication de Toolkit ${choix.version}`, corps: [etapes, fin] });
+  try {
+    const r = await window.toolkit.publication.publier(choix);
+    etapes.append(el('li', {}, el('strong', {}, `Toolkit ${r.version} est publié.`)));
+    if (r.url) {
+      fin.append(el('button', { classe: 'bouton principal', onClick: () => window.toolkit.liens.ouvrirExterne(r.url).catch(() => {}) },
+        icone('exporter'), 'Voir la Release sur GitHub'));
+    }
+    notifier(`Toolkit ${r.version} est publié.`);
+  } catch (e) {
+    fin.append(el('p', { classe: 'dialogue-erreur' }, e.message));
+  } finally {
+    arreterEcoute();
+    publicationEnCours = false;
+  }
+}
+
+function blocPublication() {
+  return el('div', { classe: 'details-boutons' },
+    el('button', { classe: 'bouton', onClick: publierVersion }, icone('tag'), 'Publier une nouvelle version…'),
+    el('span', { classe: 'details-aide' }, 'Copie de développement : numéro choisi d\'après tes changements, puis envoi sur GitHub.'));
+}
+
 export function section() {
   if (!demandeFaite) {
     demandeFaite = true;
@@ -251,6 +340,7 @@ export function section() {
         'Vérifier automatiquement une fois par semaine'),
       infos?.derniereVerification ? el('span', { classe: 'details-aide' }, `Dernière vérification : ${ilYA(infos.derniereVerification)}`) : null),
     erreur ? el('p', { classe: 'dialogue-erreur' }, erreur) : null,
+    developpement ? [el('h3', {}, 'Publier Toolkit'), blocPublication()] : null,
     r ? [
       el('h3', {}, 'Toolkit'),
       blocToolkit(r.toolkit),

@@ -1789,5 +1789,6 @@ mark { background: rgba(229, 192, 73, 0.3); color: var(--texte-fort); border-rad
 .notes-version { max-height: 220px; overflow-y: auto; padding: 4px 10px; border-left: 3px solid var(--bordure-forte); font-size: 13px; }
 .resume-maj-toolkit { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
 .resume-maj-toolkit p { margin: 0; }
+.etapes-publication { margin: 0 0 12px; padding-left: 20px; line-height: 1.8; }
 .groupe-maj-toolkit ul { margin: 4px 0 0; padding-left: 20px; font-size: 12px; }
 .groupe-maj-toolkit .details-aide { margin: 2px 0 0; }

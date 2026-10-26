@@ -103,6 +103,7 @@ app/
     │   ├── comptes.js           comptes Claude / GitHub : état, changement, déconnexion
     │   ├── proprietaires-raccourcis.js quel programme (AMD, PowerToys) a réservé un raccourci
     │   ├── mise-a-jour-toolkit.js nouvelle version de Toolkit : vérification, fusion à 3 versions
+    │   ├── publication.js       « Publier une nouvelle version » (copie de développement seulement)
     │   ├── mises-a-jour.js      versions (registre npm, npm audit, programmes) et script d'installation
     │   ├── contexte-claude.js   catalogue projets/CLAUDE.md + sections « Projets liés » + --add-dir
     │   ├── editeurs.js          détection des éditeurs + « Ouvrir avec… »
@@ -514,6 +515,14 @@ local `git init --bare`).
 - Publication : `npm run publier` (scripts/publier-version.js) : vérifie, fabrique
   l'installateur, puis APRÈS CONFIRMATION pousse, crée l'étiquette et la Release (notes :
   `docs/notes-de-version/<version>.md`, installateur joint).
+- Même chose depuis Toolkit : Réglages > Mises à jour > « Publier une nouvelle version… »
+  (`src/main/publication.js`), visible seulement sur la copie de DÉVELOPPEMENT (`origin` = dépôt
+  de `package.json > repository` ; droit d'écriture vérifié par `gh api`). `preparer()` ne
+  modifie rien : commits depuis la dernière étiquette, numéro conseillé (nouveautés, fichiers
+  ajoutés dans `src/`/`templates/` ou nouvelle dépendance -> 2ᵉ chiffre ; sinon 3ᵉ ; le 1ᵉʳ
+  seulement si choisi), brouillon des notes. `publier()` : version dans package.json + notes ->
+  commit « Version X » -> installateur -> push -> étiquette -> Release. Étiquette sans Release
+  (publication interrompue) : proposée à la reprise.
 
 ## Préférences, raccourcis, palette, notifications
 

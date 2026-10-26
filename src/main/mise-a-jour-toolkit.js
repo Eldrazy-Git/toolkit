@@ -288,4 +288,4 @@ async function appliquer() {
   return { version: plan.version, conflits: plan.conflits, dependancesChangees: plan.dependancesChangees };
 }
 
-module.exports = { verifier, analyser, appliquer, comparerVersions };
+module.exports = { verifier, analyser, appliquer, comparerVersions, depot };
