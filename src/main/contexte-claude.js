@@ -23,7 +23,7 @@ const DEBUT_CONSIGNES = '<!-- toolkit:consignes (section tenue à jour par Toolk
 const FIN_CONSIGNES = '<!-- /toolkit:consignes -->';
 const DEBUT_CATALOGUE = '<!-- toolkit:catalogue (section tenue à jour par Toolkit : ne pas la modifier à la main) -->';
 const FIN_CATALOGUE = '<!-- /toolkit:catalogue -->';
-const LIBELLES_TYPES = { html: 'outil HTML', script: 'script', 'mod-minecraft': 'mod Minecraft', android: 'application Android', autre: 'autre' };
+const LIBELLES_TYPES = { html: 'outil HTML', script: 'script', java: 'projet Java (Gradle)', android: 'application Android', autre: 'autre' };
 
 const uneLigne = (texte, max = 220) => {
   const t = String(texte || '').replace(/\s+/g, ' ').trim();

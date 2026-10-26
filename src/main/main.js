@@ -192,7 +192,7 @@ async function demarrer() {
   lanceur.mettreAJour().catch((erreur) => journal.erreur('Lanceur :', erreur));
   // Démarrage avec Windows : entrée réécrite avec les chemins actuels (si Toolkit a été déplacé).
   require('./demarrage-windows').mettreAJour();
-  // Boutons de compilation des mods / applications Android (un peu après le démarrage).
+  // Boutons de compilation des projets Java / applications Android (un peu après le démarrage).
   setTimeout(() => require('./actions-auto').completerProjets()
     .catch((erreur) => journal.erreur('Boutons de compilation :', erreur)), 3000);
   // Mises à jour : vérification si la dernière date de plus d'une semaine (une seule fois).

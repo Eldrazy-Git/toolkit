@@ -14,11 +14,11 @@ est conservé tel quel par Toolkit (on peut donc y ranger ses propres notes).
 ```json
 {
   "schema": 1,
-  "nom": "Convertisseur MCData → GIF",
-  "description": "Convertit les fichiers animés mcdata de Minecraft en GIF.",
+  "nom": "Convertisseur d'images",
+  "description": "Convertit des images PNG en JPG.",
   "type": "script",
-  "categorie": "Minecraft",
-  "tags": ["conversion", "gif"],
+  "categorie": "Images",
+  "tags": ["conversion", "images"],
   "favori": false,
   "icone": "icone.png",
   "point_entree": "index.html",
@@ -26,20 +26,20 @@ est conservé tel quel par Toolkit (on peut donc y ranger ses propres notes).
   "actions": [
     {
       "nom": "Convertir",
-      "description": "Convertit des fichiers .mcdata en GIF.",
+      "description": "Convertit des images PNG en JPG.",
       "commande": "python convert.py {entree} {sortie}",
       "dossier": ".",
       "parametres": [
-        { "id": "entree", "type": "fichiers", "libelle": "Fichiers à convertir", "extensions": ["mcdata"] },
+        { "id": "entree", "type": "fichiers", "libelle": "Fichiers à convertir", "extensions": ["png"] },
         { "id": "sortie", "type": "dossier", "libelle": "Dossier de sortie" }
       ],
       "ouvrir_dossier_apres": "{sortie}"
     }
   ],
   "outils_lies": [
-    { "nom": "Visionneuse de skin 3D", "point_entree": "app/src/main/assets/skin-viewer/index.html" }
+    { "nom": "Aperçu", "point_entree": "outils/apercu/index.html" }
   ],
-  "git": { "remote": "https://github.com/moi/convertisseur-mcdata.git" }
+  "git": { "remote": "https://github.com/moi/convertisseur-images.git" }
 }
 ```
 
@@ -50,7 +50,7 @@ est conservé tel quel par Toolkit (on peut donc y ranger ses propres notes).
 | `schema` | nombre | `1` | Version du format de la fiche. |
 | `nom` | texte | nom du dossier | Nom affiché. |
 | `description` | texte | vide | Une ou deux phrases sur le projet. |
-| `type` | `html`, `script`, `mod-minecraft`, `android`, `autre` | `autre` | Nature du projet (libellé, boutons automatiques). |
+| `type` | `html`, `script`, `java`, `android`, `autre` | `autre` | Nature du projet (libellé, boutons automatiques). |
 | `categorie` | texte | `Sans catégorie` | Catégorie dans la barre latérale ; décide aussi de la couleur de l'icône par défaut. |
 | `tags` | liste de textes | `[]` | Mots-clés libres. |
 | `favori` | `true` / `false` | `false` | Affiché dans « Favoris ». |
@@ -141,8 +141,8 @@ application Android.
 
 ## Boutons de compilation automatiques
 
-Pour un projet de type `mod-minecraft` ou `android` qui contient `gradlew.bat`, Toolkit
-ajoute de lui-même l'action « Compiler le mod » (`gradlew build`) ou « Compiler l'APK de
+Pour un projet de type `java` (projet Java ou Kotlin compilé avec Gradle) ou `android` qui
+contient `gradlew.bat`, Toolkit ajoute de lui-même l'action « Compiler » (`gradlew build`) ou « Compiler l'APK de
 debug » (`gradlew assembleDebug`). Elle reste modifiable ; si tu la supprimes, elle n'est
 pas rajoutée. Pour toute action qui lance `gradlew`, Toolkit choisit automatiquement le
 Java adapté (version demandée par build.gradle) et le SDK Android.

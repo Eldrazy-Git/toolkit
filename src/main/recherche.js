@@ -20,7 +20,7 @@ const NOTES_MAX = 5000;
 const INTERVALLE_MAJ = 2000;
 const LIEN_WIKI = /\[\[([^\]\n[]+)\]\]/g;
 
-const LIBELLES_TYPES = { html: 'Outil HTML', script: 'Script', 'mod-minecraft': 'Mod Minecraft', android: 'Android', autre: 'Autre' };
+const LIBELLES_TYPES = { html: 'Outil HTML', script: 'Script', java: 'Java (Gradle)', android: 'Android', autre: 'Autre' };
 
 function normaliser(texte) {
   return String(texte).normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();

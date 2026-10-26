@@ -326,7 +326,7 @@ export async function lierProjet(projet) {
         libelle: 'En quoi sont-ils liés ?',
         type: 'zone',
         obligatoire: true,
-        exemple: 'Par exemple : ce projet met à jour les icônes et l\'index du catalogue de l\'application (fichiers app/src/main/assets/catalogue/).',
+        exemple: 'Par exemple : ce script génère les fichiers de données que l\'application lit dans son dossier assets/.',
         aide: 'Une ou deux phrases : ce que l\'un fournit ou utilise de l\'autre (fichiers, formats, données…). Plus c\'est précis, mieux Claude fera les mises à jour.',
       },
     ],
@@ -469,7 +469,7 @@ export async function nouvelleCategorie(projet) {
   const categorie = await demanderTexte({
     titre: 'Nouvelle catégorie',
     message: `Catégorie pour « ${projet.fiche.nom} » :`,
-    exemple: 'Par exemple : Minecraft',
+    exemple: 'Par exemple : Utilitaires',
     bouton: 'Créer',
   });
   if (categorie) await changerCategorie(projet, categorie);

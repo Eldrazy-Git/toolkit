@@ -1,5 +1,5 @@
 // Boutons de compilation ajoutés automatiquement selon le type de projet :
-// - mod Minecraft : « Compiler le mod » (gradlew build -> build/libs) ;
+// - projet Java (Gradle) : « Compiler » (gradlew build -> build/libs) ;
 // - Android : « Compiler l'APK de debug » (gradlew assembleDebug -> <module>/build/outputs/apk/debug).
 // Ils sont écrits dans projet.json (donc modifiables). Toolkit retient dans donnees/reglages.json
 // ce qu'il a déjà proposé : un bouton supprimé par l'utilisateur n'est pas rajouté.
@@ -32,13 +32,13 @@ async function moduleAndroid(dossier) {
 }
 
 async function actionsAttendues(dossier, type) {
-  if (!['mod-minecraft', 'android'].includes(type)) return [];
+  if (!['java', 'android'].includes(type)) return [];
   if (!(await existe(path.join(dossier, 'gradlew.bat'))) && !(await existe(path.join(dossier, 'gradlew')))) return [];
-  if (type === 'mod-minecraft') {
+  if (type === 'java') {
     return [{
-      cle: 'compiler-mod',
+      cle: 'compiler-java',
       action: {
-        nom: 'Compiler le mod',
+        nom: 'Compiler',
         description: 'Lance « gradlew build » et ouvre le dossier contenant le .jar.',
         commande: 'gradlew build',
         parametres: [],

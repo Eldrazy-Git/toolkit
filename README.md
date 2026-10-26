@@ -1,7 +1,7 @@
 # Toolkit
 
 Toolkit est une application pour Windows qui rassemble **tous tes projets** au même endroit :
-outils HTML, scripts Python ou Node, mods Minecraft, application Android…
+outils HTML, scripts Python ou Node, projets Java, applications Android…
 Tu peux les ouvrir, les lancer, les compiler, les rechercher, les sauvegarder sur GitHub et
 les modifier avec Claude Code, sans quitter l'application.
 
@@ -61,7 +61,7 @@ lancement.
 | Claude Code (`claude`) | modifie et crée des outils | oui |
 | GitHub CLI (`gh`) | envoie tes projets sur GitHub | seulement pour GitHub |
 | Python | lance les scripts Python | seulement pour ces scripts |
-| Java (JDK 17 ou 21) | compile les mods et les applis Android | seulement pour compiler |
+| Java (JDK 17 ou 21) | compile les projets Java et les applis Android | seulement pour compiler |
 
 **Pour vérifier ce qui est installé :**
 
@@ -225,9 +225,9 @@ Les boutons de la rubrique **Actions** (panneau de droite) lancent les scripts d
 - Si Python, Node.js ou Java manquent, Toolkit explique comment les installer
   (**Réglages** > Programmes pour les scripts).
 
-**Compiler un mod Minecraft ou l'APK de debug d'une appli Android**
+**Compiler un projet Java ou l'APK de debug d'une appli Android**
 
-- Les projets de type mod ou Android ont un bouton **Compiler le mod** ou **Compiler l'APK
+- Les projets Java (Gradle) ou Android ont un bouton **Compiler** ou **Compiler l'APK
   de debug** (ajouté automatiquement s'ils contiennent `gradlew.bat`).
 - Toolkit choisit tout seul la bonne version de Java. La première compilation peut prendre
   plusieurs minutes.
@@ -260,7 +260,7 @@ intégré à Toolkit. Aucune clé API n'est utilisée.
   **description** à chaque projet : clique sur la description dans le panneau de droite.
 - **Projets liés** : dans le panneau de droite, section **Projets liés** > « Lier à un
   projet », choisis l'autre projet et explique en une ou deux phrases comment ils sont liés
-  (ex. « ce script met à jour les icônes et l'index du catalogue de l'appli »). Toolkit ajoute
+  (ex. « ce script génère les fichiers de données que l'appli lit au démarrage »). Toolkit ajoute
   alors une section « Projets liés » dans le CLAUDE.md de **chaque** projet concerné, y
   compris ceux liés **indirectement** (A ↔ B ↔ C), avec la consigne de vérifier l'impact sur
   les autres avant une mise à jour.
@@ -371,7 +371,7 @@ nouvelle combinaison) ; ↺ remet celui par défaut.
 
 ### Palette de commandes (Ctrl+Maj+P)
 
-Tape ce que tu veux faire : « code catalogue », « commit mon-projet », « réglages »,
+Tape ce que tu veux faire : « code mon-projet », « commit mon-projet », « réglages »,
 « claude », « historique »… puis Entrée. Elle contient toutes les commandes de Toolkit et,
 pour chaque projet : ouvrir, afficher, code, Claude, historique, commit, push, et ses
 actions (boutons de projet.json).

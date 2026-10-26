@@ -31,7 +31,7 @@ const EXCLUS_SI_COMPILATION = new Set(['build', 'dist', 'out', 'target']);
 const FICHIERS_COMPILATION = ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts',
   'package.json', 'pom.xml', 'pyproject.toml', 'setup.py'];
 
-const EXTENSIONS_TEXTE = /\.(html?|css|m?js|cjs|ts|tsx|jsx|json|py|md|txt|bat|cmd|ps1|xml|ya?ml|toml|ini|cfg|gradle|kts|java|kt|properties|sh|vue|svelte|mcmeta)$/i;
+const EXTENSIONS_TEXTE = /\.(html?|css|m?js|cjs|ts|tsx|jsx|json|py|md|txt|bat|cmd|ps1|xml|ya?ml|toml|ini|cfg|gradle|kts|java|kt|properties|sh|vue|svelte)$/i;
 const TAILLE_MAX_ANALYSE_TEXTE = 1024 * 1024;
 const TAILLE_MAX_EMPREINTE = 20 * 1024 * 1024;
 const TAILLE_GROS_FICHIER = 100 * 1024 * 1024; // limite de GitHub
@@ -256,30 +256,18 @@ async function detecter(racine, fichiers) {
     };
   }
 
-  // Mod Minecraft : Gradle + fichier de description du mod ou plugin de chargeur
-  const texteBuild = (await lireTexte(racine, 'build.gradle')) || (await lireTexte(racine, 'build.gradle.kts')) || '';
-  const fichierMod = rels.find((r) => /(^|\/)(fabric\.mod\.json|quilt\.mod\.json|META-INF\/(neoforge\.)?mods\.toml|mcmod\.info)$/i.test(r));
-  if (gradle && (fichierMod || /fabric-loom|net\.minecraftforge|neoforged|architectury|quilt-loom/i.test(texteBuild))) {
-    let chargeur = 'Forge';
-    if (/fabric/i.test(fichierMod || '') || /fabric-loom/i.test(texteBuild)) chargeur = 'Fabric';
-    else if (/quilt/i.test(fichierMod || '') || /quilt-loom/i.test(texteBuild)) chargeur = 'Quilt';
-    else if (/neoforge/i.test(fichierMod || '') || /neoforged/i.test(texteBuild)) chargeur = 'NeoForge';
-    if (/architectury/i.test(texteBuild)) chargeur = `Architectury (${chargeur})`;
-    if (!description && fichierMod?.endsWith('.json')) {
-      try {
-        description = JSON.parse((await lireTexte(racine, fichierMod)) || '{}').description || '';
-      } catch {
-        // Fichier de mod illisible : sans importance ici.
-      }
-    }
+  // Projet Java / Kotlin (Gradle, hors Android)
+  if (gradle) {
+    const kotlin = rels.some((r) => r.endsWith('.kt'));
+    const pointEntree = ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts'].find(aRacine);
     return {
-      type: 'mod-minecraft',
-      technologies: `Mod Minecraft pour ${chargeur} (Java, Gradle).`,
+      type: 'java',
+      technologies: `Projet ${kotlin ? 'Kotlin' : 'Java'} (Gradle).`,
       lancer: 'Compiler avec le wrapper Gradle du projet : `gradlew build` ; le .jar est produit dans `build/libs/`.',
-      point_entree: aRacine('build.gradle') ? 'build.gradle' : 'build.gradle.kts',
+      point_entree: pointEntree,
       ouvrir_avec: 'vscode',
       actions: gradlew ? [{
-        nom: 'Compiler le mod',
+        nom: 'Compiler',
         description: 'Lance « gradlew build » et ouvre le dossier contenant le .jar.',
         commande: 'gradlew build',
         parametres: [],
@@ -287,8 +275,7 @@ async function detecter(racine, fichiers) {
       }] : [],
       description,
       outilsHtml: [],
-      details: `Mod Minecraft (${chargeur})`,
-      estMod: true,
+      details: `${kotlin ? 'Kotlin' : 'Java'} (Gradle)`,
     };
   }
 
@@ -459,12 +446,6 @@ async function analyserDossier(source, { mode = 'dossier', urlOrigine = null } =
 
   surProgression('Détection du type de projet…');
   const detection = await detecter(source, liste.fichiers);
-  // Mod Minecraft : le dossier « run » (mondes de test, journaux) se régénère aussi.
-  if (detection.estMod && liste.dossiers.includes('run')) {
-    liste.exclus.push('run');
-    liste.fichiers = liste.fichiers.filter((f) => !f.rel.startsWith('run/'));
-    liste.dossiers = liste.dossiers.filter((d) => d !== 'run' && !d.startsWith('run/'));
-  }
 
   surProgression('Mesure des dossiers à exclure…');
   const gitUtilisable = liste.aGit && await git.gitDisponible();
@@ -561,7 +542,7 @@ async function analyserDossier(source, { mode = 'dossier', urlOrigine = null } =
   if (ficheExistante) {
     risques.push({ niveau: 'info', titre: 'Le projet a déjà une fiche projet.json', detail: 'Elle sera conservée telle quelle.', elements: [] });
   }
-  if (['android', 'mod-minecraft'].includes(detection.type)) {
+  if (['android', 'java'].includes(detection.type)) {
     risques.push({
       niveau: 'info',
       titre: 'Fichiers de l\'éditeur à régénérer',

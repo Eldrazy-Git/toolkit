@@ -1,4 +1,4 @@
-// Java et SDK Android pour la compilation Gradle (mods Minecraft, applications Android).
+// Java et SDK Android pour la compilation Gradle (projets Java, applications Android).
 //
 // Gradle a besoin d'un JDK. Toolkit :
 // - lit la version de Java demandée par le projet (build.gradle : toolchain, VERSION_21…) ;

@@ -11,7 +11,7 @@ const { lireJson, ecrireJson, messageErreurJson } = require('./fichiers');
 const journal = require('./journal');
 
 const VERSION_SCHEMA = 1;
-const TYPES = ['html', 'script', 'mod-minecraft', 'android', 'autre'];
+const TYPES = ['html', 'script', 'java', 'android', 'autre'];
 // 'toolkit' : l'éditeur de code intégré à Toolkit (onglet « Code »).
 const EDITEURS = ['toolkit', 'vscode', 'android-studio', 'notepad++', 'explorateur'];
 const TYPES_PARAMETRES = ['fichier', 'fichiers', 'dossier', 'texte', 'case', 'choix'];
@@ -57,12 +57,13 @@ function normaliserLiens(valeur) {
 function normaliserFiche(brut, id) {
   const problemes = [];
   const b = brut && typeof brut === 'object' && !Array.isArray(brut) ? brut : {};
+  const { type } = b;
 
   const fiche = {
     schema: Number.isInteger(b.schema) ? b.schema : VERSION_SCHEMA,
     nom: texte(b.nom) || id,
     description: texte(b.description),
-    type: TYPES.includes(b.type) ? b.type : 'autre',
+    type: TYPES.includes(type) ? type : 'autre',
     categorie: texte(b.categorie) || SANS_CATEGORIE,
     tags: listeDeTextes(b.tags),
     favori: b.favori === true,
@@ -76,7 +77,7 @@ function normaliserFiche(brut, id) {
   };
 
   if (!texte(b.nom)) problemes.push('Le champ « nom » est vide : le nom du dossier est utilisé.');
-  if (b.type !== undefined && !TYPES.includes(b.type)) {
+  if (type !== undefined && !TYPES.includes(type)) {
     problemes.push(`Type « ${b.type} » inconnu (attendu : ${TYPES.join(', ')}).`);
   }
   if (b.ouvrir_avec !== undefined && b.ouvrir_avec !== null && !EDITEURS.includes(b.ouvrir_avec)) {

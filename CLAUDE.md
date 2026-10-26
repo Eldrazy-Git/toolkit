@@ -1,7 +1,7 @@
 # Toolkit — contexte pour modifier l'application
 
 Toolkit est une application de bureau Windows (Electron) qui centralise les projets de
-l'utilisateur (outils HTML, scripts Python/Node, mods Minecraft, application Android) et
+l'utilisateur (outils HTML, scripts Python/Node, projets Java/Gradle, applications Android) et
 intègre Claude Code. Ce dossier `app/` contient **uniquement le code de l'application**.
 Ce fichier est la référence complète pour modifier l'application.
 
@@ -91,7 +91,7 @@ app/
     │   ├── terminal.js          terminaux node-pty (Claude Code, PowerShell)
     │   ├── executions.js        actions de projet.json : commande, programme, sortie, arrêt
     │   ├── java.js              JDK et SDK Android pour Gradle (choix automatique)
-    │   ├── actions-auto.js      boutons de compilation ajoutés selon le type (mod, Android)
+    │   ├── actions-auto.js      boutons de compilation ajoutés selon le type (Java, Android)
     │   ├── cibles.js            résout une « cible » ({ type: 'projet', id } / toolkit / racine) en dossier
     │   ├── git.js               Git : état d'un dépôt, commit, push, pull, fetch, .gitignore, clone
     │   ├── github.js            GitHub via « gh » (état de connexion, dépôt privé)
@@ -366,7 +366,7 @@ dans `docs/projet-json.md`. Points clés :
   principal (`application:non-enregistre`) : la fenêtre est alors cachée au lieu d'être
   détruite, et « Quitter » demande confirmation.
 
-### Compilation (mods Minecraft, APK de debug)
+### Compilation (projets Java / Gradle, APK de debug)
 
 - Les boutons sont des **actions** de projet.json (`gradlew build` -> `build/libs`,
   `gradlew assembleDebug` -> `<module>/build/outputs/apk/debug`), ajoutées à l'import, à la

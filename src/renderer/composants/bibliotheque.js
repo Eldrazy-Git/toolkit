@@ -11,7 +11,7 @@ import * as groupes from './groupes.js';
 export const LIBELLES_TYPES = {
   html: 'Outil HTML',
   script: 'Script',
-  'mod-minecraft': 'Mod Minecraft',
+  java: 'Java (Gradle)',
   android: 'Android',
   autre: 'Autre',
 };

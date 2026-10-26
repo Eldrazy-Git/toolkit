@@ -30,7 +30,7 @@ const INSTALLATION = {
 };
 // gradlew n'est pas un logiciel à installer mais un fichier fourni avec le projet.
 INSTALLATION.gradlew = 'Ce projet ne contient pas « gradlew.bat » (le lanceur Gradle fourni avec les projets '
-  + 'Gradle : mods Minecraft, Android). Vérifie que le projet est complet, ou ouvre-le une fois dans '
+  + 'Gradle : projets Java, Android). Vérifie que le projet est complet, ou ouvre-le une fois dans '
   + 'Android Studio / IntelliJ, ou demande à Claude d\'ajouter le wrapper Gradle.';
 INSTALLATION.python3 = INSTALLATION.python;
 INSTALLATION.py = INSTALLATION.python;
@@ -192,10 +192,10 @@ async function detecterProgrammes() {
     java.trouverJdks(),
     java.emplacementSdkAndroid(),
   ]);
-  // Java (pour compiler les mods et les applications Android) : chaque JDK trouvé.
+  // Java (pour compiler les projets Java et les applications Android) : chaque JDK trouvé.
   const lignesJava = jdks.length
     ? jdks.map((j) => ({ nom: 'java', libelle: `Java ${j.version}${j.source === 'JAVA_HOME' ? ' (JAVA_HOME)' : ''}`, chemin: j.chemin, version: j.source, installation: null }))
-    : [{ nom: 'java', libelle: 'Java', chemin: null, version: null, installation: `${INSTALLATION.java} (nécessaire seulement pour compiler les mods Minecraft et les applications Android)` }];
+    : [{ nom: 'java', libelle: 'Java', chemin: null, version: null, installation: `${INSTALLATION.java} (nécessaire seulement pour compiler les projets Java et les applications Android)` }];
   const ligneSdk = {
     nom: 'android-sdk',
     libelle: 'SDK Android',
@@ -280,7 +280,7 @@ async function lancer(contenu, id, projetId, indexAction, valeurs = {}) {
     if (brut) dossierApres = path.resolve(dossierProjet, brut);
   }
 
-  // Gradle (mods Minecraft, Android) : choix du Java et du SDK Android.
+  // Gradle (projets Java, Android) : choix du Java et du SDK Android.
   const infos = [];
   let envGradle = {};
   if (/^gradlew(\.bat)?$/i.test(path.basename(programme))) {
@@ -358,8 +358,8 @@ async function lancer(contenu, id, projetId, indexAction, valeurs = {}) {
   return { commande: commandeLisible(nomProgramme, args), dossier: cheminLisible(dossier), infos };
 }
 
-// Fichiers créés ou modifiés pendant l'exécution dans le dossier de sortie (ex. le .jar du
-// mod, l'.apk), le fichier principal en premier (pas les « -sources », « -dev »…).
+// Fichiers créés ou modifiés pendant l'exécution dans le dossier de sortie (ex. le .jar,
+// l'.apk), le fichier principal en premier (pas les « -sources », « -dev »…).
 async function fichiersProduits(dossier, depuis) {
   let entrees;
   try {
