@@ -501,9 +501,9 @@ local `git init --bare`).
   (`--model`) et autonomie (`--permission-mode`, jamais bypassPermissions) ajoutés par
   `terminal.creer`.
 - Raccourcis : TOUJOURS passer par `raccourcis.js` (`commandeDe`, `correspond`). Nom d'une
-  touche = caractère écrit SANS Maj sur le clavier de l'utilisateur
-  (`navigator.keyboard.getLayoutMap()`, ex. « Ctrl+Shift+ù » en AZERTY), chiffres d'après la
-  position (Ctrl+0 = touche « à » en AZERTY), sauf « - » et « = ». Disposition transmise au
+  touche : une LETTRE = la lettre tapée (`e.key`) ; un signe = caractère écrit SANS Maj sur
+  le clavier de l'utilisateur (`navigator.keyboard.getLayoutMap()`, ex. « Ctrl+Shift+ù » en
+  AZERTY) ; chiffres d'après la position (Ctrl+0 = touche « à » en AZERTY), sauf « - » et « = ». Disposition transmise au
   processus principal (`application:disposition`).
 - Un raccourci réservé par un AUTRE programme du PC (Radeon Software, PowerToys…) n'arrive
   jamais à Toolkit : `raccourcis:pris` le détecte (tentative de `globalShortcut.register`
@@ -619,8 +619,8 @@ pour l'utilisateur, attente de sa validation.
   notification reste), **sauf** si un script ou un terminal tourne : la fenêtre est alors
   seulement cachée.
 - Thème sombre uniquement.
-- Repo GitHub de l'application : à créer par l'utilisateur lui-même depuis le panneau Git
-  (ligne « Toolkit », menu ⋯ > Créer un dépôt GitHub privé), quand il le souhaite.
+- Repo GitHub de l'application : créé par l'utilisateur (privé pour l'instant) ; diffusion
+  publique prévue sous licence GPL, avec l'installateur publié dans les Releases.
 - Electron 44.9.3 (dernière de la série 44). Electron 45 était trop récent à la fin de la
   construction (4 jours, aucun correctif). Pour passer à la 45 quand une 45.1 ou plus sera
   sortie : `npm install --save electron@^45`, `npm install`, puis tester les outils HTML

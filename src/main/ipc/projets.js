@@ -16,7 +16,6 @@ function enregistrer() {
     contexteClaude.planifier(300);
     return projet;
   });
-  gerer('projets:contexte-claude', () => contexteClaude.toutMettreAJour());
   gerer('projets:renommer-categorie', (ancienne, nouvelle) => projets.renommerCategorie(ancienne, nouvelle));
   gerer('projets:renommer-tag', (ancien, nouveau) => projets.renommerTag(ancien, nouveau));
 

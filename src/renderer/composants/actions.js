@@ -389,7 +389,8 @@ export function liensDuProjet(projet) {
 
 const ongletsDuProjet = (projet) => etat.obtenir().onglets.filter((o) => o.projetId === projet.id
   || o.cible?.type === 'projet' && o.cible.id === projet.id
-  || (o.genre === 'note' && o.chemin?.split('/').includes(projet.id)));
+  // Note : chemin relatif à la racine de Toolkit, qui commence par le dossier du projet.
+  || (o.genre === 'note' && o.chemin?.startsWith(`${projet.dossier}/`)));
 
 export async function supprimerProjet(projet) {
   const onglets = ongletsDuProjet(projet);

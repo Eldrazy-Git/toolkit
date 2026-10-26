@@ -217,6 +217,7 @@ function definirDisposition(carte) {
 
 // Même règle que renderer/composants/raccourcis.js > nomTouche.
 function nomTouche(code, key) {
+  if (/^[a-z]$/i.test(key)) return key.toUpperCase();
   const caractere = disposition[code];
   if (/^Digit\d$/.test(code)) return caractere === '-' || caractere === '=' ? caractere : code.slice(-1);
   if (/^Numpad\d$/.test(code)) return code.slice(-1);

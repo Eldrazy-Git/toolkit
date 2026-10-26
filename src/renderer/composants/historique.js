@@ -94,7 +94,8 @@ export async function afficherHistorique(cible, nom, { chemin = null } = {}) {
       onClick: () => { mode = valeur; rendreDetail(); },
     }, libelle);
 
-    detail.replaceChildren(
+    // (replaceChildren écrirait « null » : la liste est filtrée.)
+    detail.replaceChildren(...[
       el('div', { classe: 'entete-version' },
         el('strong', {}, v.sauvegardeClaude ? 'Sauvegarde faite juste avant que Claude modifie le projet' : v.message),
         el('span', { classe: 'details-aide' }, `${dateLongue(v.date)} · ${v.auteur} · ${v.hash.slice(0, 7)}`)),
@@ -104,7 +105,8 @@ export async function afficherHistorique(cible, nom, { chemin = null } = {}) {
       fichiers.length
         ? listeFichiers
         : el('p', { classe: 'details-aide' }, mode === 'depuis' ? 'Aucune différence : les fichiers sont identiques à cette version.' : 'Cette version ne change aucun fichier.'),
-      fichiers.length ? zone.element : null);
+      fichiers.length ? zone.element : null,
+    ].filter(Boolean));
     listeFichiers.querySelector('.fichier-git')?.click();
   }
 

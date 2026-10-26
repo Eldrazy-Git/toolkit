@@ -94,7 +94,8 @@ le dossier `Toolkit`.
 
 ## 2. Lancer et quitter Toolkit
 
-- **Lancer :** double-clique sur `Lancer Toolkit.vbs` dans le dossier `Toolkit`.
+- **Lancer :** raccourci **Toolkit** du Bureau ou du menu Démarrer (installation avec
+  l'installateur), ou double-clic sur `Lancer Toolkit.vbs` dans le dossier `Toolkit`.
   Aucune fenêtre noire ne s'ouvre, seulement Toolkit. (Astuce : clic droit sur ce fichier >
   « Créer un raccourci », puis place le raccourci sur ton Bureau.)
 - **Fermer la fenêtre** (la croix) ne quitte pas Toolkit : il reste disponible via son

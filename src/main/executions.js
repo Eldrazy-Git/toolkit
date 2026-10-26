@@ -294,8 +294,8 @@ async function lancer(contenu, id, projetId, indexAction, valeurs = {}) {
   let processus;
   if (/\.(cmd|bat)$/i.test(programme)) {
     // Les .bat / .cmd passent obligatoirement par cmd.exe, qui interprète « " » et « % ».
-    if (args.some((a) => /["%]/.test(a))) {
-      throw new Error('Un paramètre contient « " » ou « % », ce qui n\'est pas possible avec un script .bat ou .cmd.');
+    if (args.some((a) => /["%\r\n]/.test(a))) {
+      throw new Error('Un paramètre contient « " », « % » ou un retour à la ligne, ce qui n\'est pas possible avec un script .bat ou .cmd.');
     }
     const ligne = [programme, ...args].map((a) => `"${a}"`).join(' ');
     processus = spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', `"${ligne}"`], { ...options, windowsVerbatimArguments: true });

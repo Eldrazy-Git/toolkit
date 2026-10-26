@@ -49,6 +49,8 @@ navigator.keyboard?.getLayoutMap?.().then((carte) => {
 // Nom d'une touche, tel qu'il est écrit sur le clavier de l'utilisateur (sans Maj).
 // (Même règle dans src/main/outils-html.js > nomTouche.)
 export function nomTouche(code, key) {
+  // Lettres : la lettre tapée (toujours juste, quelle que soit la disposition).
+  if (/^[a-z]$/i.test(key)) return key.toUpperCase();
   const caractere = disposition?.get(code);
   // Rangée des chiffres : le chiffre (Ctrl+0 marche aussi en AZERTY, où la touche porte « à »),
   // sauf les signes utiles aux raccourcis par défaut (« - » de la touche 6 en AZERTY).
