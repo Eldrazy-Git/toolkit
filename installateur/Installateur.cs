@@ -1,4 +1,4 @@
-// Installateur graphique de Toolkit (install.exe), compilé par scripts/construire-installateur.js
+// Installateur graphique de Toolkit (Installer-Toolkit-<version>.exe), compilé par scripts/construire-installateur.js
 // avec le compilateur C# fourni par Windows (.NET Framework 4, C# 5 : pas de $"…" ni de ?.).
 //
 // Étapes : bienvenue -> dossier et options -> logiciels nécessaires -> installation -> fin.
@@ -7,7 +7,7 @@
 // - Les logiciels manquants sont installés avec winget (Windows peut demander une
 //   autorisation) ; Claude Code avec son installateur officiel. Rien sans l'accord de
 //   l'utilisateur (cases à cocher).
-// - Désinstallation (« install.exe /desinstaller », dans Applications installées) : retire
+// - Désinstallation (« Désinstaller Toolkit.exe », dans Applications installées) : retire
 //   l'application et les raccourcis ; les projets et réglages sont GARDÉS sauf demande.
 using System;
 using System.Collections.Generic;

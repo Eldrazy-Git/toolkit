@@ -42,21 +42,15 @@ les modifier avec Claude Code, sans quitter l'application.
    tes réglages sont gardés (sauf si tu demandes de les supprimer : ils vont alors à la
    Corbeille).
 
-Sans l'installateur `.exe` (depuis le ZIP du code : bouton vert **Code** > **Download
-ZIP**, puis décompresser) : double-clique sur **`Installer Toolkit.cmd`**. Il :
-   - vérifie les logiciels nécessaires (Node.js, Git) et utiles (Claude Code, GitHub CLI,
-     Python) et **propose d'installer ceux qui manquent** (il te demande à chaque fois) ;
-   - installe Toolkit dans `C:\Users\<toi>\Toolkit` (dossiers `app`, `projets`, `donnees`) ;
-   - crée un raccourci **Toolkit** sur le Bureau et dans le menu Démarrer (il pointe vers
-     `Toolkit.exe`, dans le dossier d'installation).
-4. Pour utiliser Claude : ouvre PowerShell, tape `claude` une fois et connecte-toi avec
-   **ton** compte Claude (abonnement Pro, Max…).
-
 Toolkit est installé **sous forme de sources** : il reste modifiable à tout moment (avec
-« Modifier Toolkit avec Claude » ou dans ton éditeur), sans rien réinstaller. Tu peux
-ensuite supprimer le dossier décompressé de l'étape 1.
+« Modifier Toolkit avec Claude » ou dans ton éditeur), sans rien réinstaller.
 
-### À la main
+### À la main (depuis le code)
+
+Pour les personnes qui préfèrent partir du code : crée un dossier `Toolkit`, et place le
+code dedans sous le nom `app` (`git clone` du dépôt, ou bouton vert **Code** > **Download
+ZIP** puis décompresser). Les dossiers `projets` et `donnees` sont créés au premier
+lancement.
 
 #### Ce qu'il faut installer avant
 
@@ -92,12 +86,15 @@ Patiente jusqu'à la fin (une à quelques minutes, une connexion Internet est n�
 environ 100 Mo sont téléchargés). À la fin, le fichier `Lancer Toolkit.vbs` apparaît dans
 le dossier `Toolkit`.
 
+Pour utiliser Claude : ouvre PowerShell, tape `claude` une fois et connecte-toi avec
+**ton** compte Claude (abonnement Pro, Max…).
+
 ## 2. Lancer et quitter Toolkit
 
 - **Lancer :** raccourci **Toolkit** du Bureau ou du menu Démarrer (installation avec
-  l'installateur), ou double-clic sur `Lancer Toolkit.vbs` dans le dossier `Toolkit`.
-  Aucune fenêtre noire ne s'ouvre, seulement Toolkit. (Astuce : clic droit sur ce fichier >
-  « Créer un raccourci », puis place le raccourci sur ton Bureau.)
+  l'installateur), ou double-clic sur `Lancer Toolkit.vbs` dans le dossier `Toolkit`
+  (installation à la main). Aucune fenêtre noire ne s'ouvre, seulement Toolkit. (Astuce :
+  clic droit sur ce fichier > « Créer un raccourci », puis place le raccourci sur ton Bureau.)
 - **Fermer la fenêtre** (la croix) ne quitte pas Toolkit : il reste disponible via son
   icône bleue « T » près de l'horloge (clic pour rouvrir). Il n'utilise alors presque rien.
   Si Claude ou un script travaille encore, il continue en arrière-plan.
@@ -333,7 +330,7 @@ de passe. Si GitHub n'est pas connecté, le panneau explique comment faire.
 
 ## 11. Réglages
 
-**Réglages** (en bas à gauche, ou Ctrl+,) : six onglets.
+**Réglages** (en bas à gauche, ou Ctrl+,) : sept onglets.
 
 **Général** :
 - **Démarrer Toolkit avec Windows** : Toolkit s'ouvre discrètement près de l'horloge à
@@ -413,7 +410,8 @@ Toolkit\
 ├── projets\              tous tes projets, un dossier par projet
 ├── templates\            (facultatif) tes propres modèles pour « Nouvel outil »
 ├── donnees\              tes réglages, les données de tes outils, le journal des erreurs
-└── Lancer Toolkit.vbs    le raccourci pour lancer l'application
+├── Toolkit.exe           lance l'application (créé par l'installateur, cible des raccourcis)
+└── Lancer Toolkit.vbs    lance aussi l'application (créé automatiquement ; sert à la relancer après une mise à jour)
 ```
 
 Chaque projet contient une **fiche** `projet.json` (nom, description, catégorie, boutons…)
@@ -426,10 +424,11 @@ Tu peux déplacer le dossier `Toolkit` entier où tu veux (autre disque, autre d
 
 1. Quitte Toolkit (clic droit sur son icône près de l'horloge > Quitter Toolkit).
 2. Déplace le dossier `Toolkit` complet.
-3. Relance avec `Lancer Toolkit.vbs`.
+3. Relance avec `Toolkit.exe` (ou `Lancer Toolkit.vbs`) dans le nouveau dossier.
 
 Tout suit automatiquement : projets, réglages, données des outils, démarrage avec Windows.
-(Si tu avais créé un raccourci vers `Lancer Toolkit.vbs`, recrée-le.)
+Les raccourcis du Bureau et du menu Démarrer pointent encore vers l'ancien emplacement :
+supprime-les et recrée-en un (clic droit sur `Toolkit.exe` > « Créer un raccourci »).
 
 ## 14. Sauvegardes
 
@@ -438,15 +437,15 @@ Tout suit automatiquement : projets, réglages, données des outils, démarrage 
   envoyé sur GitHub nulle part. Pour le sauvegarder, copie-le simplement ailleurs.
 - Le code de l'application (`app\`) a son propre dépôt Git : en le récupérant ailleurs
   (puis `npm install`), on obtient un Toolkit vide, sans tes projets.
-- Une copie installée avec l'installateur n'est pas reliée au dépôt GitHub d'origine pour
-  les envois (il est gardé en lecture seule sous le nom « officiel ») : tes commits restent
-  chez toi, et tu peux créer ton propre dépôt (panneau Git > ligne Toolkit > ⋯).
+- Une copie installée avec l'installateur n'est reliée à aucun dépôt GitHub : tes
+  modifications de Toolkit restent chez toi. Pour les sauvegarder sur GitHub : panneau Git >
+  ligne Toolkit > ⋯ (activer Git, puis créer ton propre dépôt privé).
 
 ## 15. En cas de problème
 
 | Problème | Solution |
 |---|---|
-| Rien ne se passe au double-clic sur `Lancer Toolkit.vbs` | Toolkit est peut-être déjà ouvert : regarde près de l'horloge (flèche ^ si l'icône est cachée). Sinon, lance `npm start` dans `Toolkit\app` pour voir le message d'erreur. |
+| Rien ne se passe au lancement de Toolkit | Toolkit est peut-être déjà ouvert : regarde près de l'horloge (flèche ^ si l'icône est cachée). Sinon, lance `npm start` dans `Toolkit\app` pour voir le message d'erreur. |
 | « Toolkit n'est pas encore installé » | Dans PowerShell, dans `Toolkit\app`, tape `npm install`. |
 | Un projet affiche un triangle jaune | Sa fiche `projet.json` a un problème : clique dessus, le panneau de droite explique lequel. |
 | L'interface semble bloquée | Appuie sur **F5** (recharge l'interface sans perdre tes projets). |

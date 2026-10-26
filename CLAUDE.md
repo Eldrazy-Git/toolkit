@@ -3,7 +3,7 @@
 Toolkit est une application de bureau Windows (Electron) qui centralise les projets de
 l'utilisateur (outils HTML, scripts Python/Node, mods Minecraft, application Android) et
 intègre Claude Code. Ce dossier `app/` contient **uniquement le code de l'application**.
-Ce fichier est la référence complète (le cahier des charges initial y a été intégré).
+Ce fichier est la référence complète pour modifier l'application.
 
 ## Principes de conception
 
@@ -36,7 +36,8 @@ Toolkit/                  ← racine (déplaçable n'importe où)
 ├── projets/              ← projets de l'utilisateur (un repo Git par projet, hors repo appli)
 ├── templates/            ← (facultatif) modèles personnels de l'utilisateur
 ├── donnees/              ← réglages + données des outils (jamais versionné)
-└── Lancer Toolkit.vbs    ← généré automatiquement, lance l'appli sans console
+├── Toolkit.exe           ← lanceur créé par l'installateur (cible des raccourcis)
+└── Lancer Toolkit.vbs    ← généré automatiquement (lanceur.js), lance l'appli sans console
 ```
 
 ## Règles absolues
@@ -69,8 +70,12 @@ Toolkit/                  ← racine (déplaçable n'importe où)
 app/
 ├── package.json
 ├── assets/                  icône de Toolkit (générée par scripts/generer-icones.js)
-├── docs/projet-json.md      format complet de la fiche projet.json
-├── scripts/                 vérification des prérequis, création du lanceur, icônes
+├── docs/
+│   ├── projet-json.md           format complet de la fiche projet.json
+│   ├── PROTOCOLE-MISE-A-JOUR.md procédure pour publier une nouvelle version
+│   └── notes-de-version/        nouveautés de chaque version (<version>.md, montrées aux utilisateurs)
+├── installateur/Installateur.cs installateur graphique / lanceur Toolkit.exe / désinstallateur
+├── scripts/                 prérequis, lanceur, icônes, construction de l'installateur, publication
 ├── templates/               modèles fournis pour « Nouvel outil »
 └── src/
     ├── main/                processus principal (Node) : disque, processus, Git…
@@ -431,7 +436,7 @@ entrée dans `actions` de son `projet.json`.
 
 - Licence GPL-3.0-or-later (`LICENSE`, `package.json`). Toolkit est diffusé SOUS FORME DE
   SOURCES (pas d'electron-builder / asar) : il doit rester modifiable par Claude.
-- **Installateur graphique** `install.exe` : `installateur/Installateur.cs` (WinForms, C# 5),
+- **Installateur graphique** `Installer-Toolkit-<version>.exe` : `installateur/Installateur.cs` (WinForms, C# 5),
   fabriqué par `npm run installateur` (`scripts/construire-installateur.js`) avec le
   compilateur C# de Windows (.NET Framework 4, rien à installer) ; sources = `git archive
   HEAD` (le DERNIER COMMIT) incluses en ressource `app.zip` ; sortie `dist/` (ignoré par Git,
@@ -453,13 +458,8 @@ entrée dans `actions` de son `projet.json`.
   github.com/login/device ; fermer la fenêtre arrête gh. node-pty exige le CHEMIN COMPLET du
   programme (`where gh`), sinon « File not found » ; page Réglages > Comptes
   (`composants/comptes-ui.js`). Toolkit ne lit jamais de mot de passe ni de jeton.
-- `Installer Toolkit.cmd` -> `scripts/installer.ps1` (enregistré en UTF-8 AVEC BOM : sinon
-  PowerShell 5.1 abîme les accents) : vérifie / propose d'installer (winget, avec une
-  question à chaque fois) Node.js >= 20, Git, gh, Python, et Claude Code (installateur
-  officiel) ; copie les sources dans `<Destination>\app` (sans node_modules), crée
-  `projets` et `donnees`, renomme le remote `origin` en `officiel` (envoi désactivé), lance
-  `npm install` (le postinstall crée le lanceur), crée les raccourcis Bureau / menu Démarrer.
-  Options de test : `-Destination`, `-SansRaccourcis`, `-NePasLancer`, `-SansQuestions`.
+- Une installation par l'installateur n'a pas de dépôt Git : il est créé à la première
+  sauvegarde (activation de Git ou mise à jour de Toolkit), sans remote.
 - Rien de personnel dans le dépôt (vérifier avant publication : `git grep` de son nom,
   e-mail, chemins). Les textes parlent du « compte Claude » de l'utilisateur, jamais d'un
   compte précis.
@@ -473,7 +473,7 @@ npm run verifier   vérifie les prérequis
 npm run icones     régénère assets/icone.png et assets/icone.ico
 ```
 
-**Tests automatiques** (méthode utilisée pendant la construction) : un petit script
+**Tests automatiques** : un petit script
 Electron qui neutralise le verrou d'instance unique et redirige `userData` vers un dossier
 temporaire, fait `require('src/main/main.js')`, puis pilote l'interface avec
 `webContents.executeJavaScript()` (clics, lecture du DOM), `sendInputEvent()` (frappes) et
@@ -560,7 +560,7 @@ Vérification automatique au démarrage si la dernière a plus de 7 jours
 (`reglages.misesAJour`). Programmes du PC : commande affichée seulement (installation
 globale = action de l'utilisateur).
 
-## Performances (mesurées à la phase 10)
+## Performances (mesurées)
 
 - Démarrage : fenêtre affichée ~0,2 s après le lancement ; index de recherche construit en
   ~0,1 s à la première recherche.
@@ -618,36 +618,16 @@ globale = action de l'utilisateur).
 - `element.replaceChildren(...)` et `append(...)` ne déplient pas les tableaux : utiliser
   `...liste` (sinon on obtient « [object HTMLDivElement] »). `el()` les déplie, lui.
 
-## Phases
-
-Construction par phases ; à la fin de chacune : commit, explication simple, liste de tests
-pour l'utilisateur, attente de sa validation.
-
-- [x] 0. Mise en place (structure, prérequis, documentation)
-- [x] 1. Coquille (fenêtre, thème, bibliothèque, détails, zone de notification)
-- [x] 2. Outils HTML (protocole, onglets, stockage persistant, export/import)
-- [x] 3. Ouvrir avec… et réglages des éditeurs
-- [x] 4. Terminal intégré et Claude Code
-- [x] 5. Actions et scripts
-- [x] 6. Assistant d'import
-- [x] 7. Git et GitHub
-- [x] 8. Recherche et Markdown
-- [x] 9. Compilation des mods et de l'APK
-- [x] 10. Finitions (démarrage avec Windows, dossier des projets, erreurs, documentation)
-
-### Décisions prises avec l'utilisateur
+## Choix de conception
 
 - Modèles fournis dans `app/templates/` (versionnés) ; `Toolkit/templates/` facultatif pour
-  ses modèles personnels. `Lancer Toolkit.vbs` est généré automatiquement.
+  les modèles personnels.
 - Import : après copie vérifiée, l'original part **à la Corbeille** (pas de suppression
   définitive).
 - Fermer la fenêtre détruit la fenêtre pour libérer la mémoire (seule l'icône de la zone de
   notification reste), **sauf** si un script ou un terminal tourne : la fenêtre est alors
   seulement cachée.
 - Thème sombre uniquement.
-- Repo GitHub de l'application : créé par l'utilisateur (privé pour l'instant) ; diffusion
-  publique prévue sous licence GPL, avec l'installateur publié dans les Releases.
-- Electron 44.9.3 (dernière de la série 44). Electron 45 était trop récent à la fin de la
-  construction (4 jours, aucun correctif). Pour passer à la 45 quand une 45.1 ou plus sera
+- Electron 44.9.3 (dernière de la série 44). Pour passer à la 45 quand une 45.1 ou plus sera
   sortie : `npm install --save electron@^45`, `npm install`, puis tester les outils HTML
   (webview), les terminaux (node-pty) et la recherche, et vérifier le journal.
