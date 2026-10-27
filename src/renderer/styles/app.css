@@ -811,6 +811,11 @@ button.lien-sous-groupe:hover { text-decoration: underline; }
 
 .liste-actions { display: flex; flex-direction: column; gap: 6px; }
 .liste-actions .bouton { justify-content: flex-start; height: auto; min-height: 30px; padding: 6px 10px; white-space: normal; text-align: left; }
+.liste-actions + .details-boutons { margin-top: 8px; }
+.ligne-action { display: flex; align-items: center; gap: 4px; }
+.ligne-action > .bouton { flex: 1; min-width: 0; }
+.ligne-action > .bouton-icone { flex: none; }
+.marque-defaut { margin-left: auto; padding: 0 6px; border-radius: 8px; font-size: 11px; color: var(--texte-faible); border: 1px solid var(--bordure); }
 
 .infos { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; }
 .infos dt { color: var(--texte-faible); }

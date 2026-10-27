@@ -166,6 +166,16 @@ Les fiches `projet.json` : format dans `docs/projet-json.md`. `projets.js` norma
 fiche pour l'interface sans jamais la réécrire ; une modification ne touche que les champs
 concernés et conserve les autres.
 
+Action par défaut (`projet.json > action_par_defaut`, voir `docs/projet-json.md`) : lancée
+par le double-clic, le bouton principal des détails, « Ouvrir » du clic droit et la palette
+(`actions.ouvrirProjet` -> `actionParDefaut()`, choix dans `choixActionsParDefaut()`, même
+liste que `projets.js > actionParDefautExiste`). Actions modifiables depuis les détails
+(« Ajouter une action », menu `…`) : `projets:modifier-actions` = `projets.modifierActions()`
+(ajouter / modifier / supprimer / déplacer ; index = position dans `fiche.actions`, les actions
+invalides du JSON sont gardées ; seuls nom, commande, description, dossier sont écrits ;
+l'action par défaut suit un renommage). Les consoles ouvertes sont recalées
+(`recalerConsoles`, elles désignent leur action par sa position).
+
 Suppression d'un projet (`actions.supprimerProjet`) : refusée si un onglet du projet tourne
 ou n'est pas enregistré ; confirmation en retapant le nom ; onglets du projet fermés (libère
 le dossier), puis `projets:supprimer` = `shell.trashItem` (Corbeille, jamais d'effacement

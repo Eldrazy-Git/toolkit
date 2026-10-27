@@ -23,6 +23,7 @@ est conservé tel quel par Toolkit (on peut donc y ranger ses propres notes).
   "icone": "icone.png",
   "point_entree": "index.html",
   "ouvrir_avec": "vscode",
+  "action_par_defaut": "action:Convertir",
   "actions": [
     {
       "nom": "Convertir",
@@ -57,15 +58,35 @@ est conservé tel quel par Toolkit (on peut donc y ranger ses propres notes).
 | `icone` | chemin | aucune | Image (png, jpg, svg, ico…). Sans icône : initiales sur fond coloré. Se change depuis Toolkit (clic sur l'icône du projet). |
 | `point_entree` | chemin | aucun | Fichier principal : la page HTML d'un outil, le script principal, etc. |
 | `ouvrir_avec` | `toolkit`, `vscode`, `android-studio`, `notepad++`, `explorateur` | aucun | Éditeur proposé par défaut pour « Ouvrir avec… » (`toolkit` = l'onglet « Code » intégré). |
+| `action_par_defaut` | voir ci-dessous | automatique | Ce que font le double-clic sur le projet et le bouton principal. Se choisit dans le panneau du projet > « Action par défaut ». |
 | `actions` | liste | `[]` | Boutons qui lancent une commande (voir ci-dessous). |
 | `outils_lies` | liste | `[]` | Pages HTML situées dans ce projet, à ouvrir comme des outils (voir ci-dessous). |
 | `liens` | liste | `[]` | Liens vers d'autres projets : `[{ "projet": "<dossier de l'autre projet>", "description": "en quoi ils sont liés" }]`. Un lien vaut dans les deux sens ; Toolkit en informe Claude (CLAUDE.md des projets concernés, liens indirects compris). Se gère dans le panneau du projet > « Projets liés ». |
 | `git.remote` | URL | aucune | Adresse du repo GitHub du projet (indicatif). |
 
+### `action_par_defaut`
+
+| Valeur | Effet |
+|---|---|
+| absente | Automatique : ouvre l'outil si `point_entree` est une page HTML, sinon ouvre le projet dans son éditeur par défaut. |
+| `outil` | Ouvre l'outil HTML (`point_entree` doit être une page HTML). |
+| `editeur` | Ouvre le projet dans son éditeur par défaut (`ouvrir_avec`). |
+| `code` | Ouvre l'onglet « Code » de Toolkit. |
+| `claude` | « Modifier avec Claude ». |
+| `action:<nom>` | Lance l'action de ce nom (voir `actions`). |
+| `outil:<point_entree>` | Ouvre cet outil lié (voir `outils_lies`). |
+
+Une valeur qui ne correspond à rien est signalée et remplacée par le choix automatique.
+Renommer une action depuis Toolkit met cette valeur à jour ; la supprimer revient à l'automatique.
+
 ### `actions`
 
 Chaque action devient un bouton dans le panneau de détails. Ainsi, on ajoute des fonctions
-à un projet **sans toucher au code de Toolkit**.
+à un projet **sans toucher au code de Toolkit**. Depuis le panneau du projet : « Ajouter
+une action », et le bouton `…` de chaque action (modifier, en faire l'action par défaut,
+monter, descendre, supprimer). Le formulaire ne gère que `nom`, `commande`, `description`
+et `dossier` ; les autres champs (`parametres`, `ouvrir_dossier_apres`) sont conservés et
+s'écrivent dans projet.json.
 
 | Champ | Rôle |
 |---|---|

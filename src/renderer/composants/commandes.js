@@ -91,7 +91,7 @@ export function listePalette() {
     const nom = p.fiche.nom;
     const cible = { type: 'projet', id: p.id };
     liste.push(
-      { titre: `Ouvrir ${nom}`, detail: actions.estOuvrableCommeOutil(p) ? 'outil' : 'dans son éditeur', groupe: nom, icone: 'lecture', action: () => actions.ouvrirProjet(p) },
+      { titre: `Ouvrir ${nom}`, detail: p.erreur ? null : actions.actionParDefaut(p).libelle, groupe: nom, icone: 'lecture', action: () => actions.ouvrirProjet(p) },
       { titre: `Afficher ${nom}`, detail: 'dans la bibliothèque', groupe: nom, icone: 'grille', action: () => actions.allerAuProjet(p.id) },
       { titre: `Code de ${nom}`, groupe: nom, icone: 'code', action: () => actions.ouvrirCode(cible, nom) },
       { titre: `Modifier ${nom} avec Claude`, groupe: nom, icone: 'claude', action: () => actions.modifierAvecClaude(p) },

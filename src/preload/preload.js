@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld('toolkit', {
   projets: {
     lister: () => appeler('projets:lister'),
     modifier: (id, changements) => appeler('projets:modifier', id, changements),
+    // operation : { type: 'ajouter' | 'modifier' | 'supprimer' | 'deplacer', index, action, sens }
+    modifierActions: (id, operation) => appeler('projets:modifier-actions', id, operation),
     renommerCategorie: (ancienne, nouvelle) => appeler('projets:renommer-categorie', ancienne, nouvelle),
     renommerTag: (ancien, nouveau) => appeler('projets:renommer-tag', ancien, nouveau),
     choisirIcone: (id) => appeler('projets:choisir-icone', id), // projet mis à jour, ou null si annulé

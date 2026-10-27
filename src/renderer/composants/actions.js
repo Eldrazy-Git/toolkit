@@ -244,8 +244,12 @@ export function elementsMenuIcone(projet) {
 // menu « Ouvrir avec… » (le menu n'a pas de sous-menus).
 export function elementsMenuProjet(projet, position) {
   const bloque = Boolean(projet.erreur);
+  // L'action par défaut en tête ; si elle a été changée, l'ouverture habituelle reste à côté.
+  const [automatique] = choixActionsParDefaut(projet);
+  const defaut = actionParDefaut(projet);
   return [
-    { libelle: 'Ouvrir', icone: 'lecture', desactive: bloque, action: () => (estOuvrableCommeOutil(projet) ? ouvrirOutil(projet.id) : ouvrirAvec(projet)) },
+    { libelle: defaut.nomBouton || defaut.libelle, icone: defaut.icone, detail: 'double-clic', desactive: bloque, action: () => ouvrirProjet(projet) },
+    defaut.valeur === automatique.valeur ? null : { libelle: automatique.nomBouton, icone: 'lecture', desactive: bloque, action: automatique.lancer },
     { libelle: 'Ouvrir avec…', icone: 'ouvrirAvec', detail: '▸', desactive: bloque, action: () => ouvrirMenu(position, elementsMenuOuvrirAvec(projet)) },
     { libelle: 'Explorer le code', icone: 'code', action: () => ouvrirCode({ type: 'projet', id: projet.id }, projet.fiche.nom) },
     { libelle: 'Historique des versions…', icone: 'historique', action: () => import('./historique.js').then((h) => h.afficherHistorique({ type: 'projet', id: projet.id }, projet.fiche.nom)) },
@@ -290,11 +294,132 @@ export function ouvrirCode(cible, nom, fichier = null, fichiers = null) {
   });
 }
 
-// Double-clic : ouvre l'outil HTML dans un onglet, sinon le projet dans son éditeur par défaut.
+// Double-clic, bouton principal, « Ouvrir » du clic droit : l'action par défaut du projet.
 export function ouvrirProjet(projet) {
   if (projet.erreur) return;
-  if (estOuvrableCommeOutil(projet)) ouvrirOutil(projet.id);
-  else ouvrirAvec(projet);
+  actionParDefaut(projet).lancer();
+}
+
+// --- Action par défaut (projet.json > action_par_defaut) -----------------------------------
+
+// Choix possibles pour ce projet : [{ valeur, libelle, icone, lancer }]. valeur '' = automatique
+// (outil HTML s'il y en a un, sinon l'éditeur par défaut). Même liste que projets.js accepte.
+export function choixActionsParDefaut(projet) {
+  const f = projet.fiche;
+  const cible = { type: 'projet', id: projet.id };
+  const editeur = { valeur: 'editeur', libelle: `Ouvrir dans ${nomEditeur(editeurParDefaut(f))}`, icone: 'lecture', lancer: () => ouvrirAvec(projet) };
+  const outil = estOuvrableCommeOutil(projet)
+    ? { valeur: 'outil', libelle: 'Ouvrir l\'outil', icone: 'lecture', lancer: () => ouvrirOutil(projet.id) }
+    : null;
+  const automatique = outil || editeur;
+  return [
+    { ...automatique, valeur: '', libelle: `Automatique (${automatique.libelle.toLowerCase()})`, nomBouton: outil ? 'Ouvrir' : editeur.libelle },
+    outil,
+    editeur,
+    { valeur: 'code', libelle: 'Ouvrir le code dans Toolkit', icone: 'code', lancer: () => ouvrirCode(cible, f.nom) },
+    { valeur: 'claude', libelle: 'Modifier avec Claude', icone: 'claude', lancer: () => modifierAvecClaude(projet) },
+    ...f.actions.map((a, index) => ({ valeur: `action:${a.nom}`, libelle: `Action « ${a.nom} »`, nomBouton: a.nom, icone: 'lecture', lancer: () => lancerAction(projet, index) })),
+    ...f.outils_lies.map((o) => ({ valeur: `outil:${o.point_entree}`, libelle: `Outil lié « ${o.nom} »`, nomBouton: o.nom, icone: 'outil', lancer: () => ouvrirOutil(projet.id, o.point_entree) })),
+  ].filter(Boolean);
+}
+
+export function actionParDefaut(projet) {
+  const choix = choixActionsParDefaut(projet);
+  return choix.find((c) => c.valeur === (projet.fiche.action_par_defaut || '')) || choix[0];
+}
+
+// valeur = '' pour revenir au choix automatique.
+export async function changerActionParDefaut(projet, valeur) {
+  remplacerProjet(await essayer(() => api.projets.modifier(projet.id, { action_par_defaut: valeur || null })));
+}
+
+// --- Actions du projet (boutons « Actions » des détails) ------------------------------------
+
+async function demanderAction(projet, action = null) {
+  return formulaire({
+    titre: action ? `Modifier l'action « ${action.nom} »` : 'Nouvelle action',
+    message: 'Une action est un bouton qui lance une commande dans le dossier du projet (ex. « python script.py », « node index.js », « npm start »).',
+    champs: [
+      { id: 'nom', libelle: 'Nom du bouton', obligatoire: true, valeur: action?.nom || '', exemple: 'Lancer le script' },
+      { id: 'commande', libelle: 'Commande', obligatoire: true, valeur: action?.commande || '', exemple: 'python script.py',
+        aide: 'Le premier mot est le programme. Pas de « & » ni de « | » : pour enchaîner plusieurs commandes, demande à Claude d\'écrire un petit script.' },
+      { id: 'description', libelle: 'Description (au survol du bouton)', obligatoire: false, valeur: action?.description || '' },
+      { id: 'dossier', libelle: 'Dossier où la lancer', obligatoire: false, valeur: action?.dossier && action.dossier !== '.' ? action.dossier : '', exemple: '. (le projet lui-même)',
+        aide: 'Sous-dossier du projet (ex. « scripts »). Vide = le dossier du projet.' },
+    ],
+    bouton: action ? 'Enregistrer' : 'Ajouter',
+  });
+}
+
+// Les consoles ouvertes désignent leur action par sa position : on la recale après un
+// déplacement ou une suppression (-1 = action supprimée, la relance l'expliquera).
+function recalerConsoles(projetId, nouvelIndex) {
+  const { onglets } = etat.obtenir();
+  if (!onglets.some((o) => o.genre === 'console' && o.projetId === projetId)) return;
+  etat.modifier({
+    onglets: onglets.map((o) => (o.genre === 'console' && o.projetId === projetId ? { ...o, indexAction: nouvelIndex(o.indexAction) } : o)),
+  });
+}
+
+export async function ajouterAction(projet) {
+  if (projet.erreur) return;
+  const valeurs = await demanderAction(projet);
+  if (!valeurs) return;
+  const modifie = await essayer(() => api.projets.modifierActions(projet.id, { type: 'ajouter', action: valeurs }));
+  if (modifie) {
+    remplacerProjet(modifie);
+    notifier(`Action « ${valeurs.nom} » ajoutée.`, 'succes');
+  }
+}
+
+export async function modifierAction(projet, index) {
+  const action = projet.fiche.actions[index];
+  if (!action || projet.erreur) return;
+  const valeurs = await demanderAction(projet, action);
+  if (!valeurs) return;
+  remplacerProjet(await essayer(() => api.projets.modifierActions(projet.id, { type: 'modifier', index, action: valeurs })));
+}
+
+export async function supprimerAction(projet, index) {
+  const action = projet.fiche.actions[index];
+  if (!action || projet.erreur) return;
+  const ok = await confirmer({
+    titre: 'Supprimer l\'action',
+    message: `Supprimer le bouton « ${action.nom} » de ce projet ? Les fichiers du projet ne sont pas touchés.`,
+    bouton: 'Supprimer',
+    danger: true,
+  });
+  if (!ok) return;
+  const modifie = await essayer(() => api.projets.modifierActions(projet.id, { type: 'supprimer', index }));
+  if (!modifie) return;
+  remplacerProjet(modifie);
+  recalerConsoles(projet.id, (i) => (i === index ? -1 : i > index ? i - 1 : i));
+}
+
+export async function deplacerAction(projet, index, sens) {
+  const voisin = index + sens;
+  if (projet.erreur || voisin < 0 || voisin >= projet.fiche.actions.length) return;
+  const modifie = await essayer(() => api.projets.modifierActions(projet.id, { type: 'deplacer', index, sens }));
+  if (!modifie) return;
+  remplacerProjet(modifie);
+  recalerConsoles(projet.id, (i) => (i === index ? voisin : i === voisin ? index : i));
+}
+
+export function elementsMenuAction(projet, index) {
+  const action = projet.fiche.actions[index];
+  const parDefaut = projet.fiche.action_par_defaut === `action:${action.nom}`;
+  return [
+    { libelle: 'Lancer', icone: 'lecture', action: () => lancerAction(projet, index) },
+    { libelle: 'Modifier…', icone: 'crayon', action: () => modifierAction(projet, index) },
+    { libelle: parDefaut ? 'Ne plus en faire l\'action par défaut' : 'En faire l\'action par défaut', icone: 'etoile',
+      infobulle: 'Action lancée par le double-clic sur le projet et par le bouton principal',
+      action: () => changerActionParDefaut(projet, parDefaut ? '' : `action:${action.nom}`) },
+    'separateur',
+    { libelle: 'Monter', icone: 'haut', desactive: index === 0, action: () => deplacerAction(projet, index, -1) },
+    { libelle: 'Descendre', icone: 'bas', desactive: index === projet.fiche.actions.length - 1, action: () => deplacerAction(projet, index, 1) },
+    'separateur',
+    { libelle: 'Supprimer…', icone: 'effacer', action: () => supprimerAction(projet, index) },
+  ];
 }
 
 // Nom affiché du projet (projet.json > nom). Le dossier garde son nom (voir projets.js).

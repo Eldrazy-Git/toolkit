@@ -19,6 +19,8 @@ function enregistrer() {
     contexteClaude.planifier(300);
     return projet;
   });
+  // Ajouter, modifier, supprimer ou déplacer une action (voir projets.modifierActions).
+  gerer('projets:modifier-actions', (id, operation) => projets.modifierActions(id, operation));
   gerer('projets:renommer-categorie', (ancienne, nouvelle) => projets.renommerCategorie(ancienne, nouvelle));
   gerer('projets:renommer-tag', (ancien, nouveau) => projets.renommerTag(ancien, nouveau));
 

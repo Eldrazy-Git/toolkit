@@ -27,7 +27,7 @@ function surTouche(e) {
 export function ouvrirMenu(ancre, elements) {
   fermerMenu();
   const menu = el('div', { classe: 'menu', role: 'menu' },
-    ...elements.map((e) => {
+    ...elements.filter(Boolean).map((e) => {
       if (e === 'separateur') return el('div', { classe: 'menu-separateur' });
       if (e.titre) return el('div', { classe: 'menu-titre' }, e.titre);
       return el('button', {

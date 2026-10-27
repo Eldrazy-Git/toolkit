@@ -102,6 +102,61 @@ function selecteurEditeur(projet) {
   return select;
 }
 
+// Ce que fait le double-clic sur le projet (et le bouton principal) : projet.json > action_par_defaut.
+function selecteurActionParDefaut(projet) {
+  const select = el('select', {
+    classe: 'champ-select',
+    disabled: Boolean(projet.erreur),
+    title: 'Ce que font le double-clic sur le projet et le bouton principal (enregistré dans projet.json)',
+    onChange: () => actions.changerActionParDefaut(projet, select.value),
+  }, actions.choixActionsParDefaut(projet).map((c) => el('option', { value: c.valeur }, c.libelle)));
+  select.value = projet.fiche.action_par_defaut || '';
+  return select;
+}
+
+// Bouton principal = l'action par défaut ; si elle a été changée, l'ouverture habituelle
+// (outil ou éditeur) reste à côté.
+function boutonsOuvrir(projet) {
+  const [automatique] = actions.choixActionsParDefaut(projet);
+  const defaut = actions.actionParDefaut(projet);
+  const bloque = Boolean(projet.erreur);
+  return [
+    el('button', { classe: 'bouton principal', disabled: bloque, title: 'Action par défaut (aussi au double-clic sur le projet)', onClick: () => actions.ouvrirProjet(projet) },
+      icone(defaut.icone), defaut.nomBouton || defaut.libelle),
+    defaut.valeur === automatique.valeur ? null
+      : el('button', { classe: 'bouton', disabled: bloque, onClick: automatique.lancer }, icone('lecture'), automatique.nomBouton),
+  ];
+}
+
+// Boutons des actions de projet.json, chacun avec son menu (modifier, déplacer, supprimer…).
+function listeActions(projet) {
+  const f = projet.fiche;
+  const bloque = Boolean(projet.erreur);
+  return [
+    f.actions.length === 0
+      ? el('p', { classe: 'details-aide' }, 'Aucune action. Une action est un bouton qui lance une commande (script Python, Node…) dans le dossier du projet.')
+      : el('div', { classe: 'liste-actions' }, f.actions.map((a, index) => {
+        const parDefaut = f.action_par_defaut === `action:${a.nom}`;
+        const menu = el('button', {
+          classe: 'bouton-icone',
+          disabled: bloque,
+          title: 'Modifier, déplacer ou supprimer cette action',
+          onClick: () => ouvrirMenu(menu, actions.elementsMenuAction(projet, index)),
+        }, icone('points'));
+        return el('div', { classe: 'ligne-action' },
+          el('button', {
+            classe: 'bouton',
+            disabled: bloque,
+            title: [a.description, a.commande, parDefaut ? '(action par défaut)' : ''].filter(Boolean).join('\n'),
+            onClick: () => actions.lancerAction(projet, index),
+          }, icone('lecture'), a.nom, parDefaut ? el('span', { classe: 'marque-defaut' }, 'par défaut') : null),
+          menu);
+      })),
+    bloque ? null : el('div', { classe: 'details-boutons' },
+      el('button', { classe: 'etiquette', onClick: () => actions.ajouterAction(projet) }, icone('plus'), 'Ajouter une action')),
+  ];
+}
+
 function section(titre, ...contenu) {
   return el('section', { classe: 'details-section' }, el('h3', {}, titre), contenu);
 }
@@ -239,14 +294,7 @@ function rendreProjet(projet) {
         title: projet.erreur ? '' : 'Cliquer pour modifier la description (Claude s\'en sert pour comprendre le rôle du projet)',
         onClick: () => { if (!projet.erreur) actions.modifierDescription(projet); },
       }, f.description || 'Aucune description : clique ici pour en écrire une.', projet.erreur ? null : el('span', { classe: 'crayon-description' }, icone('crayon'))),
-      el('div', { classe: 'details-boutons' },
-        actions.estOuvrableCommeOutil(projet)
-          ? el('button', { classe: 'bouton principal', title: 'Ouvrir l\'outil dans un onglet', onClick: () => actions.ouvrirOutil(projet.id) }, icone('lecture'), 'Ouvrir')
-          : el('button', {
-            classe: 'bouton principal',
-            disabled: Boolean(projet.erreur),
-            onClick: () => actions.ouvrirAvec(projet),
-          }, icone('lecture'), `Ouvrir dans ${actions.nomEditeur(actions.editeurParDefaut(f))}`),
+      el('div', { classe: 'details-boutons' }, boutonsOuvrir(projet),
         boutonMenu('Ouvrir avec…', 'ouvrirAvec', () => actions.elementsMenuOuvrirAvec(projet)),
         el('button', {
           classe: 'bouton',
@@ -260,15 +308,7 @@ function rendreProjet(projet) {
           onClick: () => actions.modifierAvecClaude(projet),
         }, icone('claude'), 'Modifier avec Claude')),
 
-      section('Actions',
-        f.actions.length === 0
-          ? el('p', { classe: 'details-aide' }, 'Aucune action. On peut en ajouter dans projet.json (champ « actions »).')
-          : el('div', { classe: 'liste-actions' }, f.actions.map((a, index) => el('button', {
-            classe: 'bouton',
-            disabled: Boolean(projet.erreur),
-            title: [a.description, a.commande].filter(Boolean).join('\n'),
-            onClick: () => actions.lancerAction(projet, index),
-          }, icone('lecture'), a.nom)))),
+      section('Actions', listeActions(projet)),
 
       f.outils_lies.length > 0
         ? section('Outils liés',
@@ -281,6 +321,7 @@ function rendreProjet(projet) {
         : null,
 
       section('Catégorie', selecteurCategorie(projet)),
+      section('Action par défaut', selecteurActionParDefaut(projet)),
       section('Éditeur par défaut', selecteurEditeur(projet)),
       section('Tags', tags(projet)),
       section('Groupes', listeGroupes(projet)),

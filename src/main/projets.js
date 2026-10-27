@@ -16,6 +16,9 @@ const TYPES = ['html', 'script', 'java', 'android', 'autre'];
 const EDITEURS = ['toolkit', 'vscode', 'android-studio', 'notepad++', 'explorateur'];
 const TYPES_PARAMETRES = ['fichier', 'fichiers', 'dossier', 'texte', 'case', 'choix'];
 const SANS_CATEGORIE = 'Sans catégorie';
+// Action par défaut (double-clic, bouton principal) : ces valeurs, ou « action:<nom> » (une
+// action de la fiche) ou « outil:<point_entree> » (un outil lié). Absente = automatique.
+const ACTIONS_PAR_DEFAUT = ['outil', 'editeur', 'code', 'claude'];
 
 // --- Identifiants -------------------------------------------------------------
 
@@ -74,6 +77,7 @@ function normaliserFiche(brut, id) {
     outils_lies: [],
     git: { remote: texte(b.git?.remote) || null },
     liens: normaliserLiens(b.liens),
+    action_par_defaut: null,
   };
 
   if (!texte(b.nom)) problemes.push('Le champ « nom » est vide : le nom du dossier est utilisé.');
@@ -85,7 +89,7 @@ function normaliserFiche(brut, id) {
   }
 
   (Array.isArray(b.actions) ? b.actions : []).forEach((action, i) => {
-    if (!action || !texte(action.nom) || !texte(action.commande)) {
+    if (!estActionValide(action)) {
       problemes.push(`L'action n°${i + 1} doit avoir un « nom » et une « commande ».`);
       return;
     }
@@ -130,7 +134,25 @@ function normaliserFiche(brut, id) {
     });
   });
 
+  const parDefaut = texte(b.action_par_defaut);
+  if (parDefaut) {
+    if (actionParDefautExiste(fiche, parDefaut)) fiche.action_par_defaut = parDefaut;
+    else problemes.push(`L'action par défaut « ${parDefaut} » n'existe pas : le choix automatique est utilisé.`);
+  }
+
   return { fiche, problemes };
+}
+
+function estActionValide(action) {
+  return Boolean(action && texte(action.nom) && texte(action.commande));
+}
+
+function actionParDefautExiste(fiche, valeur) {
+  if (valeur === 'outil') return /\.html?$/i.test(fiche.point_entree || '');
+  if (ACTIONS_PAR_DEFAUT.includes(valeur)) return true;
+  if (valeur.startsWith('action:')) return fiche.actions.some((a) => a.nom === valeur.slice(7));
+  if (valeur.startsWith('outil:')) return fiche.outils_lies.some((o) => o.point_entree === valeur.slice(6));
+  return false;
 }
 
 // --- Lecture ------------------------------------------------------------------
@@ -310,7 +332,88 @@ async function modifierFiche(id, changements) {
     if (liens.length) brut.liens = liens;
     else delete brut.liens;
   }
+  if ('action_par_defaut' in changements) {
+    const valeur = texte(changements.action_par_defaut);
+    if (!valeur) delete brut.action_par_defaut;
+    else if (actionParDefautExiste(normaliserFiche(brut, id).fiche, valeur)) brut.action_par_defaut = valeur;
+    else throw new Error('Cette action n\'existe pas dans le projet.');
+  }
 
+  await ecrireJson(chemin, brut);
+  return chargerProjet(id);
+}
+
+// --- Actions (boutons du panneau de détails) ----------------------------------------------
+
+// operation : { type: 'ajouter', action } | { type: 'modifier', index, action }
+//           | { type: 'supprimer', index } | { type: 'deplacer', index, sens: -1 | 1 }
+// index = position dans fiche.actions (actions valides seulement, comme l'interface les
+// voit). Seuls nom, commande, description et dossier sont écrits : les autres champs de
+// l'action (parametres, ouvrir_dossier_apres…) sont conservés.
+async function modifierActions(id, operation) {
+  const chemin = path.join(dossierDuProjet(id), 'projet.json');
+  let brut;
+  try {
+    brut = await lireJson(chemin);
+  } catch (erreur) {
+    const raison = erreur instanceof SyntaxError ? messageErreurJson(erreur) : erreur.message;
+    throw new Error(`Impossible de modifier ce projet : sa fiche projet.json est illisible (${raison}).`);
+  }
+  const liste = Array.isArray(brut.actions) ? brut.actions : [];
+  // Position dans le JSON de chaque action valide (une action invalide est ignorée à
+  // l'affichage mais gardée dans le fichier).
+  const positions = liste.map((a, i) => (estActionValide(a) ? i : -1)).filter((i) => i >= 0);
+  const { type, index } = operation || {};
+  if (type !== 'ajouter' && !Number.isInteger(positions[index])) throw new Error('Cette action n\'existe plus : la liste a changé.');
+  const nomDe = (i) => texte(liste[positions[i]]?.nom);
+
+  const champs = () => {
+    const a = operation.action || {};
+    const nom = texte(a.nom);
+    const commande = texte(a.commande);
+    if (!nom) throw new Error('Donne un nom à l\'action (c\'est le texte du bouton).');
+    if (!commande) throw new Error('Indique la commande à lancer.');
+    if (nom.length > 80) throw new Error('Ce nom est trop long (80 caractères au plus).');
+    const autre = positions.findIndex((p, i) => texte(liste[p].nom) === nom && (type === 'ajouter' || i !== index));
+    if (autre >= 0) throw new Error(`Une action s'appelle déjà « ${nom} ».`);
+    const dossier = texte(a.dossier).replace(/\\/g, '/').replace(/^\.\/|\/$/g, '') || '.';
+    if (path.isAbsolute(dossier) || dossier.split('/').includes('..')) {
+      throw new Error('Le dossier doit être un dossier du projet, écrit depuis sa racine (ex. « scripts »), ou « . » pour le projet lui-même.');
+    }
+    return { nom, commande, description: texte(a.description), dossier };
+  };
+  const ecrireChamps = (cible, c) => {
+    cible.nom = c.nom;
+    cible.commande = c.commande;
+    if (c.description) cible.description = c.description;
+    else delete cible.description;
+    if (c.dossier !== '.') cible.dossier = c.dossier;
+    else delete cible.dossier;
+    return cible;
+  };
+
+  if (type === 'ajouter') {
+    liste.push(ecrireChamps({}, champs()));
+  } else if (type === 'modifier') {
+    const ancien = nomDe(index);
+    const c = champs();
+    ecrireChamps(liste[positions[index]], c);
+    // L'action par défaut suit le changement de nom.
+    if (brut.action_par_defaut === `action:${ancien}`) brut.action_par_defaut = `action:${c.nom}`;
+  } else if (type === 'supprimer') {
+    if (brut.action_par_defaut === `action:${nomDe(index)}`) delete brut.action_par_defaut;
+    liste.splice(positions[index], 1);
+  } else if (type === 'deplacer') {
+    const voisin = index + (operation.sens < 0 ? -1 : 1);
+    if (!Number.isInteger(positions[voisin])) return chargerProjet(id);
+    const [a, b] = [positions[index], positions[voisin]];
+    [liste[a], liste[b]] = [liste[b], liste[a]];
+  } else {
+    throw new Error('Opération inconnue.');
+  }
+
+  if (liste.length) brut.actions = liste;
+  else delete brut.actions;
   await ecrireJson(chemin, brut);
   return chargerProjet(id);
 }
@@ -476,6 +579,7 @@ module.exports = {
   chargerProjet,
   listerProjets,
   modifierFiche,
+  modifierActions,
   renommerDossier,
   changerIcone,
   EXTENSIONS_IMAGES,
