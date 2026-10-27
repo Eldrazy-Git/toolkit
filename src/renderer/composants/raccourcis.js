@@ -66,6 +66,8 @@ export function nomTouche(code, key) {
 
 // Combinaison d'un événement clavier : « Ctrl+Shift+ù » (null pour une touche seule de modificateur).
 export function combinaison(e) {
+  // Choisir une suggestion de saisie automatique dans un champ envoie un « keydown » sans touche.
+  if (typeof e.key !== 'string' || !e.key) return null;
   if (['Control', 'Shift', 'Alt', 'Meta', 'AltGraph'].includes(e.key)) return null;
   return [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', nomTouche(e.code, e.key)].filter(Boolean).join('+');
 }
