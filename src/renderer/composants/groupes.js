@@ -74,11 +74,24 @@ export function projetsDe(id) {
   return ids;
 }
 
-// « Catalogue › Outils de mise à jour »
-export function chemin(id) {
+// « Catalogue › Outils de mise à jour » ; « depuis » arrête le chemin sous ce groupe (chemin relatif).
+export function chemin(id, depuis = null) {
   const noms = [];
-  for (let g = trouver(id); g && noms.length < 50; g = trouver(g.parent)) noms.unshift(g.nom);
+  for (let g = trouver(id); g && g.id !== depuis && noms.length < 50; g = trouver(g.parent)) noms.unshift(g.nom);
   return noms.join(' › ');
+}
+
+// Répartition des projets d'un groupe par sous-groupe, pour l'affichage du groupe :
+// [{ groupe, titre, projets: Set }] (groupe = null : projets rangés directement dedans),
+// dans l'ordre de l'arbre ; les sous-groupes vides sont omis.
+export function repartition(id) {
+  const existants = new Set(etat.obtenir().projets.map((p) => p.id));
+  const garder = (g) => new Set(g.projets.filter((pid) => existants.has(pid)));
+  const principal = trouver(id);
+  return [
+    { groupe: null, titre: 'Directement dans ce groupe', projets: principal ? garder(principal) : new Set() },
+    ...arbre(id).map(({ groupe }) => ({ groupe, titre: chemin(groupe.id, id), projets: garder(groupe) })),
+  ].filter((s) => s.projets.size > 0);
 }
 
 export function groupesDuProjet(projetId) {

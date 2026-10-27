@@ -187,7 +187,8 @@ tirée du nom, voir `icone-projet.js > couleurCategorie`), `epingles`
 `groupes` (voir
 `composants/groupes.js` : `{ id, nom, parent, projets, replie }`, imbricables, un projet
 peut être dans plusieurs groupes ; nettoyés au chargement par `groupes.nettoyer()` ; filtre
-de bibliothèque `{ type: 'groupe', valeur: id }` = projets du groupe et de ses sous-groupes ;
+de bibliothèque `{ type: 'groupe', valeur: id }` = projets du groupe et de ses sous-groupes,
+affichés en une section par sous-groupe s'il en a (`groupes.repartition()`, titre cliquable) ;
 glisser-déposer par `groupes.glissable()` / `groupes.deposable()`). Icône : `changerIcone()`
 référence une image déjà dans le projet, sinon la copie en `icone.<ext>` (ou
 `icone-toolkit.<ext>` si ce nom est déjà pris) ; une image n'est jamais supprimée.

@@ -211,10 +211,30 @@ export function rendre() {
     contenu.replaceChildren(messageVide(e));
     return;
   }
-  const groupes = grouper(visibles, e.tri);
-  contenu.replaceChildren(...groupes.map((g) => el('section', { classe: 'groupe-projets' },
-    g.titre ? el('h2', { classe: 'titre-groupe' }, g.titre, el('span', {}, g.projets.length)) : null,
-    e.vue === 'liste'
-      ? el('div', { classe: 'liste' }, g.projets.map((p) => ligne(p, e.selection)))
-      : el('div', { classe: 'grille' }, g.projets.map((p) => carte(p, e.selection))))));
+  const projetsEn = (liste) => (e.vue === 'liste'
+    ? el('div', { classe: 'liste' }, liste.map((p) => ligne(p, e.selection)))
+    : el('div', { classe: 'grille' }, liste.map((p) => carte(p, e.selection))));
+  const sections = (liste, classeTitre) => grouper(liste, e.tri).map((g) => el('section', { classe: 'groupe-projets' },
+    g.titre ? el('h2', { classe: classeTitre }, g.titre, el('span', {}, g.projets.length)) : null,
+    projetsEn(g.projets)));
+
+  // Groupe avec des sous-groupes : une section par sous-groupe, pour voir où est rangé chaque
+  // projet (un projet présent dans plusieurs sous-groupes apparaît dans chacun).
+  const parSousGroupe = e.filtre.type === 'groupe' && groupes.enfants(e.filtre.valeur).length > 0
+    ? groupes.repartition(e.filtre.valeur) : null;
+  if (!parSousGroupe) {
+    contenu.replaceChildren(...sections(visibles, 'titre-groupe'));
+    return;
+  }
+  contenu.replaceChildren(...parSousGroupe.map((s) => {
+    const liste = visibles.filter((p) => s.projets.has(p.id));
+    if (liste.length === 0) return null;
+    return el('section', { classe: 'groupe-projets section-sous-groupe' },
+      el('h2', { classe: 'titre-sous-groupe' },
+        s.groupe
+          ? el('button', { classe: 'lien-sous-groupe', title: 'Afficher seulement ce sous-groupe', onClick: () => groupes.afficher(s.groupe.id) }, icone('dossier'), s.titre)
+          : el('span', { classe: 'lien-sous-groupe' }, s.titre),
+        el('span', { classe: 'compte' }, liste.length)),
+      ...sections(liste, 'titre-groupe'));
+  }).filter(Boolean));
 }

@@ -197,6 +197,33 @@ button, input, select, textarea { font: inherit; color: inherit; }
   color: var(--texte-faible);
 }
 .titre-groupe span { font-weight: 400; }
+/* Groupe affiché avec ses sous-groupes : un titre par sous-groupe, cliquable. */
+.titre-sous-groupe {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--bordure-forte);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texte);
+}
+.titre-sous-groupe .compte { font-weight: 400; font-size: 12px; color: var(--texte-faible); }
+.lien-sous-groupe {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+}
+button.lien-sous-groupe { cursor: pointer; }
+button.lien-sous-groupe:hover { text-decoration: underline; }
+.lien-sous-groupe svg { width: 16px; height: 16px; color: var(--texte-faible); }
+.section-sous-groupe .groupe-projets + .groupe-projets { margin-top: 14px; }
 .ligne-colonne.ligne-date { width: 110px; text-align: right; }
 .bouton-icone:disabled { opacity: 0.4; cursor: default; }
 
