@@ -14,7 +14,7 @@ const projets = require('./projets');
 const journal = require('./journal');
 
 const DOSSIERS_IGNORES = new Set(['node_modules', '.git', 'build', 'dist', 'out', 'target', '.gradle', '.idea',
-  '__pycache__', '.venv', 'venv', '.cxx', '.next', '.parcel-cache', 'run']);
+  '__pycache__', '.venv', 'venv', '.cxx', '.next', '.parcel-cache', 'run', '.mise-a-jour']);
 const TAILLE_MAX_NOTE = 1024 * 1024;
 const NOTES_MAX = 5000;
 const INTERVALLE_MAJ = 2000;

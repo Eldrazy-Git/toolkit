@@ -520,7 +520,8 @@ local `git init --bare`).
   nouvelle = sources de la dernière Release. Non modifié par l'utilisateur -> nouvelle
   version ; modifié par lui seul -> gardé ; des deux côtés -> `git merge-file`, sinon SA
   version gardée + fichier signalé (Claude finit la fusion, versions officielles dans
-  `app/.mise-a-jour/<version>/{base,nouveau}`, ignoré par Git) ; ses fichiers ajoutés ou
+  `app/.mise-a-jour/<version>/{base,nouveau}`, ignoré par Git, la recherche et l'onglet Code ;
+  supprimé après une mise à jour sans conflit et au début de la suivante) ; ses fichiers ajoutés ou
   supprimés : respectés. `package.json` : nouvelle version + ses ajouts (dépendances,
   scripts) ; `package-lock.json` : nouvelle version (npm install le recalcule).
 - Application : commit de sauvegarde (dépôt créé si besoin, identité « Toolkit » par défaut),

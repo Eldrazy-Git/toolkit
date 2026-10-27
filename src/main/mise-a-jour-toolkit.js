@@ -16,7 +16,8 @@
 //     · fichier retiré de la version officielle -> retiré seulement s'il ne l'avait pas modifié ;
 // - une sauvegarde Git du dossier app est faite avant : tout reste annulable (Historique).
 // Les deux versions officielles téléchargées sont rangées dans app/.mise-a-jour/<version>/
-// (ignoré par Git) pour que Claude puisse finir une fusion.
+// (ignoré par Git, la recherche et l'onglet Code) pour que Claude puisse finir une fusion ;
+// supprimé après une mise à jour sans conflit, et au début de la suivante.
 'use strict';
 
 const fs = require('node:fs/promises');
@@ -189,6 +190,8 @@ function fusionnerPaquet(base, sienne, nouvelle) {
 async function analyser() {
   const infos = await verifier();
   if (!infos.disponible) throw new Error('Toolkit est déjà à jour.');
+  // Les copies d'une mise à jour précédente ne servent plus : elles encombreraient app/.
+  await fs.rm(DOSSIER_TRAVAIL(), { recursive: true, force: true });
   const travail = path.join(DOSSIER_TRAVAIL(), infos.derniere.version);
   const dossierBase = path.join(travail, 'base');
   const dossierNouveau = path.join(travail, 'nouveau');
@@ -284,6 +287,8 @@ async function appliquer() {
   for (const relatif of plan.suppressions) await fs.rm(path.join(chemins.app, relatif), { force: true });
   await commit(`Mise à jour de Toolkit ${plan.actuelle} -> ${plan.version} (version officielle, modifications personnelles gardées)`);
   journal.info(`Toolkit mis à jour vers ${plan.version} : ${Object.keys(plan.ecritures).length} fichier(s) écrit(s), ${plan.conflits.length} conflit(s).`);
+  // Les versions officielles ne sont gardées que si Claude doit finir une fusion.
+  if (!plan.conflits.length) await fs.rm(DOSSIER_TRAVAIL(), { recursive: true, force: true }).catch(() => {});
   derniereAnalyse = null;
   return { version: plan.version, conflits: plan.conflits, dependancesChangees: plan.dependancesChangees };
 }
