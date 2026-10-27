@@ -178,7 +178,9 @@ conversations de Claude.
 
 Bibliothèque : chaque projet chargé porte aussi `dateAjout` (création du dossier) et
 `dateModification` (fichier le plus récent sur 2 niveaux, dossiers générés ignorés) pour
-le tri. Préférences d'affichage dans `reglages.interface` : `vue`, `tri`, `epingles`
+le tri. Préférences d'affichage dans `reglages.interface` : `vue`, `tri`, `couleursCategories`
+(nom -> `#rrggbb` choisi par clic sur la pastille d'une catégorie ; `null` = couleur automatique
+tirée du nom, voir `icone-projet.js > couleurCategorie`), `epingles`
 (ids des projets épinglés, dans l'ordre ; pas dans projet.json), `recents` (voir
 `composants/recents.js` : 15 dernières ouvertures, notées par `recents.noter()` dans
 `ouvrirOutil`, `ouvrirAvec`, `ouvrirNote`, `lancerClaude` et `code.js > ouvrirFichier`),
