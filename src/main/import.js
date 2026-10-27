@@ -1,4 +1,4 @@
-// Assistant d'import de projets existants (dossier du PC ou dépôt GitHub).
+// Assistant d'import de projets existants (dossier du PC, fichier seul ou dépôt GitHub).
 //
 // 1. analyser() : parcourt le dossier SANS RIEN MODIFIER, détecte le type de projet et
 //    produit un rapport (dossiers à exclure, chemins absolus, liens, fichiers verrouillés,
@@ -8,6 +8,8 @@
 //    .gitignore, Git, puis envoie l'original à la CORBEILLE (jamais de suppression
 //    définitive). En cas d'échec de la copie, l'original n'est pas touché.
 // Un clone GitHub est fait dans donnees/import-temp/, puis rangé dans projets/ à la fin.
+// Un fichier seul (outil HTML autonome, script…) devient un projet : il est copié dans un
+// NOUVEAU dossier de projets/ (un dossier par projet, comme pour le reste).
 'use strict';
 
 const { shell } = require('electron');
@@ -436,16 +438,82 @@ async function cheminsAbsolus(racine, fichiers) {
   return { versProjet, autres };
 }
 
+// Fichier seul : le reste de l'analyse travaille sur son dossier (racine) avec une liste
+// réduite à ce fichier. Le dossier voisin n'est jamais lu ni copié.
+async function listerFichierSeul(fichier) {
+  const { size } = await fs.stat(fichier);
+  return { dossiers: [], fichiers: [{ rel: path.basename(fichier), taille: size }], liens: [], exclus: [], aGit: false };
+}
+
+// Complète la détection pour un fichier seul que detecter() ne reconnaît pas (script Node, .bat…).
+function detecterFichierSeul(detection, nom) {
+  if (detection.type !== 'autre') return detection;
+  const argument = /\s/.test(nom) ? `"${nom}"` : nom;
+  if (/\.(m?js|cjs)$/i.test(nom)) {
+    return {
+      ...detection,
+      type: 'script',
+      technologies: 'Script Node.js.',
+      lancer: `\`node ${argument}\``,
+      point_entree: nom,
+      ouvrir_avec: 'vscode',
+      actions: [{ nom: 'Lancer', commande: `node ${argument}`, parametres: [] }],
+      details: 'Script Node.js',
+    };
+  }
+  if (/\.(bat|cmd)$/i.test(nom)) {
+    return {
+      ...detection,
+      type: 'script',
+      technologies: 'Script Windows (.bat).',
+      lancer: `\`${nom}\``,
+      point_entree: nom,
+      ouvrir_avec: 'vscode',
+      actions: /[\s"%]/.test(nom) ? [] : [{ nom: 'Lancer', commande: nom, parametres: [] }],
+      details: 'Script Windows',
+    };
+  }
+  return { ...detection, point_entree: nom, ouvrir_avec: 'vscode', details: 'Fichier seul' };
+}
+
+// Fichiers voisins utilisés par une page HTML seule (images, styles, scripts) : ils ne
+// seront pas copiés avec elle.
+async function fichiersVoisinsUtilises(racine, nom) {
+  if (!/\.html?$/i.test(nom)) return [];
+  const texte = await lireTexte(racine, nom, 5 * 1024 * 1024);
+  if (!texte) return [];
+  const references = new Set();
+  for (const [, ref] of texte.matchAll(/\b(?:src|href)\s*=\s*["']([^"'#?]+)/gi)) {
+    if (/^([a-z][a-z0-9+.-]*:|\/\/)/i.test(ref)) continue; // http:, data:, mailto:…
+    references.add(ref.trim());
+  }
+  const trouves = [];
+  for (const ref of references) {
+    if (ref && await existe(path.resolve(racine, decodeURIComponent(ref).replace(/^\/+/, '')))) trouves.push(ref);
+  }
+  return trouves;
+}
+
 // Analyse complète. surProgression(texte) : messages pour l'interface.
+// mode : 'dossier' | 'fichier' (source = le fichier) | 'clone'.
 async function analyserDossier(source, { mode = 'dossier', urlOrigine = null } = {}, surProgression = () => {}) {
-  surProgression('Lecture du dossier…');
-  const entreesRacine = await fs.readdir(source);
-  const aCompilation = FICHIERS_COMPILATION.some((f) => entreesRacine.some((e) => e.toLowerCase() === f));
-  const exclure = (rel, nom) => TOUJOURS_EXCLUS.has(nom) || (aCompilation && EXCLUS_SI_COMPILATION.has(nom));
-  const liste = await lister(source, exclure);
+  const fichierSeul = mode === 'fichier';
+  const racine = fichierSeul ? path.dirname(source) : source;
+  let liste;
+  if (fichierSeul) {
+    surProgression('Lecture du fichier…');
+    liste = await listerFichierSeul(source);
+  } else {
+    surProgression('Lecture du dossier…');
+    const entreesRacine = await fs.readdir(source);
+    const aCompilation = FICHIERS_COMPILATION.some((f) => entreesRacine.some((e) => e.toLowerCase() === f));
+    const exclure = (rel, nom) => TOUJOURS_EXCLUS.has(nom) || (aCompilation && EXCLUS_SI_COMPILATION.has(nom));
+    liste = await lister(source, exclure);
+  }
 
   surProgression('Détection du type de projet…');
-  const detection = await detecter(source, liste.fichiers);
+  let detection = await detecter(racine, liste.fichiers);
+  if (fichierSeul) detection = detecterFichierSeul(detection, path.basename(source));
 
   surProgression('Mesure des dossiers à exclure…');
   const gitUtilisable = liste.aGit && await git.gitDisponible();
@@ -461,9 +529,9 @@ async function analyserDossier(source, { mode = 'dossier', urlOrigine = null } =
   const risques = [];
   const fichiersHorsGit = liste.fichiers.filter((f) => !f.rel.startsWith('.git/'));
 
-  if (mode === 'dossier') {
+  if (mode !== 'clone') {
     surProgression('Recherche des fichiers ouverts par un autre programme…');
-    const verrouilles = await fichiersVerrouilles(source, liste.fichiers);
+    const verrouilles = await fichiersVerrouilles(racine, liste.fichiers);
     if (verrouilles.length) {
       risques.push({
         niveau: 'bloquant',
@@ -474,7 +542,7 @@ async function analyserDossier(source, { mode = 'dossier', urlOrigine = null } =
     }
 
     surProgression('Recherche des chemins absolus dans les fichiers…');
-    const absolus = await cheminsAbsolus(source, fichiersHorsGit);
+    const absolus = await cheminsAbsolus(racine, fichiersHorsGit);
     if (absolus.versProjet.length) {
       risques.push({
         niveau: 'attention',
@@ -489,6 +557,18 @@ async function analyserDossier(source, { mode = 'dossier', urlOrigine = null } =
         titre: `${absolus.autres.length} fichier(s) contiennent d'autres chemins absolus`,
         detail: 'Ces chemins désignent d\'autres emplacements du PC (non concernés par le déplacement). Ils fonctionneront tant que ces emplacements existent.',
         elements: absolus.autres.slice(0, 10),
+      });
+    }
+  }
+
+  if (fichierSeul) {
+    const voisins = await fichiersVoisinsUtilises(racine, path.basename(source));
+    if (voisins.length) {
+      risques.push({
+        niveau: 'attention',
+        titre: `Cette page utilise ${voisins.length} fichier(s) placé(s) à côté d'elle`,
+        detail: 'Seul le fichier choisi est importé : ces images, styles ou scripts ne seront pas copiés et la page risque de mal s\'afficher. Mieux vaut ranger la page et ces fichiers dans un dossier, puis importer ce dossier.',
+        elements: voisins.slice(0, 20),
       });
     }
   }
@@ -538,7 +618,7 @@ async function analyserDossier(source, { mode = 'dossier', urlOrigine = null } =
   }
   const secretsPresents = fichiersHorsGit.filter((f) => EXPRESSION_SECRETS.test(f.rel)).map((f) => f.rel);
 
-  const ficheExistante = await existe(path.join(source, 'projet.json'));
+  const ficheExistante = !fichierSeul && await existe(path.join(source, 'projet.json'));
   if (ficheExistante) {
     risques.push({ niveau: 'info', titre: 'Le projet a déjà une fiche projet.json', detail: 'Elle sera conservée telle quelle.', elements: [] });
   }
@@ -551,14 +631,14 @@ async function analyserDossier(source, { mode = 'dossier', urlOrigine = null } =
     });
   }
   const tailleTotale = liste.fichiers.reduce((t, f) => t + f.taille, 0);
-  const nomDossier = path.basename(source);
+  const nomDossier = fichierSeul ? path.parse(source).name : path.basename(source);
   const id = crypto.randomUUID();
   analyses.set(id, { source, mode, urlOrigine, exclusProposes: exclus.map((e) => e.chemin), ficheExistante });
 
   return {
     id,
     mode,
-    source: mode === 'dossier' ? source : urlOrigine,
+    source: mode === 'clone' ? urlOrigine : source,
     proposition: {
       nom: nomDossier,
       idProjet: await idLibre(slug(nomDossier)),
@@ -583,7 +663,7 @@ async function analyserDossier(source, { mode = 'dossier', urlOrigine = null } =
     git: etatGit,
     secretsPresents,
     ficheExistante,
-    claudeMdExistant: await existe(path.join(source, 'CLAUDE.md')),
+    claudeMdExistant: !fichierSeul && await existe(path.join(source, 'CLAUDE.md')),
     github: await github.etat(),
   };
 }
@@ -594,10 +674,19 @@ async function analyser(source, surProgression) {
   try {
     infos = await fs.stat(s);
   } catch {
-    throw new Error('Ce dossier est introuvable.');
+    throw new Error('Ce dossier ou ce fichier est introuvable.');
   }
-  if (!infos.isDirectory()) throw new Error('Choisis un dossier, pas un fichier.');
-  return analyserDossier(s, { mode: 'dossier' }, surProgression);
+  if (infos.isDirectory()) return analyserDossier(s, { mode: 'dossier' }, surProgression);
+  if (!infos.isFile()) throw new Error('Choisis un dossier ou un fichier.');
+  // Fichier seul : il sera rangé dans un nouveau dossier de projet.
+  const nom = path.basename(s);
+  if (/\.(lnk|url)$/i.test(nom)) {
+    throw new Error('Ce fichier est un raccourci : choisis le vrai fichier (ou le dossier) du projet.');
+  }
+  if (/^(projet\.json|CLAUDE\.md|\.gitignore)$/i.test(nom)) {
+    throw new Error(`« ${nom} » ne peut pas être importé seul : choisis plutôt le dossier qui le contient.`);
+  }
+  return analyserDossier(s, { mode: 'fichier' }, surProgression);
 }
 
 // --- Clonage GitHub -------------------------------------------------------------------------
@@ -742,6 +831,22 @@ async function executer(idAnalyse, choix, surProgression) {
   if (analyse.mode === 'clone') {
     await rangerClone(analyse.source, destination, surProgression);
     noter('Dépôt cloné rangé dans le dossier des projets.');
+  } else if (analyse.mode === 'fichier') {
+    // Nouveau dossier de projet contenant le fichier sous son nom d'origine.
+    const nom = path.basename(analyse.source);
+    try {
+      await fs.mkdir(destination);
+      const vers = path.join(destination, nom);
+      await fs.copyFile(analyse.source, vers, fs.constants.COPYFILE_EXCL);
+      const infos = await fs.stat(analyse.source);
+      await fs.utimes(vers, infos.atime, infos.mtime);
+      noter(`Fichier copié dans un nouveau dossier de projet (« ${id} »).`);
+      await verifierCopie(path.dirname(analyse.source), destination, { fichiers: [{ rel: nom }] }, surProgression);
+      noter('Copie vérifiée : identique à l\'original.');
+    } catch (erreur) {
+      await fs.rm(destination, { recursive: true, force: true }).catch(() => {});
+      throw erreur;
+    }
   } else {
     const exclus = (choix.exclus || []).filter((e) => analyse.exclusProposes.includes(e));
     let liste;
@@ -827,7 +932,7 @@ async function executer(idAnalyse, choix, surProgression) {
   }
 
   // 5. Original à la Corbeille (seulement maintenant que la copie est vérifiée)
-  if (analyse.mode === 'dossier') {
+  if (analyse.mode !== 'clone') {
     if (choix.garderOriginal) {
       noter('Original conservé à son emplacement (à ta demande).');
     } else {

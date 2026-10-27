@@ -22,6 +22,14 @@ function enregistrer() {
     return canceled || filePaths.length === 0 ? null : filePaths[0];
   }, { avecEmetteur: true });
 
+  gerer('import:choisir-fichier', async (contenu) => {
+    const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.fromWebContents(contenu) || undefined, {
+      title: 'Choisis le fichier à importer (il sera rangé dans un nouveau dossier de projet)',
+      properties: ['openFile'],
+    });
+    return canceled || filePaths.length === 0 ? null : filePaths[0];
+  }, { avecEmetteur: true });
+
   gerer('import:analyser', (contenu, chemin) => importation.analyser(chemin, progression(contenu)), { avecEmetteur: true });
   gerer('import:cloner', (contenu, url) => importation.cloner(url, progression(contenu)), { avecEmetteur: true });
   gerer('import:executer', (contenu, idAnalyse, choix) => importation.executer(idAnalyse, choix, progression(contenu)), { avecEmetteur: true });

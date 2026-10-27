@@ -297,6 +297,10 @@ dans `docs/projet-json.md`. Points clés :
   (jamais écrasé s'il existe) -> CLAUDE.md (section ajoutée s'il existe) -> .gitignore
   complété -> Git -> **Corbeille** (`shell.trashItem`, jamais de suppression définitive)
   -> GitHub privé (facultatif, via `gh`). Échec de copie = copie supprimée, original intact.
+- Fichier seul (page HTML autonome, script…) : `analyser()` reconnaît un fichier (mode
+  `fichier`) ; seul ce fichier est analysé (racine = son dossier, voisins jamais lus sauf pour
+  signaler ceux qu'une page HTML utilise), puis `executer()` crée un NOUVEAU dossier de projet
+  et y copie le fichier sous son nom (un dossier par projet). Raccourcis `.lnk`/`.url` refusés.
 - Clone : dans `donnees/import-temp/`, rangé dans `projets/` à la confirmation (réessais :
   Windows bloque souvent un dossier juste cloné), supprimé si l'utilisateur annule.
 - Dossiers refusés : disque, dossier personnel, Bureau, Documents, Windows, Program Files,

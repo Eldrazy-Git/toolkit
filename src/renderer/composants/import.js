@@ -88,6 +88,11 @@ async function choisirDossier() {
   if (chemin) lancerAnalyse(() => api.analyser(chemin));
 }
 
+async function choisirFichier() {
+  const chemin = await api.choisirFichier().catch((e) => aller('erreur', { erreur: e.message }));
+  if (chemin) lancerAnalyse(() => api.analyser(chemin));
+}
+
 function cloner() {
   if (!assistant.url.trim()) return;
   lancerAnalyse(() => api.cloner(assistant.url.trim()));
@@ -95,7 +100,7 @@ function cloner() {
 
 function reanalyser() {
   const { rapport } = assistant;
-  if (rapport.mode === 'dossier') lancerAnalyse(() => api.analyser(rapport.source));
+  if (rapport.mode !== 'clone') lancerAnalyse(() => api.analyser(rapport.source));
 }
 
 async function importer() {
@@ -176,6 +181,11 @@ function rendreChoix() {
         el('p', {}, 'Le projet est copié, la copie est vérifiée, puis l\'original part à la Corbeille.'),
         el('button', { classe: 'bouton principal', onClick: choisirDossier }, 'Choisir un dossier…')),
       el('div', { classe: 'carte-import' },
+        icone('code'),
+        el('h3', {}, 'Un fichier seul'),
+        el('p', {}, 'Une page HTML autonome, un script… Toolkit lui crée son propre dossier de projet, puis l\'original part à la Corbeille.'),
+        el('button', { classe: 'bouton principal', onClick: choisirFichier }, 'Choisir un fichier…')),
+      el('div', { classe: 'carte-import' },
         icone('git'),
         el('h3', {}, 'Un dépôt GitHub'),
         el('p', {}, 'Le dépôt est téléchargé (cloné) directement dans Toolkit.'),
@@ -230,7 +240,10 @@ function rendreRapport() {
   if (raisonPasGithub) choix.creerGithub = false;
 
   return [
-    el('p', { classe: 'source-import' }, icone(rapport.mode === 'clone' ? 'git' : 'dossier'), el('code', {}, rapport.source)),
+    el('p', { classe: 'source-import' }, icone({ clone: 'git', fichier: 'code' }[rapport.mode] || 'dossier'), el('code', {}, rapport.source)),
+    rapport.mode === 'fichier'
+      ? el('p', { classe: 'details-aide' }, 'Ce fichier sera rangé dans un nouveau dossier de projet, à côté de sa fiche projet.json et de son CLAUDE.md.')
+      : null,
     el('p', {}, 'Projet détecté : ', el('strong', {}, rapport.proposition.details), ` — ${rapport.stats.fichiers} fichier(s), ${rapport.stats.taille}.`),
 
     section('Points d\'attention', rendreRisques(rapport.risques)),
@@ -287,7 +300,7 @@ function rendreRapport() {
           aide: raisonPasGithub || `Sur le compte ${gh.compte}. Un .gitignore protège les fichiers sensibles (clés, keystores, .env).`,
         }))),
 
-    rapport.mode === 'dossier'
+    rapport.mode !== 'clone'
       ? section('L\'original',
         el('div', { classe: 'page-formulaire' },
           caseACocher('Garder aussi l\'original à son emplacement (copie seulement)', choix, 'garderOriginal', {
@@ -297,7 +310,7 @@ function rendreRapport() {
 
     el('div', { classe: 'boutons-import' },
       el('button', { classe: 'bouton', onClick: abandonner }, 'Annuler'),
-      rapport.mode === 'dossier' ? el('button', { classe: 'bouton', onClick: reanalyser }, icone('redemarrer'), 'Analyser à nouveau') : null,
+      rapport.mode !== 'clone' ? el('button', { classe: 'bouton', onClick: reanalyser }, icone('redemarrer'), 'Analyser à nouveau') : null,
       el('button', {
         classe: 'bouton principal',
         disabled: rapport.bloquant,

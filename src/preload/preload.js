@@ -95,7 +95,8 @@ contextBridge.exposeInMainWorld('toolkit', {
   // Assistant d'import de projets existants.
   importation: {
     choisirDossier: () => appeler('import:choisir-dossier'), // chemin ou null
-    analyser: (chemin) => appeler('import:analyser', chemin), // rapport d'analyse
+    choisirFichier: () => appeler('import:choisir-fichier'), // chemin ou null
+    analyser: (chemin) => appeler('import:analyser', chemin), // rapport d'analyse (dossier ou fichier seul)
     cloner: (url) => appeler('import:cloner', url), // rapport d'analyse du clone
     executer: (idAnalyse, choix) => appeler('import:executer', idAnalyse, choix), // { id, etapes, avertissements }
     abandonner: (idAnalyse) => appeler('import:abandonner', idAnalyse),
