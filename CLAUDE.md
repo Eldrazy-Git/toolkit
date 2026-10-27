@@ -112,6 +112,7 @@ app/
     │   ├── lsp-python.js        Pyright (aide Python) : processus, messages LSP, traduction des adresses
     │   ├── outils-html.js       protocole toolkit-outil://, partitions, sécurité des <webview>
     │   ├── outils-donnees.js    export / import localStorage + IndexedDB en JSON
+    │   ├── simulation-tactile.js la souris agit comme un doigt dans une page HTML (et seulement elle)
     │   ├── zone-notification.js icône près de l'horloge
     │   ├── demarrage-windows.js démarrage avec Windows (réduit dans la zone de notification)
     │   └── ipc/
@@ -224,10 +225,13 @@ Voir `src/main/outils-html.js` (explications en tête du fichier) et
   taille de l'appareil), réappliqué à chaque `dom-ready`. Mode retenu par outil dans le
   localStorage de l'interface (`toolkit:apercu:<id>`).
 - Simulation du tactile (`composants/simulation-tactile.js`, bouton « doigt » de la barre de
-  l'outil et de l'en-tête de l'aperçu HTML de l'onglet Code) : `outils:tactile` attache le
-  protocole de débogage à la webview (`Emulation.setTouchEmulationEnabled` +
-  `setEmitTouchEventsForMouse`) : la souris produit des événements touch. Réappliqué à chaque
-  `dom-ready`, retenu par page (`toolkit:tactile:<id>` / `code:<cle>`). Refusé si F12 est ouvert.
+  l'outil et de l'en-tête de l'aperçu HTML de l'onglet Code) : `outils:tactile` ->
+  `src/main/simulation-tactile.js` (explications en tête). JAMAIS
+  `Emulation.setEmitTouchEventsForMouse` : il convertit la souris de toute la fenêtre
+  (interface comprise). À la place : script dans la page qui arrête la souris et transmet
+  les appuis (binding), touchers envoyés par `Input.dispatchTouchEvent` à la FENÊTRE aux
+  coordonnées de la webview (envoyés à la page, le tap ne cliquait pas). Réappliqué à chaque
+  `dom-ready`, retenu par page (`toolkit:tactile:<id>` / `code:<cle>`).
 
 Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
 

@@ -4,6 +4,7 @@
 const { gerer } = require('./gerer');
 const outilsHtml = require('../outils-html');
 const outilsDonnees = require('../outils-donnees');
+const simulationTactile = require('../simulation-tactile');
 
 function enregistrer() {
   gerer('outils:preparer', (projetId, outilLie) => outilsHtml.preparer(projetId, outilLie));
@@ -29,24 +30,8 @@ function enregistrer() {
     });
   });
 
-  // Simulation du tactile : la souris produit des événements touch (touchstart…), comme
-  // le mode appareil des outils de développement de Chrome. Passe par le protocole de
-  // débogage (seul moyen d'Electron) ; les réglages restent valables d'une page à l'autre.
-  gerer('outils:tactile', async (idContenu, actif) => {
-    const contenu = outilsHtml.contenuOutil(idContenu);
-    const dbg = contenu.debugger;
-    if (!dbg.isAttached()) {
-      if (!actif) return;
-      try {
-        dbg.attach('1.3');
-      } catch {
-        throw new Error('Impossible de simuler le tactile pendant que les outils de développement (F12) sont ouverts. Ferme-les puis réessaie.');
-      }
-    }
-    await dbg.sendCommand('Emulation.setTouchEmulationEnabled', { enabled: Boolean(actif), maxTouchPoints: 5 });
-    await dbg.sendCommand('Emulation.setEmitTouchEventsForMouse', { enabled: Boolean(actif), configuration: 'mobile' });
-    if (!actif) dbg.detach();
-  });
+  // Simulation du tactile dans cette page seulement (voir simulation-tactile.js).
+  gerer('outils:tactile', (idContenu, actif) => simulationTactile.definir(outilsHtml.contenuOutil(idContenu), Boolean(actif)));
 }
 
 module.exports = { enregistrer };
