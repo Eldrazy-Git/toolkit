@@ -199,6 +199,8 @@ contextBridge.exposeInMainWorld('toolkit', {
     installer: (paquets) => appeler('mises-a-jour:installer', paquets), // Toolkit quitte puis redémarre
     surDisponibles: (rappel) => ecouter('mises-a-jour:disponibles', rappel), // rappel({ toolkit: version | null })
     // Nouvelle version de Toolkit : analyse (aucune modification) puis application.
+    etatToolkit: () => appeler('toolkit-maj:etat'), // { etat: 'a-jour' | 'disponible' | 'inconnu', actuelle, derniere }
+    notesDeVersion: () => appeler('toolkit-maj:notes-version'), // [{ version, html }], la plus récente d'abord
     analyserToolkit: () => appeler('toolkit-maj:analyser'),
     appliquerToolkit: () => appeler('toolkit-maj:appliquer'), // { version, conflits, dependancesChangees }
   },

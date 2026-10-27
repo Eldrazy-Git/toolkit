@@ -251,8 +251,10 @@ function noteConnue(chemin) {
 function notesDe(projetId) {
   const prefixe = projetId ? `${chemins.versRelatif(chemins.projets())}/${projetId}/` : `${chemins.versRelatif(chemins.app)}/`;
   const ordre = (c) => (/\/readme\.md$/i.test(c) ? 0 : /\/claude\.md$/i.test(c) ? 1 : 2);
+  // Les notes de version de Toolkit ont leur propre bouton (elles s'accumulent avec le temps).
+  const versions = `${prefixe}docs/notes-de-version/`;
   return [...notes.keys()]
-    .filter((c) => c.startsWith(prefixe))
+    .filter((c) => c.startsWith(prefixe) && (projetId || !c.startsWith(versions)))
     .sort((a, b) => ordre(a) - ordre(b) || a.localeCompare(b, 'fr'))
     .map((chemin) => ({ chemin, titre: notes.get(chemin).titre, relatif: chemin.slice(prefixe.length) }));
 }

@@ -39,6 +39,21 @@ function elementNav({ libelle, visuel, compteur, actif, auClic, renommer }) {
   );
 }
 
+// Point à côté du nom : vert = à jour, orange = nouvelle version, gris = pas encore vérifié
+// ou hors ligne. Clic = Réglages > Mises à jour.
+function pointMiseAJour() {
+  const maj = etat.obtenir().majToolkit;
+  const titre = maj?.etat === 'disponible' ? `Toolkit ${maj.derniere} est disponible (tu as la ${maj.actuelle}) : clique pour l'installer`
+    : maj?.etat === 'a-jour' ? `Toolkit est à jour (version ${maj.actuelle})`
+      : maj ? 'Impossible de vérifier les mises à jour (connexion Internet ?)' : 'Vérification des mises à jour…';
+  return el('button', {
+    classe: `point-maj ${maj?.etat || 'inconnu'}`,
+    title: titre,
+    'aria-label': titre,
+    onClick: () => actions.ouvrirReglages('mises-a-jour', { verifier: maj?.etat === 'disponible' }),
+  });
+}
+
 // Projets épinglés : accès direct sous « Favoris » (clic = afficher, double-clic = ouvrir,
 // clic droit = menu, × = désépingler). Un projet supprimé disparaît simplement de la liste.
 function projetsEpingles(projets, selection, ongletActif) {
@@ -267,7 +282,8 @@ export function rendre() {
   conteneur.replaceChildren(
     el('div', { classe: 'barre-entete' },
       infosApp ? el('img', { src: infosApp.icone, alt: '' }) : null,
-      'Toolkit'),
+      'Toolkit',
+      pointMiseAJour()),
     el('button', { classe: 'bouton-recherche', title: 'Rechercher dans les projets et les notes', onClick: ouvrirRecherche },
       icone('recherche'), el('span', {}, 'Rechercher…'), raccourcis.touche('recherche') ? el('kbd', {}, raccourcis.afficher(raccourcis.touche('recherche'))) : null),
     el('div', { classe: 'barre-defilante' },

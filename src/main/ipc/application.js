@@ -123,6 +123,8 @@ function enregistrer({ quitter }) {
     derniereVerification: reglages.obtenir().misesAJour?.derniereVerification || null,
   }));
   // Mise à jour de Toolkit lui-même : analyse (rien n'est modifié), puis application.
+  gerer('toolkit-maj:etat', () => require('../mise-a-jour-toolkit').etat());
+  gerer('toolkit-maj:notes-version', () => require('../mise-a-jour-toolkit').notesDeVersion());
   gerer('toolkit-maj:analyser', () => require('../mise-a-jour-toolkit').analyser());
   gerer('toolkit-maj:appliquer', () => require('../mise-a-jour-toolkit').appliquer());
   // Publication d'une nouvelle version (copie de développement seulement, voir publication.js).

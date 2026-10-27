@@ -47,6 +47,7 @@ document.addEventListener('keydown', (e) => {
 // Ctrl+W pressé à l'intérieur d'un outil (les touches n'arrivent pas jusqu'ici).
 // Vérification hebdomadaire (au démarrage) : des mises à jour sont proposées.
 window.toolkit.misesAJour.surDisponibles((infos) => {
+  actions.chargerEtatToolkit();
   notifier(infos?.toolkit
     ? `Toolkit ${infos.toolkit} est disponible : Réglages > Mises à jour pour l'installer (tes réglages et tes modifications sont gardés).`
     : 'Des mises à jour sont disponibles pour Toolkit : Réglages > Mises à jour.');
@@ -109,6 +110,8 @@ async function demarrer() {
   raccourcis.verifierConflits(notifier);
   (await import('./composants/bienvenue.js')).ouvrirSiPremierLancement();
   (await import('./composants/mises-a-jour.js')).proposerFinDeFusion();
+  // Point de mise à jour : un peu après le démarrage, pour ne pas le ralentir.
+  setTimeout(actions.chargerEtatToolkit, 3000);
 }
 
 demarrer();

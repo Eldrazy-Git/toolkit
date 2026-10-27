@@ -8,6 +8,7 @@ const etat = {
   chargement: true,
   projets: [],
   infosApp: null,
+  majToolkit: null, // { etat: 'a-jour' | 'disponible' | 'inconnu', actuelle, derniere } (point de la barre latérale)
   filtre: { type: 'tous' }, // tous | favoris | categorie (valeur) | tag (valeur) | groupe (valeur = id)
   texteFiltre: '',
   vue: 'grille', // grille | liste

@@ -528,6 +528,13 @@ local `git init --bare`).
   écriture, commit « Mise à jour de Toolkit … ». Puis redémarrage, ou `npm install` Toolkit
   fermé si les dépendances changent (script de mises-a-jour.js). `donnees/` et `projets/`
   ne sont jamais touchés.
+- Point à côté du nom dans la barre latérale (`barre-laterale.js > pointMiseAJour`, état
+  `majToolkit`) : vert = à jour, orange = nouvelle version, gris = inconnu. `toolkit-maj:etat`
+  = `mise-a-jour-toolkit.etat()` (une requête, résultat gardé 6 h ; demandé 3 s après le
+  démarrage et après chaque vérification complète). Clic = Réglages > Mises à jour.
+- Notes de version : bouton « Notes de version » des détails de Toolkit (fenêtre, la plus
+  récente dépliée, `toolkit-maj:notes-version`) ; exclues de la section « Notes »
+  (`recherche.notesDe`), mais toujours trouvées par Ctrl+K.
 - Procédure complète pour l'utilisateur (et pour toi s'il demande de « préparer une version ») :
   `docs/PROTOCOLE-MISE-A-JOUR.md` (fichier personnel, ignoré par Git : il n'existe que sur
   le PC de la personne qui publie). Tu prépares (numéro, notes, commit) ; c'est lui qui lance

@@ -2,7 +2,8 @@
 // processus principal via window.toolkit, et affiche les erreurs proprement.
 import * as etat from './etat.js';
 import { notifier } from './notifications.js';
-import { demanderTexte, confirmer, choisir, formulaire } from './dialogue.js';
+import { demanderTexte, confirmer, choisir, formulaire, fenetre } from './dialogue.js';
+import { el } from './dom.js';
 import * as actionsGit from './actions-git.js';
 import { ouvrirMenu } from './menu.js';
 import * as groupes from './groupes.js';
@@ -953,6 +954,28 @@ export async function nouvelOutil() {
 }
 
 // --- Application ------------------------------------------------------------------------
+
+// Point de mise à jour de la barre latérale (une requête GitHub, sans erreur affichée).
+export async function chargerEtatToolkit() {
+  try {
+    etat.modifier({ majToolkit: await api.misesAJour.etatToolkit() });
+  } catch { /* le point reste gris */ }
+}
+
+// Notes de version fournies avec Toolkit, la plus récente dépliée.
+export async function afficherNotesDeVersion() {
+  const versions = await essayer(() => api.misesAJour.notesDeVersion());
+  if (!versions) return;
+  const corps = versions.length
+    ? versions.map((v, i) => {
+      const contenu = el('article', { classe: 'markdown notes-version-toolkit' });
+      contenu.innerHTML = v.html; // rendu par le processus principal, HTML brut désactivé
+      return el('details', { classe: 'version-toolkit', ...(i === 0 ? { open: true } : {}) },
+        el('summary', {}, `Version ${v.version}`, i === 0 ? el('span', { classe: 'etiquette' }, 'la plus récente') : null), contenu);
+    })
+    : el('p', { classe: 'details-aide' }, 'Aucune note de version.');
+  fenetre({ titre: 'Notes de version de Toolkit', corps });
+}
 
 export async function redemarrerToolkit() {
   const terminauxOuverts = etat.obtenir().onglets.some((o) => o.genre === 'terminal' && o.enCours);

@@ -125,11 +125,42 @@ async function verifier() {
   const release = await derniereRelease();
   if (!release || !VERSION.test(release.tag_name || '')) return { actuelle, derniere: null, disponible: false };
   const version = release.tag_name.replace(/^v/, '');
-  return {
+  const infos = {
     actuelle,
     derniere: { version, tag: release.tag_name, notes: release.body || '', date: release.published_at || null, url: release.html_url || null },
     disponible: comparerVersions(version, actuelle) > 0,
   };
+  dernierEtat = { date: Date.now(), infos };
+  return infos;
+}
+
+// Indicateur de la barre latérale : une seule requête, résultat gardé quelques heures
+// (Toolkit peut rester ouvert des jours ; aucune vérification périodique pour autant).
+const DUREE_ETAT = 6 * 3600 * 1000;
+let dernierEtat = null;
+
+// { etat: 'a-jour' | 'disponible' | 'inconnu', actuelle, derniere }
+async function etat() {
+  try {
+    const infos = dernierEtat && Date.now() - dernierEtat.date < DUREE_ETAT ? dernierEtat.infos : await verifier();
+    return { etat: infos.disponible ? 'disponible' : 'a-jour', actuelle: infos.actuelle, derniere: infos.derniere?.version || null };
+  } catch (erreur) {
+    journal.info(`Indicateur de mise à jour : ${erreur.message}`);
+    return { etat: 'inconnu', actuelle: (await paquetActuel().catch(() => ({}))).version || null, derniere: null };
+  }
+}
+
+// Notes de version fournies avec Toolkit (docs/notes-de-version/<version>.md), la plus récente
+// d'abord, rendues en HTML sûr.
+async function notesDeVersion() {
+  const dossier = path.join(chemins.app, 'docs', 'notes-de-version');
+  const fichiers = (await fs.readdir(dossier).catch(() => [])).filter((f) => VERSION.test(f.replace(/\.md$/i, '')));
+  const versions = fichiers.map((f) => f.replace(/\.md$/i, '')).sort((a, b) => comparerVersions(b, a));
+  const notes = require('./notes');
+  return Promise.all(versions.map(async (version) => ({
+    version,
+    html: notes.rendre(await fs.readFile(path.join(dossier, `${version}.md`), 'utf8'), `notes-de-version/${version}.md`),
+  })));
 }
 
 // --- Analyse (rien n'est modifié) ---------------------------------------------------------------
@@ -293,4 +324,4 @@ async function appliquer() {
   return { version: plan.version, conflits: plan.conflits, dependancesChangees: plan.dependancesChangees };
 }
 
-module.exports = { verifier, analyser, appliquer, comparerVersions, depot };
+module.exports = { verifier, etat, notesDeVersion, analyser, appliquer, comparerVersions, depot };

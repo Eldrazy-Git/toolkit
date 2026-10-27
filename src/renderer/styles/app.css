@@ -222,6 +222,28 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .barre-entete img { width: 22px; height: 22px; }
 
+/* Point de mise à jour à côté du nom (vert : à jour, orange : nouvelle version). */
+.point-maj {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--texte-faible);
+  opacity: 0.6;
+  cursor: pointer;
+}
+.point-maj.a-jour { background: var(--succes); opacity: 1; }
+.point-maj.disponible { background: #e8912d; opacity: 1; box-shadow: 0 0 0 3px rgba(232, 145, 45, 0.25); }
+.point-maj:hover { outline: 2px solid var(--bordure-forte); outline-offset: 2px; }
+
+/* Fenêtre « Notes de version de Toolkit ». */
+.version-toolkit { border-bottom: 1px solid var(--bordure); }
+.version-toolkit > summary { display: flex; align-items: center; gap: 8px; padding: 10px 2px; cursor: pointer; font-weight: 600; color: var(--texte-fort); }
+.version-toolkit .etiquette { font-weight: normal; }
+.notes-version-toolkit { max-width: none; padding: 0 8px 12px 20px; font-size: 13px; }
+.notes-version-toolkit h2 { font-size: 15px; margin-top: 0.6em; }
+
 .barre-defilante {
   flex: 1;
   overflow-y: auto;

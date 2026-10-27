@@ -45,6 +45,7 @@ export async function verifier() {
     const resultat = await api.verifier();
     infos = { ...(infos || {}), resultat, derniereVerification: resultat.date };
     preparerCoches(resultat);
+    actions.chargerEtatToolkit(); // le point de la barre latérale suit (résultat déjà en mémoire)
   } catch (e) {
     erreur = e.message;
   }
