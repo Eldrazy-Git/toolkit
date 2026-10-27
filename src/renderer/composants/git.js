@@ -39,7 +39,7 @@ export function pastillesGit(e) {
       'Fichiers modifiés depuis le dernier commit. Clique sur « Commit » pour enregistrer une version.',
       () => afficherModifications(e.cible)));
   }
-  if (!e.remote) liste.push(pastille('Pas sur GitHub', 'neutre', 'Ce projet n\'est relié à aucun dépôt en ligne.'));
+  if (!e.remote) liste.push(pastille('Pas sur GitHub', 'neutre', 'Ce projet n\'est relié à aucun dépôt en ligne (menu ⋯ : créer son dépôt, ou l\'envoyer dans un dépôt partagé).'));
   else if (!e.aucunCommit && !e.amont) {
     liste.push(pastille('Jamais envoyé', 'bleu', 'Cette branche n\'a encore jamais été envoyée sur GitHub.', () => afficherCommits(e.cible, 'envoyer')));
   } else {
@@ -53,6 +53,10 @@ export function pastillesGit(e) {
     }
   }
   if (liste.length === 0) liste.push(pastille('À jour', 'vert', e.remote ? 'Tout est enregistré et envoyé (selon la dernière vérification).' : 'Tout est enregistré.'));
+  if (e.partage) {
+    const depot = e.partage.remote.replace(/\.git$/i, '').split('/').pop();
+    liste.unshift(pastille(`Dépôt partagé ${depot} / ${e.partage.dossier}`, 'neutre', 'Ce projet est envoyé dans un dossier d\'un dépôt GitHub commun à plusieurs projets.'));
+  }
   return liste;
 }
 
@@ -60,6 +64,10 @@ function elementsMenu(e) {
   return [
     !e.estDepot ? { libelle: 'Activer l\'historique Git', icone: 'git', action: () => git.initialiser(e.cible) } : null,
     e.estDepot && !e.remote ? { libelle: 'Créer un dépôt GitHub privé…', icone: 'plus', action: () => git.creerGithub(e.cible) } : null,
+    e.estDepot && !e.remote && e.cible.type === 'projet'
+      ? { libelle: 'Envoyer dans un dépôt GitHub partagé…', icone: 'dossier', infobulle: 'Un seul dépôt pour plusieurs petits projets (un dossier chacun)', action: () => git.rejoindrePartage(e.cible) }
+      : null,
+    e.partage ? { libelle: 'Ne plus utiliser le dépôt partagé…', icone: 'croix', action: () => git.quitterPartage(e.cible) } : null,
     e.estDepot && !e.aucunCommit ? { libelle: 'Historique des versions…', icone: 'historique', action: () => afficherHistorique(e.cible, e.nom) } : null,
     e.urlWeb ? { libelle: 'Ouvrir sur GitHub', icone: 'ouvrirAvec', action: () => git.ouvrirGithub(e.cible) } : null,
     e.estDepot ? { libelle: 'Protéger les fichiers sensibles', icone: 'coche', detail: '.gitignore', action: () => git.proteger(e.cible) } : null,

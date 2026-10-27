@@ -78,7 +78,13 @@ function normaliserFiche(brut, id) {
     ouvrir_avec: EDITEURS.includes(b.ouvrir_avec) ? b.ouvrir_avec : null,
     actions: [],
     outils_lies: [],
-    git: { remote: texte(b.git?.remote) || null },
+    git: {
+      remote: texte(b.git?.remote) || null,
+      // Dépôt GitHub partagé avec d'autres projets (voir depot-partage.js).
+      partage: texte(b.git?.partage?.remote) && texte(b.git?.partage?.dossier)
+        ? { remote: texte(b.git.partage.remote), dossier: texte(b.git.partage.dossier) }
+        : null,
+    },
     liens: normaliserLiens(b.liens),
     action_par_defaut: null,
   };

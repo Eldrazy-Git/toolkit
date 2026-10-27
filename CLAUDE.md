@@ -95,6 +95,7 @@ app/
     │   ├── cibles.js            résout une « cible » ({ type: 'projet', id } / toolkit / racine) en dossier
     │   ├── git.js               Git : état d'un dépôt, commit, push, pull, fetch, .gitignore, clone
     │   ├── github.js            GitHub via « gh » (état de connexion, dépôt privé)
+│   ├── depot-partage.js     dépôt GitHub partagé : plusieurs projets, un dossier chacun
     │   ├── import.js            assistant d'import : analyse, détection, copie vérifiée
     │   ├── recherche.js         index MiniSearch (projets + .md), liens [[…]], rétroliens
     │   ├── notes.js             notes .md : rendu markdown-it (HTML brut désactivé), lecture, écriture
@@ -359,6 +360,15 @@ dans `docs/projet-json.md`. Points clés :
 - « Tout envoyer » : chaque dépôt vers SON remote, après confirmation listant les projets.
 - Dépôt GitHub : toujours PRIVÉ (`gh repo create --private`), refusé si des secrets sont
   suivis par Git ; l'adresse est notée dans `projet.json` (`git.remote`).
+- Dépôt PARTAGÉ (`src/main/depot-partage.js`, explications en tête) : plusieurs petits projets
+  dans UN dépôt GitHub, un dossier chacun (`projet.json > git.partage = { remote, dossier }`).
+  Chaque projet garde SON dépôt local (historique, retour arrière) et n'a pas de remote. Cache
+  « bare » dans `donnees/depots-partages/` ; Push = `mktree` + `commit-tree` qui remplacent
+  seulement le dossier du projet ; Pull = commit « Récupéré depuis GitHub » fabriqué dans le cache
+  puis `merge --ff-only` ; `refs/toolkit/partage` (dans le dépôt du projet) = dernier état
+  synchronisé, pour savoir qui a changé (les deux = refus, comme pour un pull qui diverge).
+  `ipc/git.js` aiguille push / pull / état / commits vers ce module quand la fiche a `git.partage`.
+  Limite : pas d'import depuis un dépôt partagé sur un autre PC (l'assistant clone un dépôt entier).
 - Le repo de l'application ne contient que `app/` : un clone donne un Toolkit vierge.
 - Détail (`composants/details-git.js`, ouvert par les pastilles cliquables) :
   `git.listerCommits(dossier, 'envoyer' | 'recuperer')` (`@{u}..HEAD`, `HEAD..@{u}`, ou

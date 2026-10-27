@@ -63,6 +63,7 @@ est conservé tel quel par Toolkit (on peut donc y ranger ses propres notes).
 | `outils_lies` | liste | `[]` | Pages HTML situées dans ce projet, à ouvrir comme des outils (voir ci-dessous). |
 | `liens` | liste | `[]` | Liens vers d'autres projets : `[{ "projet": "<dossier de l'autre projet>", "description": "en quoi ils sont liés" }]`. Un lien vaut dans les deux sens ; Toolkit en informe Claude (CLAUDE.md des projets concernés, liens indirects compris). Se gère dans le panneau du projet > « Projets liés ». |
 | `git.remote` | URL | aucune | Adresse du repo GitHub du projet (indicatif). |
+| `git.partage` | `{ remote, dossier }` | aucun | Projet envoyé dans un dépôt GitHub **partagé** (un dossier par projet) au lieu d'avoir son propre dépôt : `remote` = adresse du dépôt, `dossier` = nom de son dossier dedans. Se règle dans la section Git (menu ⋯ > « Envoyer dans un dépôt GitHub partagé… »). |
 
 ### `action_par_defaut`
 

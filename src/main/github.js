@@ -49,4 +49,23 @@ async function creerDepotPrive(dossier, nom, description) {
   return url.code === 0 ? url.sortie.trim() : null;
 }
 
-module.exports = { etat, creerDepotPrive, AIDE_GH };
+// Crée un dépôt PRIVÉ vide (dépôt partagé : les projets y seront envoyés ensuite).
+// Renvoie l'adresse du dépôt.
+async function creerDepotPriveVide(nom, description) {
+  const args = ['repo', 'create', nom, '--private'];
+  if (description) args.push('--description', description.slice(0, 300));
+  const r = await gh(args, process.cwd());
+  if (r.introuvable) throw new Error(`GitHub CLI (gh) est introuvable.\n${AIDE_GH}`);
+  if (r.code !== 0) {
+    if (/already exists/i.test(r.erreur)) throw new Error(`Un dépôt nommé « ${nom} » existe déjà sur ton compte GitHub : choisis-le dans la liste ou donne un autre nom.`);
+    if (/auth|login/i.test(r.erreur)) throw new Error(`Tu n'es pas connecté à GitHub.\n${AIDE_GH}`);
+    throw new Error(`La création du dépôt GitHub a échoué : ${r.erreur.trim().split('\n').pop()}`);
+  }
+  const url = /https:\/\/\S+/.exec(r.sortie)?.[0];
+  if (url) return url.replace(/\/$/, '');
+  const vue = await gh(['repo', 'view', nom, '--json', 'url', '--jq', '.url'], process.cwd());
+  if (vue.code !== 0) throw new Error('Le dépôt a été créé, mais Toolkit n\'arrive pas à lire son adresse.');
+  return vue.sortie.trim();
+}
+
+module.exports = { etat, creerDepotPrive, creerDepotPriveVide, AIDE_GH };

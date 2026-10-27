@@ -335,7 +335,7 @@ function rendreProjet(projet) {
             onClick: () => actions.renommerDossier(projet),
           }, projet.dossier, el('span', { classe: 'crayon-titre' }, icone('crayon')))),
           el('dt', {}, 'Point d\'entrée'), el('dd', {}, f.point_entree ? el('code', {}, f.point_entree) : '—'),
-          el('dt', {}, 'GitHub'), el('dd', {}, f.git.remote || 'Aucun repo distant'))),
+          el('dt', {}, 'GitHub'), el('dd', {}, f.git.remote || (f.git.partage ? `Dépôt partagé ${f.git.partage.remote.replace(/.git$/i, '').split('/').pop()}, dossier « ${f.git.partage.dossier} »` : 'Aucun repo distant')))),
 
       sectionNotes(projet.id),
       sectionGit({ type: 'projet', id: projet.id }),

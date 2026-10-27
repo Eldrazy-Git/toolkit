@@ -122,6 +122,11 @@ contextBridge.exposeInMainWorld('toolkit', {
     initialiser: (cible) => appeler('git:initialiser', cible),
     proteger: (cible) => appeler('git:proteger', cible), // lignes ajoutées au .gitignore
     creerGithub: (cible) => appeler('git:creer-github', cible), // { url }
+    // Dépôt GitHub partagé : [{ remote, projets: [noms] }]
+    depotsPartages: () => appeler('git:depots-partages'),
+    // choix : { remote } ou { nouveau: nom } ; dossier : nom du dossier dans le dépôt. -> { url }
+    rejoindrePartage: (cible, choix, dossier) => appeler('git:rejoindre-partage', cible, choix, dossier),
+    quitterPartage: (cible) => appeler('git:quitter-partage', cible),
     ouvrirGithub: (cible) => appeler('git:ouvrir-github', cible),
     // sens : 'envoyer' | 'recuperer' -> [{ hash, message, date, auteur, fichiers: [{ chemin, etat }] }]
     commits: (cible, sens) => appeler('git:commits', cible, sens),

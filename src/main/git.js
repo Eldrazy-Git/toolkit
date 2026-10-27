@@ -43,9 +43,10 @@ const GITIGNORE_DEFAUT = [
 ].join('\n');
 
 // Lance « git <args> » dans un dossier. Renvoie { code, sortie, erreur, delaiDepasse }.
-function git(dossier, args, { env = {}, delai = 0 } = {}) {
+// entree : texte envoyé sur l'entrée standard (ex. git mktree).
+function git(dossier, args, { env = {}, delai = 0, entree = null } = {}) {
   return new Promise((resoudre, rejeter) => {
-    execFile('git', args, {
+    const enfant = execFile('git', args, {
       cwd: dossier,
       env: environnementPropre(env),
       windowsHide: true,
@@ -63,6 +64,10 @@ function git(dossier, args, { env = {}, delai = 0 } = {}) {
         delaiDepasse: Boolean(erreur?.killed),
       });
     });
+    if (entree !== null) {
+      enfant.stdin.on('error', () => {}); // git a pu se terminer avant de tout lire
+      enfant.stdin.end(entree);
+    }
   });
 }
 
@@ -290,11 +295,14 @@ const TAILLE_MAX_DIFF = 300 * 1024;
 
 // Commits à envoyer (sens 'envoyer') ou à récupérer (sens 'recuperer'), 100 au plus :
 // [{ hash, message, date, auteur, fichiers: [{ chemin, etat }] }]
-async function listerCommits(dossier, sens) {
+// plageForcee : plage choisie par l'appelant (ex. projet d'un dépôt partagé).
+async function listerCommits(dossier, sens, plageForcee = null) {
   const etat = await etatDepot(dossier);
   if (!etat.estDepot || etat.aucunCommit) return [];
   let plage;
-  if (sens === 'recuperer') {
+  if (plageForcee) {
+    plage = plageForcee;
+  } else if (sens === 'recuperer') {
     if (!etat.amont) return [];
     plage = ['HEAD..@{u}'];
   } else if (etat.amont) {

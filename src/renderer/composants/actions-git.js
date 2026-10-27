@@ -145,7 +145,7 @@ export async function toutPousser() {
   const nonCommites = aEnvoyer.filter((e) => e.nbModifications > 0).map((e) => e.nom);
   const ok = await confirmer({
     titre: 'Tout envoyer sur GitHub',
-    message: `Chaque projet sera envoyé vers SON propre dépôt GitHub :\n${lignes.join('\n')}`
+    message: `Chaque projet sera envoyé vers son dépôt GitHub (ou son dossier du dépôt partagé) :\n${lignes.join('\n')}`
       + (nonCommites.length ? `\n\nAttention : ${nonCommites.join(', ')} ont des modifications pas encore « commitées » ; elles ne seront pas envoyées.` : ''),
     bouton: `Envoyer ${aEnvoyer.length} projet(s)`,
   });
@@ -204,6 +204,70 @@ export async function creerGithub(cible) {
   if (!ok) return;
   const resultat = await operation(cible, 'Création du dépôt…', () => api.creerGithub(cible), 'La création du dépôt GitHub a échoué');
   if (resultat) notifier(`Dépôt privé créé : ${resultat.url}`, 'succes');
+}
+
+// Dépôt GitHub PARTAGÉ : le projet est envoyé dans un dossier d'un dépôt commun à plusieurs
+// projets (pratique pour les petites pages HTML : un seul dépôt au lieu d'un par projet).
+const NOUVEAU = '\u0000nouveau';
+const ADRESSE = '\u0000adresse';
+
+export async function rejoindrePartage(cible) {
+  const { github } = etat.obtenir();
+  if (!github?.installe || !github.connecte) {
+    informer({ titre: 'GitHub n\'est pas connecté', message: AIDE_GITHUB });
+    return;
+  }
+  let existants = [];
+  try {
+    existants = await api.depotsPartages();
+  } catch (erreur) {
+    notifier(erreur.message, 'erreur');
+    return;
+  }
+  const nomDepot = (remote) => remote.replace(/\.git$/i, '').split('/').pop();
+  const e = etatDe(cible);
+  const valeurs = await formulaire({
+    titre: 'Envoyer dans un dépôt GitHub partagé',
+    message: `Au lieu d'avoir son propre dépôt, « ${e?.nom} » sera rangé dans un dossier d'un dépôt GitHub PRIVÉ commun à plusieurs projets. `
+      + 'L\'historique et le retour arrière restent propres à chaque projet, sur ce PC.',
+    champs: [
+      { id: 'depot', libelle: 'Dépôt partagé', type: 'choix', valeur: existants[0]?.remote || NOUVEAU, options: [
+        ...existants.map((d) => ({ valeur: d.remote, libelle: `${nomDepot(d.remote)} (${d.projets.length} projet(s) : ${d.projets.slice(0, 3).join(', ')}${d.projets.length > 3 ? '…' : ''})` })),
+        { valeur: NOUVEAU, libelle: 'Créer un nouveau dépôt privé…' },
+        { valeur: ADRESSE, libelle: 'Un dépôt GitHub qui existe déjà (adresse)…' },
+      ] },
+      { id: 'texte', libelle: 'Nom du nouveau dépôt, ou adresse du dépôt existant', obligatoire: false, valeur: existants.length ? '' : 'pages-html',
+        exemple: 'pages-html  ou  https://github.com/moi/mes-pages',
+        aide: 'Seulement si tu crées un dépôt ou si tu indiques un dépôt existant.' },
+      { id: 'dossier', libelle: 'Nom du dossier de ce projet dans le dépôt', obligatoire: true, valeur: cible.id },
+    ],
+    bouton: 'Envoyer',
+  });
+  if (!valeurs) return;
+  let choix;
+  if (valeurs.depot === NOUVEAU) {
+    if (!valeurs.texte) return informer({ titre: 'Nom manquant', message: 'Indique le nom du nouveau dépôt (par exemple : pages-html).' });
+    choix = { nouveau: valeurs.texte };
+  } else if (valeurs.depot === ADRESSE) {
+    if (!/^(https:\/\/|git@)/i.test(valeurs.texte)) return informer({ titre: 'Adresse manquante', message: 'Indique l\'adresse du dépôt, par exemple https://github.com/moi/mes-pages' });
+    choix = { remote: valeurs.texte };
+  } else {
+    choix = { remote: valeurs.depot };
+  }
+  const resultat = await operation(cible, 'Envoi…', () => api.rejoindrePartage(cible, choix, valeurs.dossier), 'L\'envoi dans le dépôt partagé a échoué');
+  if (resultat) notifier(`« ${e?.nom} » envoyé dans le dépôt partagé (dossier « ${valeurs.dossier} »).`, 'succes');
+}
+
+export async function quitterPartage(cible) {
+  const e = etatDe(cible);
+  const ok = await confirmer({
+    titre: 'Ne plus utiliser le dépôt partagé',
+    message: `« ${e?.nom} » ne sera plus envoyé dans le dépôt partagé. Son dossier y reste tel quel (rien n'est supprimé sur GitHub), et son historique sur ce PC est gardé.`,
+    bouton: 'Ne plus l\'utiliser',
+  });
+  if (!ok) return;
+  const resultat = await operation(cible, 'Modification…', async () => { await api.quitterPartage(cible); return true; }, 'L\'opération a échoué');
+  if (resultat) notifier('Le projet n\'est plus relié au dépôt partagé.', 'succes');
 }
 
 export function ouvrirGithub(cible) {
