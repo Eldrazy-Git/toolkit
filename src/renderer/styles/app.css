@@ -1729,6 +1729,11 @@ mark { background: rgba(229, 192, 73, 0.3); color: var(--texte-fort); border-rad
 .crayon-description { position: absolute; top: 2px; right: 2px; display: none; color: var(--texte-faible); }
 .crayon-description .ico { width: 13px; height: 13px; }
 .details-description.modifiable:hover .crayon-description { display: inline-flex; }
+.details-titre h2.modifiable { cursor: pointer; border-radius: 4px; }
+.details-titre h2.modifiable:hover { background: var(--fond-survol); }
+.crayon-titre { display: none; margin-left: 6px; color: var(--texte-faible); vertical-align: middle; }
+.crayon-titre .ico { width: 13px; height: 13px; }
+.details-titre h2.modifiable:hover .crayon-titre { display: inline-flex; }
 
 /* Réglages > Mises à jour */
 .section-maj h3 { margin: 18px 0 6px; font-size: 13px; color: var(--texte-fort); }

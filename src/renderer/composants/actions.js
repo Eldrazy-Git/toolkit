@@ -256,6 +256,7 @@ export function elementsMenuProjet(projet, position) {
     { libelle: 'Groupes…', icone: 'dossier', action: () => groupes.choisirGroupesDuProjet(projet) },
     ...elementsRetirerDuGroupe(projet),
     'separateur',
+    { libelle: 'Renommer…', icone: 'crayon', desactive: bloque, action: () => renommerProjet(projet) },
     ...elementsMenuIcone(projet).map((e) => ({ ...e, desactive: e.desactive || bloque })),
     'separateur',
     { libelle: 'Supprimer le projet…', icone: 'effacer', action: () => supprimerProjet(projet) },
@@ -293,6 +294,22 @@ export function ouvrirProjet(projet) {
   if (projet.erreur) return;
   if (estOuvrableCommeOutil(projet)) ouvrirOutil(projet.id);
   else ouvrirAvec(projet);
+}
+
+// Nom affiché du projet (projet.json > nom). Le dossier garde son nom (voir projets.js).
+export async function renommerProjet(projet) {
+  if (projet.erreur) return;
+  const nom = await demanderTexte({
+    titre: 'Renommer le projet',
+    message: `Nouveau nom pour « ${projet.fiche.nom} » (le dossier du projet ne change pas) :`,
+    valeur: projet.fiche.nom,
+    bouton: 'Renommer',
+  });
+  if (!nom || nom.trim() === projet.fiche.nom) return;
+  const modifie = await essayer(() => api.projets.modifier(projet.id, { nom }));
+  if (!modifie) return;
+  remplacerProjet(modifie);
+  notifier(`Projet renommé en « ${modifie.fiche.nom} ».`, 'succes');
 }
 
 export async function modifierDescription(projet) {

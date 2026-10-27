@@ -171,6 +171,11 @@ ou n'est pas enregistré ; confirmation en retapant le nom ; onglets du projet f
 le dossier), puis `projets:supprimer` = `shell.trashItem` (Corbeille, jamais d'effacement
 définitif) ; épingles, groupes et récents nettoyés.
 
+Renommer un projet (`actions.renommerProjet`, clic sur le nom dans les détails ou menu
+clic droit) : change seulement `nom` dans projet.json (`modifierFiche`). Le dossier (= id)
+ne change JAMAIS : il porte le stockage des outils HTML, les liens, groupes, épingles et
+conversations de Claude.
+
 Bibliothèque : chaque projet chargé porte aussi `dateAjout` (création du dossier) et
 `dateModification` (fichier le plus récent sur 2 niveaux, dossiers générés ignorés) pour
 le tri. Préférences d'affichage dans `reglages.interface` : `vue`, `tri`, `epingles`

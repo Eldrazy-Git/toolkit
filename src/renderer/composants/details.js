@@ -108,11 +108,15 @@ function section(titre, ...contenu) {
 
 // Les boutons (épingle, favori) sont sur la ligne du type, sous le nom : le nom garde ainsi
 // toute la largeur, même quand le panneau est étroit.
-function entete(visuel, nom, sousTitre, boutons) {
+// renommer : fonction appelée au clic sur le nom (null = nom non modifiable).
+function entete(visuel, nom, sousTitre, boutons, renommer = null) {
   return el('header', { classe: 'details-entete' },
     visuel,
     el('div', { classe: 'details-titre' },
-      el('h2', {}, nom),
+      renommer
+        ? el('h2', { classe: 'modifiable', title: 'Cliquer pour renommer le projet', onClick: renommer },
+          nom, el('span', { classe: 'crayon-titre' }, icone('crayon')))
+        : el('h2', {}, nom),
       el('div', { classe: 'details-sous-titre' }, sousTitre, boutons)),
     el('button', { classe: 'bouton-icone', title: 'Fermer (Échap)', onClick: () => actions.selectionner(null) }, icone('croix')));
 }
@@ -226,7 +230,8 @@ function rendreProjet(projet) {
   return [
     entete(boutonIcone, f.nom,
       el('span', { classe: 'etiquette type' }, LIBELLES_TYPES[f.type]),
-      [boutonEpingle, boutonFavori]),
+      [boutonEpingle, boutonFavori],
+      projet.erreur ? null : () => actions.renommerProjet(projet)),
     el('div', { classe: 'details-corps' },
       alertes(projet),
       el('p', {

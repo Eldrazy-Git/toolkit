@@ -276,6 +276,14 @@ async function modifierFiche(id, changements) {
     throw new Error(`Impossible de modifier ce projet : sa fiche projet.json est illisible (${raison}).`);
   }
 
+  // nom : nom affiché seulement. Le dossier (= l'identifiant) ne change pas : le renommer
+  // casserait les données des outils HTML, les liens, groupes et conversations de Claude.
+  if ('nom' in changements) {
+    const nom = texte(changements.nom);
+    if (!nom) throw new Error('Le nom du projet ne peut pas être vide.');
+    if (nom.length > 100) throw new Error('Ce nom est trop long (100 caractères au plus).');
+    brut.nom = nom;
+  }
   if ('favori' in changements) brut.favori = changements.favori === true;
   if ('description' in changements) {
     if (texte(changements.description)) brut.description = texte(changements.description);
