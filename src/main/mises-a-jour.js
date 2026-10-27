@@ -240,19 +240,29 @@ async function preparerInstallation(paquets) {
   }
   // Chemins relatifs au script (donnees/) : rien d'absolu n'est écrit.
   const installation = liste.length ? `call npm install --save ${liste.join(' ')}` : 'call npm install';
+  // Outils de Windows par leur chemin complet : un « find » ou « timeout » de Git placé avant
+  // dans le PATH n'a pas les mêmes options.
+  const systeme = '%SystemRoot%\\System32\\';
   const script = [
     '@echo off',
+    // Lancé détaché, le script n'a pas de console : chaque programme en ouvrait une à lui
+    // (find y attendait le clavier : blocage) et rien ne s'affichait. Il se relance donc une
+    // fois dans sa propre fenêtre (2e argument « console »).
+    'if not "%2"=="console" (',
+    '  start "Toolkit" cmd.exe /d /c ""%~f0" %1 console"',
+    '  exit /b',
+    ')',
     'chcp 65001 >nul',
     'title Mise à jour de Toolkit',
     'echo Mise à jour de Toolkit : attente de la fermeture de Toolkit...',
     // %1 = numéro du processus de Toolkit : on attend qu'il soit vraiment fermé.
     ':attendre',
-    'tasklist /fi "PID eq %1" /nh | find "%1" >nul',
+    `"${systeme}tasklist.exe" /fi "PID eq %1" /nh | "${systeme}find.exe" "%1" >nul`,
     'if not errorlevel 1 (',
-    '  timeout /t 1 /nobreak >nul',
+    `  "${systeme}timeout.exe" /t 1 /nobreak >nul`,
     '  goto attendre',
     ')',
-    'timeout /t 2 /nobreak >nul',
+    `"${systeme}timeout.exe" /t 2 /nobreak >nul`,
     'cd /d "%~dp0..\\app"',
     'echo.',
     `echo ${installation.replace('call ', '')}`,
@@ -263,7 +273,7 @@ async function preparerInstallation(paquets) {
     'echo.',
     'echo Mise à jour terminée. Relance de Toolkit...',
     'start "" wscript.exe "%~dp0..\\Lancer Toolkit.vbs"',
-    'timeout /t 3 /nobreak >nul',
+    `"${systeme}timeout.exe" /t 3 /nobreak >nul`,
     'exit /b 0',
     ':erreur',
     'echo.',
