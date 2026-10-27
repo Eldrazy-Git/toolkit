@@ -288,7 +288,11 @@ function rendreProjet(projet) {
 
       section('Informations',
         el('dl', { classe: 'infos' },
-          el('dt', {}, 'Dossier'), el('dd', {}, el('code', {}, projet.dossier)),
+          el('dt', {}, 'Dossier'), el('dd', {}, el('code', {
+            classe: 'dossier-modifiable',
+            title: 'Cliquer pour renommer le dossier (liens, groupes et conversations de Claude suivent)',
+            onClick: () => actions.renommerDossier(projet),
+          }, projet.dossier, el('span', { classe: 'crayon-titre' }, icone('crayon')))),
           el('dt', {}, 'Point d\'entrée'), el('dd', {}, f.point_entree ? el('code', {}, f.point_entree) : '—'),
           el('dt', {}, 'GitHub'), el('dd', {}, f.git.remote || 'Aucun repo distant'))),
 

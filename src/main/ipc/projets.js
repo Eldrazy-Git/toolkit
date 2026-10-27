@@ -7,6 +7,9 @@ const { gerer } = require('./gerer');
 const projets = require('../projets');
 const chemins = require('../chemins');
 const contexteClaude = require('../contexte-claude');
+const reglages = require('../reglages');
+const sessionsClaude = require('../sessions-claude');
+const journal = require('../journal');
 
 function enregistrer() {
   gerer('projets:lister', () => projets.listerProjets());
@@ -18,6 +21,21 @@ function enregistrer() {
   });
   gerer('projets:renommer-categorie', (ancienne, nouvelle) => projets.renommerCategorie(ancienne, nouvelle));
   gerer('projets:renommer-tag', (ancien, nouveau) => projets.renommerTag(ancien, nouveau));
+
+  // Renommer le dossier d'un projet (l'interface a fermé ses onglets et met à jour groupes,
+  // épingles et récents). Suivent aussi : boutons déjà proposés et conversations de Claude.
+  gerer('projets:renommer-dossier', async (ancien, nouveau) => {
+    const projet = await projets.renommerDossier(ancien, nouveau);
+    if (projet.id !== ancien) {
+      const dejaProposees = reglages.obtenir().actionsAuto?.[ancien];
+      // modifier() fusionne : undefined efface l'ancienne clé (absente du JSON écrit).
+      if (dejaProposees) await reglages.modifier({ actionsAuto: { [projet.id]: dejaProposees, [ancien]: undefined } });
+      await sessionsClaude.deplacer(path.join(chemins.projets(), ancien), path.join(chemins.projets(), projet.id))
+        .catch((erreur) => journal.erreur('Conversations de Claude non déplacées :', erreur));
+    }
+    contexteClaude.planifier();
+    return projet;
+  });
 
   // Suppression d'un projet : son dossier part à la Corbeille de Windows (récupérable),
   // jamais d'effacement définitif. L'interface a demandé une confirmation explicite.

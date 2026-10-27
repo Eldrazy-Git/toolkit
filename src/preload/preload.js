@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('toolkit', {
     renommerCategorie: (ancienne, nouvelle) => appeler('projets:renommer-categorie', ancienne, nouvelle),
     renommerTag: (ancien, nouveau) => appeler('projets:renommer-tag', ancien, nouveau),
     choisirIcone: (id) => appeler('projets:choisir-icone', id), // projet mis à jour, ou null si annulé
+    renommerDossier: (id, nouveau) => appeler('projets:renommer-dossier', id, nouveau), // projet sous son nouvel id
     supprimer: (id) => appeler('projets:supprimer', id), // dossier envoyé à la Corbeille
     surChangement: (rappel) => ecouter('projets:changes', rappel),
   },

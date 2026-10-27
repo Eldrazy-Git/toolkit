@@ -1765,6 +1765,9 @@ mark { background: rgba(229, 192, 73, 0.3); color: var(--texte-fort); border-rad
 .crayon-titre { display: none; margin-left: 6px; color: var(--texte-faible); vertical-align: middle; }
 .crayon-titre .ico { width: 13px; height: 13px; }
 .details-titre h2.modifiable:hover .crayon-titre { display: inline-flex; }
+.dossier-modifiable { cursor: pointer; }
+.dossier-modifiable:hover { background: var(--fond-survol); }
+.dossier-modifiable:hover .crayon-titre { display: inline-flex; }
 
 /* Réglages > Mises à jour */
 .section-maj h3 { margin: 18px 0 6px; font-size: 13px; color: var(--texte-fort); }

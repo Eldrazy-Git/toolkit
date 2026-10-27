@@ -276,8 +276,8 @@ async function modifierFiche(id, changements) {
     throw new Error(`Impossible de modifier ce projet : sa fiche projet.json est illisible (${raison}).`);
   }
 
-  // nom : nom affiché seulement. Le dossier (= l'identifiant) ne change pas : le renommer
-  // casserait les données des outils HTML, les liens, groupes et conversations de Claude.
+  // nom : nom affiché seulement. Le dossier (= l'identifiant) ne change pas ici : voir
+  // renommerDossier(), qui met à jour liens, groupes et conversations de Claude.
   if ('nom' in changements) {
     const nom = texte(changements.nom);
     if (!nom) throw new Error('Le nom du projet ne peut pas être vide.');
@@ -313,6 +313,68 @@ async function modifierFiche(id, changements) {
 
   await ecrireJson(chemin, brut);
   return chargerProjet(id);
+}
+
+// --- Renommer le dossier (= l'identifiant) ------------------------------------------------
+// Rare et délicat : l'interface a fermé les onglets du projet et prévenu que les données des
+// outils HTML ne suivent pas. Ici : le dossier, les liens des autres projets et la ligne
+// « Emplacement » du CLAUDE.md du projet. Les réglages (groupes, épingles…) sont mis à jour
+// par l'appelant.
+
+const NOMS_RESERVES = /^(con|prn|aux|nul|com\d|lpt\d)(\..*)?$/i;
+
+function verifierNouveauDossier(nom) {
+  const n = texte(nom);
+  if (!n) throw new Error('Le nom du dossier ne peut pas être vide.');
+  if (n.length > 80) throw new Error('Ce nom de dossier est trop long (80 caractères au plus).');
+  if (!/^[\p{L}\p{N}][\p{L}\p{N} ._-]*$/u.test(n) || /[. ]$/.test(n) || NOMS_RESERVES.test(n)) {
+    throw new Error('Nom de dossier impossible : utilise seulement des lettres, des chiffres, des tirets (-), des points et des « _ », sans finir par un point.');
+  }
+  return n;
+}
+
+async function renommerDossier(ancien, nouveau) {
+  const source = dossierDuProjet(ancien);
+  const nom = verifierNouveauDossier(nouveau);
+  if (nom === ancien) return chargerProjet(ancien);
+  if (!(await chargerProjet(ancien))) throw new Error('Ce projet n\'existe plus.');
+  // Windows ignore la casse : « Mon-Projet » -> « mon-projet » est un simple changement de casse.
+  const memeDossier = nom.toLowerCase() === ancien.toLowerCase();
+  const destination = path.join(chemins.projets(), nom);
+  if (!memeDossier && await fsp.stat(destination).catch(() => null)) {
+    throw new Error(`Un dossier « ${nom} » existe déjà dans projets/ : choisis un autre nom.`);
+  }
+
+  // Nos surveillants gardent le dossier ouvert : Windows refuserait de le renommer.
+  fermerSurveillants();
+  try {
+    await fsp.rename(source, destination);
+  } catch (erreur) {
+    journal.erreur(`Renommage du dossier ${ancien} -> ${nom} :`, erreur);
+    throw new Error('Windows refuse de renommer le dossier : un programme l\'utilise encore (VS Code, Android Studio, l\'Explorateur, un terminal, Gradle…). Ferme-le puis réessaie.');
+  } finally {
+    if (rappelChangement) reconstruire();
+  }
+
+  // Liens déclarés par les autres projets vers celui-ci.
+  for (const p of await listerProjets()) {
+    if (p.erreur || p.id === nom || !p.fiche.liens.some((l) => l.projet === ancien)) continue;
+    await modifierFiche(p.id, { liens: p.fiche.liens.map((l) => (l.projet === ancien ? { ...l, projet: nom } : l)) })
+      .catch((erreur) => journal.erreur(`Lien de ${p.id} vers ${ancien} non mis à jour :`, erreur));
+  }
+
+  // « Emplacement : `projets/<ancien>/` » écrit dans son CLAUDE.md à la création / l'import.
+  const claudeMd = path.join(destination, 'CLAUDE.md');
+  try {
+    const contenu = await fsp.readFile(claudeMd, 'utf8');
+    const ancienChemin = `${chemins.versRelatif(source)}/`;
+    if (contenu.includes(ancienChemin)) {
+      await fsp.writeFile(claudeMd, contenu.split(ancienChemin).join(`${chemins.versRelatif(destination)}/`), 'utf8');
+    }
+  } catch (erreur) {
+    if (erreur.code !== 'ENOENT') journal.erreur(`CLAUDE.md de ${nom} non mis à jour :`, erreur);
+  }
+  return chargerProjet(nom);
 }
 
 async function renommerCategorie(ancienne, nouvelle) {
@@ -414,6 +476,7 @@ module.exports = {
   chargerProjet,
   listerProjets,
   modifierFiche,
+  renommerDossier,
   changerIcone,
   EXTENSIONS_IMAGES,
   renommerCategorie,

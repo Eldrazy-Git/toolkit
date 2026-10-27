@@ -257,6 +257,7 @@ export function elementsMenuProjet(projet, position) {
     ...elementsRetirerDuGroupe(projet),
     'separateur',
     { libelle: 'Renommer…', icone: 'crayon', desactive: bloque, action: () => renommerProjet(projet) },
+    { libelle: 'Renommer le dossier…', icone: 'dossier', desactive: bloque, action: () => renommerDossier(projet) },
     ...elementsMenuIcone(projet).map((e) => ({ ...e, desactive: e.desactive || bloque })),
     'separateur',
     { libelle: 'Supprimer le projet…', icone: 'effacer', action: () => supprimerProjet(projet) },
@@ -470,6 +471,76 @@ export async function supprimerProjet(projet) {
   if (selection === projet.id) selectionner(null);
   await chargerProjets();
   notifier(`« ${projet.fiche.nom} » est dans la Corbeille de Windows.`, 'succes');
+}
+
+// --- Renommer le dossier d'un projet ----------------------------------------------------------
+// Le dossier est l'identifiant du projet : ses onglets sont fermés (ils libèrent le dossier),
+// puis groupes, épingles et récents passent au nouveau nom. Le processus principal s'occupe
+// des liens, du CLAUDE.md et des conversations de Claude.
+
+function nomDeDossierConseille(nom) {
+  return nom.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+}
+
+export async function renommerDossier(projet) {
+  if (projet.erreur) return;
+  const onglets = ongletsDuProjet(projet);
+  if (onglets.some((o) => o.enCours)) {
+    notifier('Un script, un terminal ou Claude tourne encore dans ce projet : arrête-le et ferme son onglet d\'abord.', 'erreur');
+    return;
+  }
+  if (onglets.some((o) => o.nonEnregistre)) {
+    notifier('Des fichiers de ce projet ne sont pas enregistrés : enregistre-les ou ferme leurs onglets d\'abord.', 'erreur');
+    return;
+  }
+  const outilHtml = estOuvrableCommeOutil(projet) || projet.fiche.outils_lies.length > 0;
+  const nouveau = await demanderTexte({
+    titre: 'Renommer le dossier',
+    message: `Nouveau nom du dossier « ${projet.id} » (dans projets/).\n`
+      + 'Les liens, groupes, épingles et conversations de Claude suivent. Ferme d\'abord ce projet dans VS Code, Android Studio ou l\'Explorateur.'
+      + (outilHtml ? '\n\n⚠ Les données enregistrées par l\'outil (localStorage, IndexedDB) ne suivent PAS : exporte-les avant (bouton « Exporter les données » de l\'outil) puis importe-les après.' : ''),
+    valeur: nomDeDossierConseille(projet.fiche.nom) || projet.id,
+    bouton: 'Renommer le dossier',
+  });
+  if (!nouveau || nouveau.trim() === projet.id) return;
+
+  const ids = new Set(onglets.map((o) => o.id));
+  const { ongletActif } = etat.obtenir();
+  if (ids.size) {
+    etat.modifier({ onglets: etat.obtenir().onglets.filter((o) => !ids.has(o.id)), ongletActif: ids.has(ongletActif) ? 'bibliotheque' : ongletActif });
+    if (onglets.some((o) => o.genre === 'code')) await new Promise((r) => setTimeout(r, 1500));
+  }
+  const renomme = await essayer(() => api.projets.renommerDossier(projet.id, nouveau.trim()));
+  if (!renomme) return;
+
+  const ancien = projet.id;
+  const id = renomme.id;
+  const { epingles, groupes: listeGroupes, recents: listeRecents } = etat.obtenir();
+  if (epingles.includes(ancien)) {
+    const nouveaux = epingles.map((e) => (e === ancien ? id : e));
+    etat.modifier({ epingles: nouveaux });
+    essayer(() => api.reglages.modifier({ interface: { epingles: nouveaux } }));
+  }
+  if (listeGroupes.some((gr) => gr.projets.includes(ancien))) {
+    const nouveaux = listeGroupes.map((gr) => ({ ...gr, projets: gr.projets.map((p) => (p === ancien ? id : p)) }));
+    etat.modifier({ groupes: nouveaux });
+    essayer(() => api.reglages.modifier({ interface: { groupes: nouveaux } }));
+  }
+  const prefixe = `${projet.dossier}/`;
+  const recentsModifies = listeRecents.map((r) => ({
+    ...r,
+    ...(r.projetId === ancien ? { projetId: id } : {}),
+    ...(r.cible?.type === 'projet' && r.cible.id === ancien ? { cible: { ...r.cible, id } } : {}),
+    ...(r.type === 'note' && r.chemin?.startsWith(prefixe) ? { chemin: `${renomme.dossier}/${r.chemin.slice(prefixe.length)}` } : {}),
+  }));
+  if (JSON.stringify(recentsModifies) !== JSON.stringify(listeRecents)) {
+    etat.modifier({ recents: recentsModifies });
+    essayer(() => api.reglages.modifier({ interface: { recents: recentsModifies } }));
+  }
+  await chargerProjets();
+  selectionner(id);
+  notifier(`Dossier renommé en « ${id} ».`, 'succes');
 }
 
 // --- Modification des fiches ----------------------------------------------------------

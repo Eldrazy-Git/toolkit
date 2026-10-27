@@ -124,4 +124,23 @@ async function lister(dossier) {
   return sessions;
 }
 
-module.exports = { lister, existe, ID_SESSION };
+// Dossier d'un projet renommé : ses conversations le suivent (sinon « Conversations » et
+// « Reprendre » ne les trouveraient plus). Les fichiers sont déplacés, jamais effacés.
+async function deplacer(ancienDossier, nouveauDossier) {
+  // Même nom que celui que Claude Code créerait (casse conservée, contrairement à encoder()).
+  const destination = path.join(dossierProjets(), nouveauDossier.replace(/[^a-zA-Z0-9]/g, '-'));
+  for (const source of await dossiersDe(ancienDossier)) {
+    if (!(await fs.stat(destination).catch(() => null))) {
+      await fs.rename(source, destination);
+      continue;
+    }
+    // Les deux existent déjà (cas rare) : on regroupe, sans écraser.
+    for (const nom of await fs.readdir(source)) {
+      if (!(await fs.stat(path.join(destination, nom)).catch(() => null))) {
+        await fs.rename(path.join(source, nom), path.join(destination, nom));
+      }
+    }
+  }
+}
+
+module.exports = { lister, existe, deplacer, ID_SESSION };

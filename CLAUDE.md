@@ -173,8 +173,15 @@ définitif) ; épingles, groupes et récents nettoyés.
 
 Renommer un projet (`actions.renommerProjet`, clic sur le nom dans les détails ou menu
 clic droit) : change seulement `nom` dans projet.json (`modifierFiche`). Le dossier (= id)
-ne change JAMAIS : il porte le stockage des outils HTML, les liens, groupes, épingles et
-conversations de Claude.
+ne change pas : il porte le stockage des outils HTML, les liens, groupes, épingles et
+conversations de Claude. Pour le changer, action à part `actions.renommerDossier` (clic sur
+« Dossier » dans les détails ou menu « Renommer le dossier… ») : refusée si un onglet du
+projet tourne ou n'est pas enregistré ; onglets fermés ; `projets:renommer-dossier` =
+`projets.renommerDossier()` (surveillants fermés le temps du `rename`, liens des autres
+projets, ligne « Emplacement » du CLAUDE.md) + `reglages.actionsAuto` +
+`sessions-claude.deplacer()` (dossier `~/.claude/projects/<encodé>`) ; l'interface met à jour
+épingles, groupes et récents. Les données des outils HTML ne suivent PAS (origine différente) :
+la boîte le dit et renvoie vers Exporter / Importer.
 
 Bibliothèque : chaque projet chargé porte aussi `dateAjout` (création du dossier) et
 `dateModification` (fichier le plus récent sur 2 niveaux, dossiers générés ignorés) pour
