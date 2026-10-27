@@ -103,7 +103,7 @@ export async function informer({ titre, message, bouton = 'Compris' }) {
   }));
 }
 
-// Formulaire. champs : [{ id, libelle, type, valeur?, options?, suggestions?, extensions?, exemple?, aide?, obligatoire? }]
+// Formulaire. champs : [{ id, libelle, type, valeur?, options?, suggestions?, extensions?, exemple?, aide?, obligatoire?, auChangement? }]
 // Types : 'texte' | 'zone' (texte sur plusieurs lignes) | 'choix' (options : [{ valeur, libelle }])
 //       | 'case' (case à cocher) | 'fichier' | 'fichiers' | 'dossier' (bouton « Parcourir… »).
 // Renvoie { id: valeur } ou null si annulé (« fichiers » : liste de chemins ; « case » : true/false).
@@ -166,7 +166,14 @@ export function formulaire({ titre, message, champs, bouton = 'Valider' }) {
         // Suggestions proposées pendant la saisie (ex. catégories existantes).
         if (idListe) suggestions = el('datalist', { id: idListe }, c.suggestions.map((s) => el('option', { value: s })));
       }
-      controles[c.id] = { element: controle, lire: () => controle.value.trim() };
+      controles[c.id] = { element: controle, lire: () => controle.value.trim(), ecrire: (v) => { controle.value = v; } };
+      // auChangement(valeur, { lire(id), ecrire(id, valeur) }) : un champ qui en met d'autres à jour.
+      if (c.auChangement) {
+        controle.addEventListener(c.type === 'choix' ? 'change' : 'input', () => c.auChangement(controle.value, {
+          lire: (id) => controles[id]?.lire(),
+          ecrire: (id, v) => controles[id]?.ecrire?.(v),
+        }));
+      }
       return el('label', { classe: 'champ-formulaire' }, libelle, controle, suggestions, aide);
     });
 

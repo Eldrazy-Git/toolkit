@@ -258,6 +258,16 @@ async function publierVersion() {
     if (!ok) return;
     choix = { version: p.reprise, notes: p.notes || `Toolkit ${p.reprise}` };
   } else {
+    // Changer de numéro remplace les notes par le brouillon de ce type de version, sauf si elles
+    // ont été retouchées à la main (rien n'est perdu).
+    let notesProposees = p.notes;
+    const changerNiveau = (version, champs) => {
+      const niveau = NIVEAUX.map(([n]) => n).find((n) => p.versions[n] === version);
+      const nouvelles = p.notesParNiveau?.[niveau];
+      if (!nouvelles || champs.lire('notes') !== notesProposees.trim()) return;
+      champs.ecrire('notes', nouvelles);
+      notesProposees = nouvelles;
+    };
     const liste = p.commits.slice(0, 10).map((c) => `• ${c}`).join('\n') + (p.commits.length > 10 ? `\n… et ${p.commits.length - 10} autre(s)` : '');
     choix = await formulaire({
       titre: 'Publier une nouvelle version de Toolkit',
@@ -269,6 +279,7 @@ async function publierVersion() {
           type: 'choix',
           valeur: p.versions[p.suggestion],
           options: NIVEAUX.map(([niveau, libelle]) => ({ valeur: p.versions[niveau], libelle: `${p.versions[niveau]} : ${libelle}${niveau === p.suggestion ? ' (conseillé)' : ''}` })),
+          auChangement: changerNiveau,
         },
         {
           id: 'notes',
@@ -276,7 +287,7 @@ async function publierVersion() {
           type: 'zone',
           valeur: p.notes,
           obligatoire: true,
-          aide: 'Montrées aux utilisateurs avant d\'installer. Une ligne « - … » par changement, en phrases simples (tu peux reformuler).',
+          aide: 'Montrées aux utilisateurs avant d\'installer. Une ligne « - … » par changement, en phrases simples (tu peux reformuler). Changer le numéro adapte ce brouillon, tant que tu ne l\'as pas retouché.',
         },
       ],
       bouton: 'Continuer',

@@ -109,7 +109,8 @@ async function verifierPrerequis() {
 }
 
 // Ne modifie rien. Renvoie soit { reprise: version, notes }, soit
-// { derniere, commits, versions: { correctif, nouveautes, majeure }, suggestion, raison, notes }.
+// { derniere, commits, versions: { correctif, nouveautes, majeure }, suggestion, raison, notes,
+//   notesParNiveau: { correctif, nouveautes, majeure } }.
 async function preparer() {
   await verifierPrerequis();
   const tags = await etiquettes();
@@ -153,14 +154,21 @@ async function preparer() {
 
   const versions = { correctif: incrementer(derniere, 'correctif'), nouveautes: incrementer(derniere, 'nouveautes'), majeure: incrementer(derniere, 'majeure') };
   const puces = (liste) => liste.map((c) => `- ${c}`).join('\n');
-  const brouillon = [
-    nouveautes.length ? `## Nouveautés\n\n${puces(nouveautes)}` : null,
-    corrections.length ? `## Corrections\n\n${puces(corrections)}` : null,
-    !nouveautes.length && !corrections.length ? `## Améliorations\n\n${puces(entretien)}` : null,
-  ].filter(Boolean).join('\n\n');
-  // Notes déjà écrites pour le numéro conseillé (publication relancée) : gardées.
-  const notes = (await lireNotes(versions[suggestion])) || `${brouillon}\n`;
-  return { derniere, commits, versions, suggestion, raison, notes };
+  const section = (titre, liste) => (liste.length ? `## ${titre}\n\n${puces(liste)}` : null);
+  // Un brouillon par niveau : un correctif n'annonce pas de « Nouveautés » (elles passent en
+  // « Améliorations »), pour que changer de numéro dans le formulaire n'oblige pas à réécrire.
+  const brouillons = {
+    correctif: [section('Améliorations', [...nouveautes, ...entretien]), section('Corrections', corrections)],
+    nouveautes: [section('Nouveautés', nouveautes), section('Corrections', corrections),
+      !nouveautes.length && !corrections.length ? section('Améliorations', entretien) : null],
+  };
+  brouillons.majeure = brouillons.nouveautes;
+  // Notes déjà écrites pour un numéro (publication relancée) : gardées.
+  const notesParNiveau = {};
+  for (const niveau of Object.keys(versions)) {
+    notesParNiveau[niveau] = (await lireNotes(versions[niveau])) || `${brouillons[niveau].filter(Boolean).join('\n\n')}\n`;
+  }
+  return { derniere, commits, versions, suggestion, raison, notes: notesParNiveau[suggestion], notesParNiveau };
 }
 
 // Publie « version » avec ces notes. etape(texte) reçoit l'avancement. Renvoie { version, url }.
