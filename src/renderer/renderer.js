@@ -95,6 +95,8 @@ async function demarrer() {
       vue: preferences.vue === 'liste' ? 'liste' : 'grille',
       tri: typeof preferences.tri === 'string' ? preferences.tri : 'nom',
       epingles: Array.isArray(preferences.epingles) ? preferences.epingles : [],
+      couleursCategories: Object.fromEntries(Object.entries(preferences.couleursCategories || {})
+        .filter(([, c]) => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c))),
       groupes: groupes.nettoyer(preferences.groupes),
       recents: recents.nettoyer(preferences.recents),
       preferences: reglagesSauves.preferences || {},

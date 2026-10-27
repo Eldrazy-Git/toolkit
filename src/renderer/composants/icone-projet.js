@@ -1,10 +1,16 @@
 // Icône d'un projet : son image si elle existe, sinon ses initiales sur une
 // couleur qui dépend de sa catégorie (même catégorie = même couleur).
 import { el } from './dom.js';
+import * as etat from './etat.js';
 
-const PALETTE = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'];
+export const PALETTE = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'];
+export const NOMS_PALETTE = ['Bleu', 'Vert', 'Ambre', 'Rouge', 'Violet', 'Rose', 'Turquoise', 'Orange', 'Indigo', 'Vert clair'];
 
+// Couleur choisie par l'utilisateur (reglages.interface.couleursCategories), sinon une couleur
+// de la palette tirée du nom.
 export function couleurCategorie(categorie) {
+  const choisie = etat.obtenir().couleursCategories[categorie];
+  if (choisie) return choisie;
   let somme = 0;
   for (const caractere of String(categorie)) somme = (somme * 31 + caractere.codePointAt(0)) >>> 0;
   return PALETTE[somme % PALETTE.length];

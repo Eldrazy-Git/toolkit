@@ -520,12 +520,29 @@ export async function renommerCategorie(categorie) {
   if (nouvelle === null || nouvelle === categorie) return;
   const nombre = await essayer(() => api.projets.renommerCategorie(categorie, nouvelle));
   if (nombre === undefined) return;
+  // La couleur choisie suit la catégorie sous son nouveau nom.
+  const couleur = etat.obtenir().couleursCategories[categorie];
+  if (couleur && nouvelle && !etat.obtenir().couleursCategories[nouvelle]) {
+    await changerCouleurCategorie(nouvelle, couleur);
+    await changerCouleurCategorie(categorie, null);
+  }
   const { filtre } = etat.obtenir();
   if (filtre.type === 'categorie' && filtre.valeur === categorie) {
     choisirFiltre({ type: 'categorie', valeur: nouvelle || 'Sans catégorie' });
   }
   notifier(`${nombre} projet(s) mis à jour.`, 'succes');
   await chargerProjets();
+}
+
+// Couleur d'une catégorie, rangée dans les réglages (projet.json n'est pas touché).
+// couleur = '#rrggbb', ou null pour revenir à la couleur automatique.
+export async function changerCouleurCategorie(categorie, couleur) {
+  const couleurs = { ...etat.obtenir().couleursCategories };
+  if (couleur) couleurs[categorie] = couleur;
+  else delete couleurs[categorie];
+  etat.modifier({ couleursCategories: couleurs });
+  // Les réglages fusionnent les objets : null efface l'ancienne valeur.
+  await essayer(() => api.reglages.modifier({ interface: { couleursCategories: { [categorie]: couleur || null } } }));
 }
 
 export async function renommerTag(tag) {

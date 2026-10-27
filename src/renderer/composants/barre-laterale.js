@@ -1,7 +1,7 @@
 // Barre latérale : récents, tous les projets, favoris, projets épinglés, groupes, catégories, tags et l'entrée « Toolkit ».
 import { el } from './dom.js';
 import { icone } from './icones.js';
-import { couleurCategorie, iconeProjet } from './icone-projet.js';
+import { couleurCategorie, iconeProjet, PALETTE, NOMS_PALETTE } from './icone-projet.js';
 import { ouvrirMenu } from './menu.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
@@ -17,7 +17,7 @@ function memeFiltre(a, b) {
   return a.type === b.type && a.valeur === b.valeur;
 }
 
-function elementNav({ libelle, visuel, compteur, actif, auClic, renommer }) {
+function elementNav({ libelle, visuel, compteur, actif, auClic, renommer, auClicDroit }) {
   return el('div', {
     classe: `element-nav${actif ? ' actif' : ''}`,
     role: 'button',
@@ -25,6 +25,7 @@ function elementNav({ libelle, visuel, compteur, actif, auClic, renommer }) {
     title: libelle,
     onClick: auClic,
     onKeydown: (e) => { if (e.key === 'Enter') auClic(); },
+    onContextmenu: auClicDroit,
   },
     visuel,
     el('span', { classe: 'libelle' }, libelle),
@@ -182,6 +183,56 @@ function sectionGroupes(projets, filtre, selection, ongletActif) {
   ];
 }
 
+// --- Catégories ---------------------------------------------------------------------------------
+// Clic sur la pastille ou clic droit sur la catégorie = choisir sa couleur.
+
+// « Autre couleur… » : sélecteur de couleur de Windows, ouvert à l'endroit du menu.
+// Le champ (invisible) reste jusqu'au choix ; annuler le laisse en place jusqu'à la fois suivante.
+function choisirAutreCouleur(categorie, position) {
+  document.querySelector('.champ-couleur-cache')?.remove();
+  const champ = el('input', { type: 'color', value: couleurCategorie(categorie), classe: 'champ-couleur-cache' });
+  champ.style.setProperty('left', `${position.x}px`);
+  champ.style.setProperty('top', `${position.y}px`);
+  champ.addEventListener('change', () => {
+    champ.remove();
+    actions.changerCouleurCategorie(categorie, champ.value);
+  });
+  document.body.append(champ);
+  champ.click();
+}
+
+function menuCouleur(categorie, position) {
+  const actuelle = etat.obtenir().couleursCategories[categorie];
+  ouvrirMenu(position, [
+    { titre: `Couleur de « ${categorie} »` },
+    ...PALETTE.map((couleur, i) => ({
+      libelle: NOMS_PALETTE[i],
+      couleur,
+      detail: actuelle === couleur ? '✓' : '',
+      action: () => actions.changerCouleurCategorie(categorie, couleur),
+    })),
+    'separateur',
+    { libelle: 'Autre couleur…', couleur: actuelle && !PALETTE.includes(actuelle) ? actuelle : null, icone: 'crayon', action: () => choisirAutreCouleur(categorie, position) },
+    { libelle: 'Couleur automatique', detail: actuelle ? '' : '✓', desactive: !actuelle, action: () => actions.changerCouleurCategorie(categorie, null) },
+    'separateur',
+    { libelle: 'Renommer la catégorie…', icone: 'crayon', action: () => actions.renommerCategorie(categorie) },
+  ]);
+}
+
+function pastilleCategorie(categorie) {
+  return el('button', {
+    classe: 'pastille-couleur cliquable',
+    style: { '--couleur': couleurCategorie(categorie) },
+    title: 'Changer la couleur',
+    'aria-label': `Changer la couleur de « ${categorie} »`,
+    onClick: (e) => {
+      e.stopPropagation();
+      const r = e.currentTarget.getBoundingClientRect();
+      menuCouleur(categorie, { x: r.left, y: r.bottom });
+    },
+  });
+}
+
 // --- Récents ------------------------------------------------------------------------------------
 // Dernières ouvertures (voir recents.js) : un clic rouvre de la même façon.
 // 5 visibles, « Plus… » pour les 15 ; section repliable (choix gardé dans ce navigateur).
@@ -313,11 +364,15 @@ export function rendre() {
         const f = { type: 'categorie', valeur: nom };
         return elementNav({
           libelle: nom,
-          visuel: el('span', { classe: 'pastille-couleur', style: { '--couleur': couleurCategorie(nom) } }),
+          visuel: pastilleCategorie(nom),
           compteur: nombre,
           actif: memeFiltre(filtre, f),
           auClic: choisir(f),
           renommer: () => actions.renommerCategorie(nom),
+          auClicDroit: (e) => {
+            e.preventDefault();
+            menuCouleur(nom, { x: e.clientX, y: e.clientY });
+          },
         });
       }),
 

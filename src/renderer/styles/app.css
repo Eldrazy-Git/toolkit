@@ -291,6 +291,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
   background: var(--couleur);
   flex-shrink: 0;
 }
+/* Pastille d'une catégorie : bouton qui ouvre le choix de la couleur. */
+.pastille-couleur.cliquable { padding: 0; border: none; cursor: pointer; }
+.pastille-couleur.cliquable:hover { outline: 2px solid var(--texte-faible); outline-offset: 1px; }
+.champ-couleur-cache { position: fixed; width: 1px; height: 1px; padding: 0; border: none; opacity: 0; }
 
 .barre-pied {
   padding: 6px 0;

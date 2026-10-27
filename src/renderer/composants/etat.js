@@ -14,6 +14,7 @@ const etat = {
   vue: 'grille', // grille | liste
   tri: 'nom', // nom | modification | ajout | type | categorie (voir bibliotheque.js > TRIS)
   epingles: [], // ids des projets épinglés dans la barre latérale, dans l'ordre
+  couleursCategories: {}, // nom de catégorie -> couleur choisie ('#rrggbb'), absente = automatique
   groupes: [], // groupes de projets de la barre latérale (voir groupes.js)
   recents: [], // dernières ouvertures (voir recents.js)
   preferences: {}, // préférences de l'utilisateur (voir preferences.js)

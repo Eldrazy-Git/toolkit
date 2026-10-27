@@ -1,5 +1,5 @@
 // Petit menu déroulant affiché sous un bouton (ex. « Ouvrir avec… »).
-// elements : [{ libelle, icone?, detail?, desactive?, infobulle?, action }] ; 'separateur' pour un
+// elements : [{ libelle, icone? | couleur?, detail?, desactive?, infobulle?, action }] ; 'separateur' pour un
 // trait ; { titre } pour un intitulé de section (non cliquable).
 import { el } from './dom.js';
 import { icone } from './icones.js';
@@ -40,7 +40,8 @@ export function ouvrirMenu(ancre, elements) {
           e.action();
         },
       },
-      e.icone ? icone(e.icone) : el('span', { classe: 'ico' }),
+      e.couleur ? el('span', { classe: 'ico' }, el('span', { classe: 'pastille-couleur', style: { '--couleur': e.couleur } }))
+        : e.icone ? icone(e.icone) : el('span', { classe: 'ico' }),
       el('span', { classe: 'menu-libelle' }, e.libelle),
       e.detail ? el('span', { classe: 'menu-detail' }, e.detail) : null);
     }));
