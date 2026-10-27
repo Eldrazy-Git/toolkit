@@ -8,6 +8,7 @@
 // Les images (png, jpg…) sont déjà affichées directement par l'éditeur.
 import { el } from './dom.js';
 import { icone } from './icones.js';
+import { creerBoutonTactile } from './simulation-tactile.js';
 import { chargerRessources, dossierResDe, apercuXml, genreXml } from './apercu-android.js';
 
 const api = window.toolkit.code;
@@ -47,8 +48,10 @@ export function creerApercu({ cible, cle }) {
   const titre = el('span', { classe: 'apercu-titre' }, 'Aperçu');
   const boutonRecharger = el('button', { classe: 'bouton-icone', title: 'Recharger l\'aperçu', onClick: () => montrer(dernier, 'forcer') }, icone('redemarrer'));
   const boutonSombre = el('button', { classe: 'bouton-icone', title: 'Thème clair / sombre (layouts Android)', hidden: true, onClick: () => { sombre = !sombre; montrer(dernier, 'forcer'); } }, icone('ordinateur'));
+  const tactile = creerBoutonTactile(`code:${cle}`);
+  tactile.bouton.hidden = true;
   const element = el('div', { classe: 'code-apercu' },
-    el('div', { classe: 'apercu-entete' }, icone('lecture'), titre, boutonSombre, boutonRecharger),
+    el('div', { classe: 'apercu-entete' }, icone('lecture'), titre, boutonSombre, tactile.bouton, boutonRecharger),
     contenu);
 
   let webview = null;
@@ -95,6 +98,7 @@ export function creerApercu({ cible, cle }) {
       webview.setAttribute('partition', racineHtml.partition);
       webview.setAttribute('src', url);
       webview.classList.add('apercu-webview');
+      tactile.attacher(webview);
       urlDemandee = url;
     } else if (urlDemandee !== url) {
       webview.setAttribute('src', url);
@@ -119,6 +123,7 @@ export function creerApercu({ cible, cle }) {
     const texte = doc.modele.getValue();
     const genre = genreApercu(chemin, texte);
     boutonSombre.hidden = genre !== 'xml';
+    tactile.bouton.hidden = genre !== 'html';
     titre.textContent = `Aperçu — ${chemin.split('/').pop()}`;
     const n = ++numero;
     try {

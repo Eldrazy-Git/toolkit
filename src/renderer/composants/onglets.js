@@ -21,6 +21,7 @@ import { creerPanneauTerminal } from './terminal.js';
 import { creerPanneauConsole } from './console.js';
 import { creerPanneauNote } from './note.js';
 import { creerApercuAppareil } from './apercu-appareil.js';
+import { creerBoutonTactile } from './simulation-tactile.js';
 import { creerPanneauCode } from './code.js';
 
 export const ID_BIBLIOTHEQUE = 'bibliotheque';
@@ -97,11 +98,13 @@ function creerPanneauOutil(o) {
   const conteneur = el('div', { classe: 'conteneur-webview' });
   // Aperçu ordinateur / smartphone / tablette (la webview est placée dans un cadre).
   const apercu = creerApercuAppareil(webview, conteneur, o.id);
+  const tactile = creerBoutonTactile(o.id, webview);
   conteneur.append(apercu.cadre, message);
   const element = el('section', { classe: 'panneau panneau-outil' },
     el('div', { classe: 'barre-outil' },
       el('button', { classe: 'bouton-icone', title: 'Recharger (F5)', onClick: () => webview.reloadIgnoringCache() }, icone('redemarrer')),
       apercu.boutons,
+      tactile.bouton,
       el('button', { classe: 'bouton petit', title: 'Exporter les données de l\'outil dans un fichier .json', onClick: () => actions.exporterDonnees(o, idContenu()) }, icone('exporter'), el('span', { classe: 'texte-bouton' }, 'Exporter les données')),
       el('button', { classe: 'bouton petit', title: 'Importer les données de l\'outil depuis un fichier .json', onClick: () => actions.importerDonnees(o, idContenu()) }, icone('importer'), el('span', { classe: 'texte-bouton' }, 'Importer les données')),
       el('button', { classe: 'bouton petit', title: 'Outils de développement (F12)', onClick: () => webview.openDevTools() }, icone('code'), 'F12'),

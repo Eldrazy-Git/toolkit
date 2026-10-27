@@ -131,6 +131,7 @@ app/
             ├── notifications.js notifier(message, type)
             ├── onglets.js       barre d'onglets + panneaux des outils (<webview>)
             ├── apercu-appareil.js aperçu ordinateur / smartphone / tablette d'un outil
+            ├── simulation-tactile.js bouton « Simuler le tactile » (outil + aperçu HTML du Code)
             ├── reglages.js      onglet « Réglages »
             ├── terminal.js      panneau de terminal (xterm.js), copier/coller, relance
             ├── console.js       panneau d'exécution d'une action (sortie en direct)
@@ -222,6 +223,11 @@ Voir `src/main/outils-html.js` (explications en tête du fichier) et
   `enableDeviceEmulation({ screenPosition: 'mobile' })` (viewport respecté, `screen` à la
   taille de l'appareil), réappliqué à chaque `dom-ready`. Mode retenu par outil dans le
   localStorage de l'interface (`toolkit:apercu:<id>`).
+- Simulation du tactile (`composants/simulation-tactile.js`, bouton « doigt » de la barre de
+  l'outil et de l'en-tête de l'aperçu HTML de l'onglet Code) : `outils:tactile` attache le
+  protocole de débogage à la webview (`Emulation.setTouchEmulationEnabled` +
+  `setEmitTouchEventsForMouse`) : la souris produit des événements touch. Réappliqué à chaque
+  `dom-ready`, retenu par page (`toolkit:tactile:<id>` / `code:<cle>`). Refusé si F12 est ouvert.
 
 Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
 

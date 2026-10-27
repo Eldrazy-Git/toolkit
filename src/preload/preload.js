@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('toolkit', {
     importer: (idContenu, nom) => appeler('outils:importer', idContenu, nom),
     // Aperçu appareil : { largeur, hauteur } (smartphone, tablette) ou null (ordinateur).
     emulation: (idContenu, appareil) => appeler('outils:emulation', idContenu, appareil),
+    tactile: (idContenu, actif) => appeler('outils:tactile', idContenu, actif),
     // Raccourcis clavier pressés dans un outil (ex. 'fermer' pour Ctrl+W).
     surRaccourci: (rappel) => ecouter('outils:raccourci', rappel),
   },
