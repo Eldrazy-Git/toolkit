@@ -21,6 +21,37 @@ function enregistrer() {
   });
   // Ajouter, modifier, supprimer ou déplacer une action (voir projets.modifierActions).
   gerer('projets:modifier-actions', (id, operation) => projets.modifierActions(id, operation));
+  // Action « fichier » : choisir un fichier du projet (renvoie son chemin relatif, ou null).
+  gerer('projets:choisir-fichier', async (contenu, id) => {
+    if (!(await projets.chargerProjet(id))) throw new Error('Ce projet n\'existe plus.');
+    const racine = path.join(chemins.projets(), id);
+    const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.fromWebContents(contenu) || undefined, {
+      title: 'Choisis le fichier à ouvrir (dans le dossier du projet)',
+      defaultPath: racine,
+      properties: ['openFile'],
+    });
+    if (canceled || filePaths.length === 0) return null;
+    const relatif = path.relative(racine, filePaths[0]);
+    if (!relatif || relatif.startsWith('..') || path.isAbsolute(relatif)) {
+      throw new Error('Ce fichier n\'est pas dans le dossier du projet. Copie-le d\'abord dans le projet, puis choisis-le.');
+    }
+    return relatif.split(path.sep).join('/');
+  }, { avecEmetteur: true });
+
+  // Action « fichier » ouverte avec le programme de Windows (celui qui ouvre ce type de fichier).
+  gerer('projets:ouvrir-fichier', async (id, index) => {
+    const projet = await projets.chargerProjet(id);
+    const action = projet?.fiche.actions[index];
+    if (!action || action.genre !== 'fichier') throw new Error('Cette action n\'existe plus dans projet.json.');
+    const racine = path.join(chemins.projets(), id);
+    const fichier = path.resolve(racine, action.fichier);
+    if (!fichier.startsWith(racine + path.sep)) throw new Error('Le fichier doit se trouver dans le dossier du projet.');
+    const erreur = await shell.openPath(fichier);
+    if (erreur) {
+      journal.erreur(`Ouverture de ${action.fichier} :`, erreur);
+      throw new Error(`Windows n'a pas pu ouvrir « ${action.fichier} » (fichier introuvable, ou aucun programme pour ce type de fichier).`);
+    }
+  });
   gerer('projets:renommer-categorie', (ancienne, nouvelle) => projets.renommerCategorie(ancienne, nouvelle));
   gerer('projets:renommer-tag', (ancien, nouveau) => projets.renommerTag(ancien, nouveau));
 

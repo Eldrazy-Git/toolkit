@@ -19,6 +19,9 @@ const SANS_CATEGORIE = 'Sans catégorie';
 // Action par défaut (double-clic, bouton principal) : ces valeurs, ou « action:<nom> » (une
 // action de la fiche) ou « outil:<point_entree> » (un outil lié). Absente = automatique.
 const ACTIONS_PAR_DEFAUT = ['outil', 'editeur', 'code', 'claude'];
+// Action « fichier » : où l'ouvrir (absent = automatique : page HTML et texte dans Toolkit,
+// le reste avec le programme de Windows).
+const OUVRIR_DANS = ['toolkit', 'windows'];
 
 // --- Identifiants -------------------------------------------------------------
 
@@ -90,7 +93,26 @@ function normaliserFiche(brut, id) {
 
   (Array.isArray(b.actions) ? b.actions : []).forEach((action, i) => {
     if (!estActionValide(action)) {
-      problemes.push(`L'action n°${i + 1} doit avoir un « nom » et une « commande ».`);
+      problemes.push(`L'action n°${i + 1} doit avoir un « nom » et une « commande » (ou un « fichier » à ouvrir).`);
+      return;
+    }
+    // Action qui ouvre un fichier du projet au lieu de lancer une commande.
+    if (!texte(action.commande)) {
+      const ouvrirDans = texte(action.ouvrir_dans);
+      if (ouvrirDans && !OUVRIR_DANS.includes(ouvrirDans)) {
+        problemes.push(`Action « ${action.nom} » : « ouvrir_dans » doit valoir ${OUVRIR_DANS.join(' ou ')}.`);
+      }
+      fiche.actions.push({
+        genre: 'fichier',
+        nom: texte(action.nom),
+        description: texte(action.description),
+        commande: '',
+        fichier: texte(action.fichier).replace(/\\/g, '/'),
+        ouvrir_dans: OUVRIR_DANS.includes(ouvrirDans) ? ouvrirDans : null,
+        dossier: '.',
+        parametres: [],
+        ouvrir_dossier_apres: null,
+      });
       return;
     }
     const parametres = (Array.isArray(action.parametres) ? action.parametres : [])
@@ -113,6 +135,7 @@ function normaliserFiche(brut, id) {
         };
       });
     fiche.actions.push({
+      genre: 'commande',
       nom: texte(action.nom),
       description: texte(action.description),
       commande: texte(action.commande),
@@ -144,7 +167,7 @@ function normaliserFiche(brut, id) {
 }
 
 function estActionValide(action) {
-  return Boolean(action && texte(action.nom) && texte(action.commande));
+  return Boolean(action && texte(action.nom) && (texte(action.commande) || texte(action.fichier)));
 }
 
 function actionParDefautExiste(fiche, valeur) {
@@ -367,36 +390,63 @@ async function modifierActions(id, operation) {
   if (type !== 'ajouter' && !Number.isInteger(positions[index])) throw new Error('Cette action n\'existe plus : la liste a changé.');
   const nomDe = (i) => texte(liste[positions[i]]?.nom);
 
-  const champs = () => {
+  const champs = async () => {
     const a = operation.action || {};
     const nom = texte(a.nom);
-    const commande = texte(a.commande);
     if (!nom) throw new Error('Donne un nom à l\'action (c\'est le texte du bouton).');
-    if (!commande) throw new Error('Indique la commande à lancer.');
     if (nom.length > 80) throw new Error('Ce nom est trop long (80 caractères au plus).');
     const autre = positions.findIndex((p, i) => texte(liste[p].nom) === nom && (type === 'ajouter' || i !== index));
     if (autre >= 0) throw new Error(`Une action s'appelle déjà « ${nom} ».`);
+    const description = texte(a.description);
+    if (a.genre === 'fichier') {
+      const fichier = texte(a.fichier).replace(/\\/g, '/').replace(/^\.\//, '');
+      if (!fichier) throw new Error('Choisis le fichier à ouvrir.');
+      const racine = dossierDuProjet(id);
+      const complet = path.resolve(racine, fichier);
+      if (path.isAbsolute(fichier) || !complet.startsWith(racine + path.sep)) {
+        throw new Error('Le fichier doit se trouver dans le dossier du projet.');
+      }
+      try {
+        if (!(await fsp.stat(complet)).isFile()) throw new Error();
+      } catch {
+        throw new Error(`Le fichier « ${fichier} » est introuvable dans le dossier du projet.`);
+      }
+      const ouvrirDans = OUVRIR_DANS.includes(a.ouvrir_dans) ? a.ouvrir_dans : null;
+      return { genre: 'fichier', nom, description, fichier, ouvrirDans };
+    }
+    const commande = texte(a.commande);
+    if (!commande) throw new Error('Indique la commande à lancer.');
     const dossier = texte(a.dossier).replace(/\\/g, '/').replace(/^\.\/|\/$/g, '') || '.';
     if (path.isAbsolute(dossier) || dossier.split('/').includes('..')) {
       throw new Error('Le dossier doit être un dossier du projet, écrit depuis sa racine (ex. « scripts »), ou « . » pour le projet lui-même.');
     }
-    return { nom, commande, description: texte(a.description), dossier };
+    return { genre: 'commande', nom, commande, description, dossier };
   };
+  // Une action change de genre (commande <-> fichier) : les champs de l'autre genre partent.
   const ecrireChamps = (cible, c) => {
     cible.nom = c.nom;
-    cible.commande = c.commande;
     if (c.description) cible.description = c.description;
     else delete cible.description;
+    if (c.genre === 'fichier') {
+      for (const cle of ['commande', 'dossier', 'parametres', 'ouvrir_dossier_apres']) delete cible[cle];
+      cible.fichier = c.fichier;
+      if (c.ouvrirDans) cible.ouvrir_dans = c.ouvrirDans;
+      else delete cible.ouvrir_dans;
+      return cible;
+    }
+    delete cible.fichier;
+    delete cible.ouvrir_dans;
+    cible.commande = c.commande;
     if (c.dossier !== '.') cible.dossier = c.dossier;
     else delete cible.dossier;
     return cible;
   };
 
   if (type === 'ajouter') {
-    liste.push(ecrireChamps({}, champs()));
+    liste.push(ecrireChamps({}, await champs()));
   } else if (type === 'modifier') {
     const ancien = nomDe(index);
-    const c = champs();
+    const c = await champs();
     ecrireChamps(liste[positions[index]], c);
     // L'action par défaut suit le changement de nom.
     if (brut.action_par_defaut === `action:${ancien}`) brut.action_par_defaut = `action:${c.nom}`;

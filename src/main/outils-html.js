@@ -145,8 +145,10 @@ async function preparer(projetId, outilLie) {
   let entree;
   let nom;
   if (outilLie) {
-    const lie = fiche.outils_lies.find((o) => o.point_entree === outilLie);
-    if (!lie) throw new Error('Cet outil lié n\'est plus déclaré dans projet.json.');
+    // Outil lié, ou page HTML ouverte par une action « fichier » (même stockage d'une fois à l'autre).
+    const lie = fiche.outils_lies.find((o) => o.point_entree === outilLie)
+      || fiche.actions.filter((a) => a.genre === 'fichier' && a.fichier === outilLie).map((a) => ({ point_entree: a.fichier, nom: a.nom }))[0];
+    if (!lie) throw new Error('Cette page n\'est plus déclarée dans projet.json (outil lié ou action).');
     entree = lie.point_entree;
     nom = lie.nom;
   } else {

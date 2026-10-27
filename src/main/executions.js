@@ -261,6 +261,7 @@ async function lancer(contenu, id, projetId, indexAction, valeurs = {}) {
   if (projet.erreur) throw new Error('La fiche projet.json de ce projet est illisible : corrige-la d\'abord.');
   const action = projet.fiche.actions[indexAction];
   if (!action) throw new Error('Cette action n\'existe plus dans projet.json.');
+  if (action.genre === 'fichier') throw new Error('Cette action ouvre un fichier : elle ne lance pas de commande.');
 
   const dossierProjet = path.join(chemins.projets(), projetId);
   const dossier = path.resolve(dossierProjet, action.dossier || '.');

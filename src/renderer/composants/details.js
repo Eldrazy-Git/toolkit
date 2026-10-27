@@ -134,7 +134,7 @@ function listeActions(projet) {
   const bloque = Boolean(projet.erreur);
   return [
     f.actions.length === 0
-      ? el('p', { classe: 'details-aide' }, 'Aucune action. Une action est un bouton qui lance une commande (script Python, Node…) dans le dossier du projet.')
+      ? el('p', { classe: 'details-aide' }, 'Aucune action. Une action est un bouton qui ouvre un fichier du projet (page HTML, texte…) ou lance une commande (script Python, Node…).')
       : el('div', { classe: 'liste-actions' }, f.actions.map((a, index) => {
         const parDefaut = f.action_par_defaut === `action:${a.nom}`;
         const menu = el('button', {
@@ -147,9 +147,9 @@ function listeActions(projet) {
           el('button', {
             classe: 'bouton',
             disabled: bloque,
-            title: [a.description, a.commande, parDefaut ? '(action par défaut)' : ''].filter(Boolean).join('\n'),
+            title: [a.description, a.genre === 'fichier' ? `Ouvre ${a.fichier}` : a.commande, parDefaut ? '(action par défaut)' : ''].filter(Boolean).join('\n'),
             onClick: () => actions.lancerAction(projet, index),
-          }, icone('lecture'), a.nom, parDefaut ? el('span', { classe: 'marque-defaut' }, 'par défaut') : null),
+          }, icone(a.genre === 'fichier' ? 'note' : 'lecture'), a.nom, parDefaut ? el('span', { classe: 'marque-defaut' }, 'par défaut') : null),
           menu);
       })),
     bloque ? null : el('div', { classe: 'details-boutons' },

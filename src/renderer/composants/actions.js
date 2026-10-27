@@ -313,12 +313,12 @@ export function choixActionsParDefaut(projet) {
     : null;
   const automatique = outil || editeur;
   return [
-    { ...automatique, valeur: '', libelle: `Automatique (${automatique.libelle.toLowerCase()})`, nomBouton: outil ? 'Ouvrir' : editeur.libelle },
+    { ...automatique, valeur: '', libelle: `Automatique (${automatique.libelle[0].toLowerCase()}${automatique.libelle.slice(1)})`, nomBouton: outil ? 'Ouvrir' : editeur.libelle },
     outil,
     editeur,
     { valeur: 'code', libelle: 'Ouvrir le code dans Toolkit', icone: 'code', lancer: () => ouvrirCode(cible, f.nom) },
     { valeur: 'claude', libelle: 'Modifier avec Claude', icone: 'claude', lancer: () => modifierAvecClaude(projet) },
-    ...f.actions.map((a, index) => ({ valeur: `action:${a.nom}`, libelle: `Action « ${a.nom} »`, nomBouton: a.nom, icone: 'lecture', lancer: () => lancerAction(projet, index) })),
+    ...f.actions.map((a, index) => ({ valeur: `action:${a.nom}`, libelle: `Action « ${a.nom} »`, nomBouton: a.nom, icone: a.genre === 'fichier' ? 'note' : 'lecture', lancer: () => lancerAction(projet, index) })),
     ...f.outils_lies.map((o) => ({ valeur: `outil:${o.point_entree}`, libelle: `Outil lié « ${o.nom} »`, nomBouton: o.nom, icone: 'outil', lancer: () => ouvrirOutil(projet.id, o.point_entree) })),
   ].filter(Boolean);
 }
@@ -335,9 +335,30 @@ export async function changerActionParDefaut(projet, valeur) {
 
 // --- Actions du projet (boutons « Actions » des détails) ------------------------------------
 
-async function demanderAction(projet, action = null) {
-  return formulaire({
-    titre: action ? `Modifier l'action « ${action.nom} »` : 'Nouvelle action',
+// genre : 'commande' (lancer une commande) ou 'fichier' (ouvrir un fichier du projet).
+async function demanderAction(projet, action = null, genre = action?.genre || 'commande') {
+  const titre = action ? `Modifier l'action « ${action.nom} »` : 'Nouvelle action';
+  if (genre === 'fichier') {
+    const valeurs = await formulaire({
+      titre,
+      message: 'Le bouton ouvrira ce fichier du projet : une page HTML comme un outil, un texte ou du code dans l\'éditeur de Toolkit, le reste avec le programme habituel de Windows.',
+      champs: [
+        { id: 'fichier', libelle: 'Fichier à ouvrir', type: 'fichier', obligatoire: true, valeur: action?.fichier || '', choisir: () => api.projets.choisirFichier(projet.id) },
+        { id: 'ouvrir_dans', libelle: 'Ouvrir dans', type: 'choix', valeur: action?.ouvrir_dans || '', options: [
+          { valeur: '', libelle: 'Automatique (selon le type de fichier)' },
+          { valeur: 'toolkit', libelle: 'Toolkit (outil HTML ou éditeur de code)' },
+          { valeur: 'windows', libelle: 'Le programme de Windows pour ce type de fichier' },
+        ] },
+        { id: 'nom', libelle: 'Nom du bouton', obligatoire: false, valeur: action?.nom || '', exemple: 'Vide = le nom du fichier' },
+        { id: 'description', libelle: 'Description (au survol du bouton)', obligatoire: false, valeur: action?.description || '' },
+      ],
+      bouton: action ? 'Enregistrer' : 'Ajouter',
+    });
+    if (!valeurs) return null;
+    return { ...valeurs, genre, nom: valeurs.nom || valeurs.fichier.split('/').pop() };
+  }
+  const valeurs = await formulaire({
+    titre,
     message: 'Une action est un bouton qui lance une commande dans le dossier du projet (ex. « python script.py », « node index.js », « npm start »).',
     champs: [
       { id: 'nom', libelle: 'Nom du bouton', obligatoire: true, valeur: action?.nom || '', exemple: 'Lancer le script' },
@@ -349,6 +370,26 @@ async function demanderAction(projet, action = null) {
     ],
     bouton: action ? 'Enregistrer' : 'Ajouter',
   });
+  return valeurs && { ...valeurs, genre };
+}
+
+// Extensions ouvertes dans l'éditeur de Toolkit en mode automatique (texte, code, images).
+const EXTENSIONS_TEXTE = new Set(['txt', 'md', 'markdown', 'json', 'js', 'mjs', 'cjs', 'ts', 'py', 'css', 'csv', 'xml', 'svg', 'yml', 'yaml',
+  'toml', 'ini', 'cfg', 'log', 'java', 'kt', 'gradle', 'properties', 'bat', 'cmd', 'ps1', 'sh', 'c', 'h', 'cpp', 'cs', 'lua', 'sql',
+  'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'ico']);
+
+// Action « fichier » : page HTML = outil dans un onglet ; texte / code = onglet « Code » ;
+// le reste (PDF, Word…) = programme de Windows.
+function ouvrirFichierAction(projet, index) {
+  const action = projet.fiche.actions[index];
+  const extension = (action.fichier.split('.').pop() || '').toLowerCase();
+  const html = extension === 'html' || extension === 'htm';
+  const dansToolkit = action.ouvrir_dans ? action.ouvrir_dans === 'toolkit' : html || EXTENSIONS_TEXTE.has(extension);
+  if (!dansToolkit) {
+    return essayer(() => api.projets.ouvrirFichier(projet.id, index));
+  }
+  if (html) return ouvrirOutil(projet.id, action.fichier);
+  return ouvrirCode({ type: 'projet', id: projet.id }, projet.fiche.nom, action.fichier);
 }
 
 // Les consoles ouvertes désignent leur action par sa position : on la recale après un
@@ -363,7 +404,16 @@ function recalerConsoles(projetId, nouvelIndex) {
 
 export async function ajouterAction(projet) {
   if (projet.erreur) return;
-  const valeurs = await demanderAction(projet);
+  const genre = await choisir({
+    titre: 'Nouvelle action',
+    message: 'Que doit faire ce bouton ?',
+    boutons: [
+      { libelle: 'Ouvrir un fichier', valeur: 'fichier' },
+      { libelle: 'Lancer une commande', valeur: 'commande', style: 'principal' },
+    ],
+  });
+  if (!genre) return;
+  const valeurs = await demanderAction(projet, null, genre);
   if (!valeurs) return;
   const modifie = await essayer(() => api.projets.modifierActions(projet.id, { type: 'ajouter', action: valeurs }));
   if (modifie) {
@@ -945,6 +995,10 @@ function lireParametresPrecedents(cle) {
 export async function lancerAction(projet, index) {
   const action = projet.fiche.actions[index];
   if (!action) return;
+  if (action.genre === 'fichier') {
+    ouvrirFichierAction(projet, index);
+    return;
+  }
 
   let valeurs = {};
   if (action.parametres.length > 0) {

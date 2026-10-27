@@ -103,7 +103,7 @@ export async function informer({ titre, message, bouton = 'Compris' }) {
   }));
 }
 
-// Formulaire. champs : [{ id, libelle, type, valeur?, options?, suggestions?, extensions?, exemple?, aide?, obligatoire?, auChangement? }]
+// Formulaire. champs : [{ id, libelle, type, valeur?, options?, suggestions?, extensions?, exemple?, aide?, obligatoire?, auChangement?, choisir? }]
 // Types : 'texte' | 'zone' (texte sur plusieurs lignes) | 'choix' (options : [{ valeur, libelle }])
 //       | 'case' (case à cocher) | 'fichier' | 'fichiers' | 'dossier' (bouton « Parcourir… »).
 // Renvoie { id: valeur } ou null si annulé (« fichiers » : liste de chemins ; « case » : true/false).
@@ -135,7 +135,9 @@ export function formulaire({ titre, message, champs, bouton = 'Valider' }) {
         };
         const parcourir = async () => {
           try {
-            const choix = await window.toolkit.dialogues.choisirChemin({ type: c.type, titre: c.libelle, extensions: c.extensions || [] });
+            // c.choisir() : choix personnalisé (ex. un fichier DANS le projet, en chemin relatif).
+            const choix = c.choisir ? await c.choisir()
+              : await window.toolkit.dialogues.choisirChemin({ type: c.type, titre: c.libelle, extensions: c.extensions || [] });
             if (choix) {
               valeur = choix;
               afficher();

@@ -173,7 +173,11 @@ liste que `projets.js > actionParDefautExiste`). Actions modifiables depuis les 
 (« Ajouter une action », menu `…`) : `projets:modifier-actions` = `projets.modifierActions()`
 (ajouter / modifier / supprimer / déplacer ; index = position dans `fiche.actions`, les actions
 invalides du JSON sont gardées ; seuls nom, commande, description, dossier sont écrits ;
-l'action par défaut suit un renommage). Les consoles ouvertes sont recalées
+l'action par défaut suit un renommage). Action « fichier » (`fichier` sans `commande`,
+`genre: 'fichier'` dans la fiche normalisée) : `actions.ouvrirFichierAction` (HTML -> outil,
+`outils:preparer` l'accepte comme un outil lié ; texte/code/images -> onglet Code ; sinon
+`projets:ouvrir-fichier` = `shell.openPath`) ; fichier choisi par `projets:choisir-fichier`
+(chemin relatif, refusé hors du projet). Les consoles ouvertes sont recalées
 (`recalerConsoles`, elles désignent leur action par sa position).
 
 Suppression d'un projet (`actions.supprimerProjet`) : refusée si un onglet du projet tourne

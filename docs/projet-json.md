@@ -88,11 +88,20 @@ monter, descendre, supprimer). Le formulaire ne gère que `nom`, `commande`, `de
 et `dossier` ; les autres champs (`parametres`, `ouvrir_dossier_apres`) sont conservés et
 s'écrivent dans projet.json.
 
+Une action fait l'une de ces deux choses :
+- **lancer une commande** (`commande`, voir ci-dessous) ;
+- **ouvrir un fichier du projet** (`fichier`, sans `commande`) : `{ "nom": "Aide", "fichier": "pages/aide.html" }`.
+  Champ facultatif `ouvrir_dans` : `toolkit` (page HTML = outil dans un onglet, avec ses
+  données gardées comme un outil lié ; autre fichier = onglet « Code ») ou `windows` (le
+  programme habituel de Windows pour ce type de fichier). Absent = automatique : HTML, texte,
+  code et images dans Toolkit, le reste (PDF, Word…) avec Windows. Le fichier doit être dans
+  le dossier du projet.
+
 | Champ | Rôle |
 |---|---|
 | `nom` | Texte du bouton (obligatoire). |
 | `description` | Aide affichée au survol. |
-| `commande` | Commande à lancer (obligatoire). `{id}` est remplacé par la valeur du paramètre `id`, automatiquement entre guillemets ; pour `fichiers`, chaque fichier devient un argument séparé. |
+| `commande` | Commande à lancer (obligatoire, sauf pour une action `fichier`). `{id}` est remplacé par la valeur du paramètre `id`, automatiquement entre guillemets ; pour `fichiers`, chaque fichier devient un argument séparé. |
 | `dossier` | Dossier où lancer la commande, relatif au projet. Défaut : `.` (le projet). |
 | `parametres` | Champs du petit formulaire affiché avant de lancer l'action. |
 | `ouvrir_dossier_apres` | Dossier à proposer d'ouvrir à la fin (peut contenir `{id}`). |
