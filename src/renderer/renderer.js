@@ -15,6 +15,7 @@ import * as raccourcis from './composants/raccourcis.js';
 import * as commandes from './composants/commandes.js';
 import * as session from './composants/session.js';
 import * as preferencesUtilisateur from './composants/preferences.js';
+import * as logiciels from './composants/logiciels.js';
 
 let nonEnregistre = false;
 etat.abonner(() => {
@@ -107,6 +108,7 @@ async function demarrer() {
   }
   window.toolkit.projets.surChangement(actions.chargerProjets);
   await actions.chargerProjets();
+  logiciels.charger(); // icônes lues par Windows : sans attendre
   await actions.chargerEditeurs();
   await session.restaurer(sessionSauvee);
   raccourcis.verifierConflits(notifier);

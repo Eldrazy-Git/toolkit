@@ -59,6 +59,17 @@ contextBridge.exposeInMainWorld('toolkit', {
     ouvrirProjet: (projetId, editeurId) => appeler('editeurs:ouvrir-projet', projetId, editeurId),
     ouvrirToolkit: (editeurId) => appeler('editeurs:ouvrir-toolkit', editeurId),
   },
+  // Barre de raccourcis vers des logiciels du PC (au-dessus des onglets).
+  logiciels: {
+    lister: () => appeler('logiciels:lister'), // [{ id, nom, chemin, icone, existe }]
+    ajouter: () => appeler('logiciels:ajouter'), // { id, nom } ou null si annulé
+    changer: (id) => appeler('logiciels:changer', id), // true, ou false si annulé
+    renommer: (id, nom) => appeler('logiciels:renommer', id, nom),
+    supprimer: (id) => appeler('logiciels:supprimer', id),
+    deplacer: (id, index) => appeler('logiciels:deplacer', id, index),
+    lancer: (id) => appeler('logiciels:lancer', id),
+    afficher: (id) => appeler('logiciels:afficher', id),
+  },
   // Terminal intégré. cible : { type: 'projet', id } | { type: 'toolkit' } | { type: 'racine' }
   terminal: {
     // options : { mode: 'claude' | 'powershell', cible, demande?, continuer?, reprendre?, modele?, effort?, colonnes, lignes }

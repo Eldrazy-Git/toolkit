@@ -109,6 +109,7 @@ app/
     │   ├── contexte-claude.js   catalogue projets/CLAUDE.md + sections « Projets liés » + --add-dir
     │   ├── sessions-claude.js   conversations Claude Code d'un dossier (~/.claude/projects, lecture seule)
     │   ├── editeurs.js          détection des éditeurs + « Ouvrir avec… »
+    │   ├── logiciels.js         barre de raccourcis vers des logiciels du PC (reglages.logiciels)
     │   ├── explorateur.js       onglet « Code » : lister, lire, écrire, créer, renommer, Corbeille, surveiller
     │   ├── lsp-python.js        Pyright (aide Python) : processus, messages LSP, traduction des adresses
     │   ├── outils-html.js       protocole toolkit-outil://, partitions, sécurité des <webview>
@@ -133,6 +134,7 @@ app/
             ├── dialogue.js      demanderTexte(), confirmer(), choisir(), formulaire(), fenetre(), cocher()
             ├── notifications.js notifier(message, type)
             ├── onglets.js       barre d'onglets + panneaux des outils (<webview>)
+            ├── logiciels.js     barre de raccourcis vers des logiciels (au-dessus des onglets)
             ├── apercu-appareil.js aperçu ordinateur / smartphone / tablette d'un outil
             ├── simulation-tactile.js bouton « Simuler le tactile » (outil + aperçu HTML du Code)
             ├── reglages.js      onglet « Réglages »
@@ -476,6 +478,14 @@ emplacements habituels), jamais enregistrée : elle se refait d'elle-même sur u
 « Ouvrir » utilise `ouvrir_avec` de la fiche, sinon Android Studio pour un projet
 `android` et VS Code pour les autres. Tout programme externe se lance via
 `processus.js` (`lancerDetache`, `environnementPropre`).
+
+Raccourcis vers des logiciels (barre au-dessus des onglets) : `src/main/logiciels.js` +
+`ipc/logiciels.js` + `composants/logiciels.js`. `reglages.logiciels = [{ id, nom, chemin }]`
+(ordre d'affichage) ; chemin absolu hors de Toolkit (même exception que les éditeurs), relatif
+à la racine s'il est dedans. L'interface ne connaît que les ids. « + » = choix du fichier
+(.exe, .lnk, .url, .bat…) puis du nom ; clic = lancer (.exe via `lancerDetache`, le reste via
+`shell.openPath`) ; clic droit = renommer, autre emplacement, Explorateur, déplacer, retirer ;
+glisser-déposer = ordre. Icône = `app.getFileIcon` (cible du .lnk), gardée en mémoire.
 
 ## Comment ajouter une fonctionnalité
 

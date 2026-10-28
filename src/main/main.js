@@ -212,6 +212,7 @@ async function demarrer() {
   require('./ipc/git').enregistrer();
   require('./ipc/recherche').enregistrer();
   require('./ipc/code').enregistrer();
+  require('./ipc/logiciels').enregistrer();
   ipcMain.on('application:non-enregistre', (_e, valeur) => { travailNonEnregistre = Boolean(valeur); });
 
   zoneNotification.creer({ afficher: afficherFenetre, quitter });
