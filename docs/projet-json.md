@@ -62,6 +62,7 @@ est conservé tel quel par Toolkit (on peut donc y ranger ses propres notes).
 | `actions` | liste | `[]` | Boutons qui lancent une commande (voir ci-dessous). |
 | `outils_lies` | liste | `[]` | Pages HTML situées dans ce projet, à ouvrir comme des outils (voir ci-dessous). |
 | `liens` | liste | `[]` | Liens vers d'autres projets : `[{ "projet": "<dossier de l'autre projet>", "description": "en quoi ils sont liés" }]`. Un lien vaut dans les deux sens ; Toolkit en informe Claude (CLAUDE.md des projets concernés, liens indirects compris). Se gère dans le panneau du projet > « Projets liés ». |
+| `permissions` | liste de textes | `[]` | Accès particuliers d'un outil HTML. `"claude"` : l'outil peut demander du texte à Claude avec le compte Claude Code du PC (voir « Claude dans un outil HTML » ci-dessous). |
 | `git.remote` | URL | aucune | Adresse du repo GitHub du projet (indicatif). |
 | `git.partage` | `{ remote, dossier }` | aucun | Projet envoyé dans un dépôt GitHub **partagé** (un dossier par projet) au lieu d'avoir son propre dépôt : `remote` = adresse du dépôt, `dossier` = nom de son dossier dedans. Se règle dans la section Git (menu ⋯ > « Envoyer dans un dépôt GitHub partagé… »). |
 
@@ -185,6 +186,24 @@ IndexedDB) d'une ouverture à l'autre. Elles sont rattachées au **nom du dossie
 projet (et, pour un outil lié, à son `point_entree`). Avant de renommer le dossier d'un
 projet ou de déplacer un outil lié, utilise **Exporter les données**, puis **Importer
 les données** une fois le changement fait.
+
+## Claude dans un outil HTML
+
+Avec `"permissions": ["claude"]`, une page HTML du projet peut interroger Claude avec le
+compte Claude Code connecté sur le PC (aucune clé API). La première fois, Toolkit demande
+l'accord de l'utilisateur (retenu dans `donnees/reglages.json > outilsClaude`). Claude n'a
+aucun outil (ni fichiers, ni commandes) : il répond seulement du texte. Adresses relatives
+à la page (même origine) :
+
+| Adresse | Corps (JSON) | Réponse |
+|---|---|---|
+| `GET /__toolkit__/claude/etat` | — | `{ installe, connecte, email, abonnement, autorise, occupe }` |
+| `POST /__toolkit__/claude/connexion` | — | ouvre l'onglet de connexion à Claude de Toolkit |
+| `POST /__toolkit__/claude/generer` | `{ id, demande, modele? }` | `{ texte }` |
+| `POST /__toolkit__/claude/annuler` | `{ id }` | arrête la génération `id` |
+
+En cas d'erreur : statut HTTP ≥ 400 et `{ code, message }` (`non_autorise`, `refuse`,
+`non_installe`, `non_connecte`, `occupe`, `annule`, `delai`, `echec`).
 
 ## En cas d'erreur
 

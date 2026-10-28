@@ -73,6 +73,8 @@ window.addEventListener('focus', () => {
 
 // Raccourci pressé à l'intérieur d'un outil (les touches n'arrivent pas jusqu'ici).
 window.toolkit.outils.surRaccourci((id) => commandes.executer(id));
+// Un outil HTML demande à se connecter à Claude : onglet de connexion habituel.
+window.toolkit.outils.surConnexionClaude(() => actions.connecterCompte('claude'));
 
 // Dernier filet de sécurité : une erreur imprévue s'affiche au lieu de passer inaperçue.
 // (Le détail technique part aussi dans donnees/journal.log via la console.)

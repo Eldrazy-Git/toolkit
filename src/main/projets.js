@@ -22,6 +22,8 @@ const ACTIONS_PAR_DEFAUT = ['outil', 'editeur', 'code', 'claude'];
 // Action « fichier » : où l'ouvrir (absent = automatique : page HTML et texte dans Toolkit,
 // le reste avec le programme de Windows).
 const OUVRIR_DANS = ['toolkit', 'windows'];
+// Accès particuliers qu'un outil HTML peut demander (« claude » : voir pont-claude.js).
+const PERMISSIONS = ['claude'];
 
 // --- Identifiants -------------------------------------------------------------
 
@@ -86,6 +88,7 @@ function normaliserFiche(brut, id) {
         : null,
     },
     liens: normaliserLiens(b.liens),
+    permissions: listeDeTextes(b.permissions).filter((p) => PERMISSIONS.includes(p)),
     action_par_defaut: null,
   };
 

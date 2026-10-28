@@ -113,6 +113,7 @@ app/
     │   ├── explorateur.js       onglet « Code » : lister, lire, écrire, créer, renommer, Corbeille, surveiller
     │   ├── lsp-python.js        Pyright (aide Python) : processus, messages LSP, traduction des adresses
     │   ├── outils-html.js       protocole toolkit-outil://, partitions, sécurité des <webview>
+    │   ├── pont-claude.js       Claude pour les outils HTML (« permissions »: ["claude"], « claude -p » sans outils)
     │   ├── outils-donnees.js    export / import localStorage + IndexedDB en JSON
     │   ├── remise-a-zero.js     « Repartir de zéro » : hors Git -> Corbeille, données des outils effacées
     │   ├── simulation-tactile.js la souris agit comme un doigt dans une page HTML (et seulement elle)
@@ -276,6 +277,14 @@ Voir `src/main/outils-html.js` (explications en tête du fichier) et
   les appuis (binding), touchers envoyés par `Input.dispatchTouchEvent` à la FENÊTRE aux
   coordonnées de la webview (envoyés à la page, le tap ne cliquait pas). Réappliqué à chaque
   `dom-ready`, retenu par page (`toolkit:tactile:<id>` / `code:<cle>`).
+
+- Pont Claude (`src/main/pont-claude.js`, explications en tête) : un outil dont projet.json
+  contient `"permissions": ["claude"]` appelle `/__toolkit__/claude/*` sur sa propre origine
+  (refusé si la partition de la requête n'est pas celle de l'hôte). Accord demandé une fois
+  (`reglages.outilsClaude`), puis `claude -p --tools "" --strict-mcp-config
+  --no-session-persistence` dans le dossier temporaire. « connexion » envoie
+  `outils:connexion-claude` à l'interface (`actions.connecterCompte('claude')`). Format
+  documenté dans `docs/projet-json.md`.
 
 Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
 
