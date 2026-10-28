@@ -23,6 +23,7 @@ const { ecrireJson, existe, lireJson } = require('./fichiers');
 const { genererClaudeMd, sectionPourClaudeMdExistant } = require('./claude-md');
 const git = require('./git');
 const github = require('./github');
+const depotPartage = require('./depot-partage');
 const journal = require('./journal');
 
 // Dossiers régénérables, toujours proposés à l'exclusion.
@@ -812,7 +813,8 @@ async function rangerClone(temporaire, destination, surProgression) {
 
 // choix : { nom, idProjet, type, categorie, description, point_entree, ouvrir_avec, technologies, lancer,
 //           actions, outilsLies: [{ nom, point_entree }], exclus: [chemins], garderOriginal,
-//           initialiserGit, commiterFiche, creerGithub }
+//           initialiserGit, commiterFiche, creerGithub,
+//           partage: { choix: { remote } | { nouveau: nom }, dossier } (dépôt GitHub partagé) }
 // Renvoie { id, etapes: [textes], avertissements: [textes] }.
 async function executer(idAnalyse, choix, surProgression) {
   const analyse = analyses.get(idAnalyse);
@@ -947,8 +949,17 @@ async function executer(idAnalyse, choix, surProgression) {
     }
   }
 
-  // 6. Dépôt GitHub privé (facultatif)
-  if (choix.creerGithub && estDepot && !(await git.urlRemote(destination))) {
+  // 6. GitHub (facultatif) : dépôt privé à lui, ou dossier d'un dépôt partagé
+  if (choix.partage && estDepot && !(await git.urlRemote(destination))) {
+    surProgression('Envoi dans le dépôt GitHub partagé…');
+    try {
+      const nom = (await lireJson(path.join(destination, 'projet.json')).catch(() => null))?.nom || choix.nom || id;
+      const { url } = await depotPartage.rejoindre(destination, choix.partage.choix, choix.partage.dossier, nom);
+      noter(`Envoyé dans le dépôt GitHub partagé${url ? ` ${url}` : ''} (dossier « ${choix.partage.dossier} »).`);
+    } catch (erreur) {
+      avertissements.push(`GitHub : ${erreur.message} Tu pourras réessayer depuis l'onglet « Git et GitHub ».`);
+    }
+  } else if (choix.creerGithub && estDepot && !(await git.urlRemote(destination))) {
     surProgression('Création du dépôt GitHub privé…');
     try {
       const url = await github.creerDepotPrive(destination, id, choix.description);

@@ -20,7 +20,8 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const chemins = require('./chemins');
 const git = require('./git');
-const { existe } = require('./fichiers');
+const github = require('./github');
+const { existe, lireJson, ecrireJson } = require('./fichiers');
 
 const REF_SYNCHRO = 'refs/toolkit/partage';
 const VIDE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'; // arbre vide de Git
@@ -231,4 +232,44 @@ async function oublier(dossierProjet) {
   await git.git(dossierProjet, ['update-ref', '-d', REF_SYNCHRO]);
 }
 
-module.exports = { etat, pousser, recuperer, actualiser, dossiersDistants, oublier, verifierDossier, REF_SYNCHRO };
+// Note (ou retire, partage = null) git.partage dans projet.json, puis commit de la fiche.
+async function ecrireDansFiche(dossierProjet, partage, message) {
+  const chemin = path.join(dossierProjet, 'projet.json');
+  const fiche = await lireJson(chemin);
+  const gitFiche = { ...(fiche.git || {}) };
+  if (partage) gitFiche.partage = partage;
+  else delete gitFiche.partage;
+  if (Object.keys(gitFiche).length) fiche.git = gitFiche;
+  else delete fiche.git;
+  await ecrireJson(chemin, fiche);
+  await git.commiterFichiers(dossierProjet, ['projet.json'], message);
+}
+
+// Range un projet dans un dépôt partagé et l'envoie aussitôt (panneau Git et assistant d'import).
+// choix : { remote } (dépôt partagé existant) ou { nouveau: nom } (dépôt privé créé) ;
+// dossierDistant : nom du dossier du projet dans le dépôt. -> { envoyes, url }
+async function rejoindre(dossierProjet, choix, dossierDistant, nomProjet) {
+  const etatLocal = await git.etatDepot(dossierProjet);
+  if (!etatLocal.estDepot) throw new Error('Active d\'abord l\'historique Git.');
+  if (etatLocal.remote) throw new Error('Ce projet a déjà son propre dépôt GitHub.');
+  if (etatLocal.secretsSuivis.length) {
+    throw new Error(`Des fichiers sensibles sont enregistrés dans Git (${etatLocal.secretsSuivis.join(', ')}). Retire-les du suivi avant d'envoyer le projet sur GitHub.`);
+  }
+  const nomDossier = verifierDossier(dossierDistant);
+  let remote = String(choix?.remote || '').trim();
+  if (!remote) {
+    const nom = String(choix?.nouveau || '').trim();
+    if (!/^[A-Za-z0-9._-]+$/.test(nom)) throw new Error('Nom de dépôt invalide : lettres, chiffres, tirets, points et soulignés seulement (ex. pages-html).');
+    remote = await github.creerDepotPriveVide(nom, 'Projets simples (un dossier par projet), gérés avec Toolkit.');
+  } else if ((await dossiersDistants(remote)).includes(nomDossier)) {
+    throw new Error(`Le dépôt partagé contient déjà un dossier « ${nomDossier} » : choisis un autre nom de dossier.`);
+  }
+  const partage = { remote, dossier: nomDossier };
+  await ecrireDansFiche(dossierProjet, partage, 'Envoi sur GitHub dans un dépôt partagé');
+  const resultat = await pousser(dossierProjet, partage, nomProjet);
+  return { ...resultat, url: git.urlWeb(remote) };
+}
+
+module.exports = {
+  etat, pousser, recuperer, actualiser, dossiersDistants, oublier, verifierDossier, ecrireDansFiche, rejoindre, REF_SYNCHRO,
+};

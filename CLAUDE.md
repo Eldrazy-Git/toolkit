@@ -350,7 +350,9 @@ dans `docs/projet-json.md`. Points clés :
 - `executer()` : copie -> vérification (taille + SHA-1 jusqu'à 20 Mo) -> projet.json
   (jamais écrasé s'il existe) -> CLAUDE.md (section ajoutée s'il existe) -> .gitignore
   complété -> Git -> **Corbeille** (`shell.trashItem`, jamais de suppression définitive)
-  -> GitHub privé (facultatif, via `gh`). Échec de copie = copie supprimée, original intact.
+  -> GitHub (facultatif, via `gh`) : dépôt privé à lui, OU dossier d'un dépôt partagé
+  (`choix.partage`, même fonction que le panneau Git : `depot-partage.rejoindre()`).
+  Échec de copie = copie supprimée, original intact.
 - Fichier seul (page HTML autonome, script…) : `analyser()` reconnaît un fichier (mode
   `fichier`) ; seul ce fichier est analysé (racine = son dossier, voisins jamais lus sauf pour
   signaler ceux qu'une page HTML utilise), puis `executer()` crée un NOUVEAU dossier de projet

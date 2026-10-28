@@ -68,18 +68,6 @@ async function depotsPartages() {
   return [...adresses.values()];
 }
 
-async function ecrirePartageDansFiche(dossier, partage, message) {
-  const chemin = path.join(dossier, 'projet.json');
-  const fiche = await lireJson(chemin);
-  const gitFiche = { ...(fiche.git || {}) };
-  if (partage) gitFiche.partage = partage;
-  else delete gitFiche.partage;
-  if (Object.keys(gitFiche).length) fiche.git = gitFiche;
-  else delete fiche.git;
-  await ecrireJson(chemin, fiche);
-  await git.commiterFichiers(dossier, ['projet.json'], message);
-}
-
 // Après la création d'un dépôt GitHub, l'adresse est notée dans la fiche du projet.
 async function noterRemoteDansFiche(cible, dossier, url) {
   if (cible.type !== 'projet' || !url) return;
@@ -127,34 +115,16 @@ function enregistrer() {
   // dossier : nom du dossier du projet dans le dépôt. Envoie aussitôt le projet.
   gerer('git:rejoindre-partage', async (cible, choix, dossierDistant) => {
     if (cible.type !== 'projet') throw new Error('Seul un projet peut utiliser un dépôt partagé.');
-    const dossier = await dossierCible(cible);
-    const etat = await git.etatDepot(dossier);
-    if (!etat.estDepot) throw new Error('Active d\'abord l\'historique Git.');
-    if (etat.remote) throw new Error('Ce projet a déjà son propre dépôt GitHub.');
     if (await partageDe(cible)) throw new Error('Ce projet utilise déjà un dépôt partagé.');
-    if (etat.secretsSuivis.length) {
-      throw new Error(`Des fichiers sensibles sont enregistrés dans Git (${etat.secretsSuivis.join(', ')}). Retire-les du suivi avant d'envoyer le projet sur GitHub.`);
-    }
-    const nomDossier = depotPartage.verifierDossier(dossierDistant);
-    let remote = String(choix?.remote || '').trim();
-    if (!remote) {
-      const nom = String(choix?.nouveau || '').trim();
-      if (!/^[A-Za-z0-9._-]+$/.test(nom)) throw new Error('Nom de dépôt invalide : lettres, chiffres, tirets, points et soulignés seulement (ex. pages-html).');
-      remote = await github.creerDepotPriveVide(nom, 'Projets simples (un dossier par projet), gérés avec Toolkit.');
-    } else if ((await depotPartage.dossiersDistants(remote)).includes(nomDossier)) {
-      throw new Error(`Le dépôt partagé contient déjà un dossier « ${nomDossier} » : choisis un autre nom de dossier.`);
-    }
     const projet = await projets.chargerProjet(cible.id);
-    await ecrirePartageDansFiche(dossier, { remote, dossier: nomDossier }, 'Envoi sur GitHub dans un dépôt partagé');
-    const resultat = await depotPartage.pousser(dossier, { remote, dossier: nomDossier }, projet.fiche.nom);
-    return { ...resultat, url: git.urlWeb(remote) };
+    return depotPartage.rejoindre(await dossierCible(cible), choix, dossierDistant, projet.fiche.nom);
   });
 
   // Le projet n'est plus envoyé dans le dépôt partagé (son dossier y reste).
   gerer('git:quitter-partage', async (cible) => {
     const p = await partageDe(cible);
     if (!p) return;
-    await ecrirePartageDansFiche(p.dossier, null, 'Projet retiré du dépôt GitHub partagé');
+    await depotPartage.ecrireDansFiche(p.dossier, null,'Projet retiré du dépôt GitHub partagé');
     await depotPartage.oublier(p.dossier);
   });
 

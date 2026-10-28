@@ -9,6 +9,10 @@ import * as actions from './actions.js';
 
 export const ID_IMPORT = 'import';
 
+// Valeurs spéciales de la liste des dépôts partagés (même principe que actions-git.js).
+const NOUVEAU = '\u0000nouveau';
+const ADRESSE = '\u0000adresse';
+
 const api = window.toolkit.importation;
 
 const panneau = el('section', { id: 'import', classe: 'panneau panneau-reglages inactif' });
@@ -57,8 +61,11 @@ async function lancerAnalyse(fonction) {
   try {
     const rapport = await fonction();
     const p = rapport.proposition;
+    // Dépôts partagés déjà utilisés (pour les proposer) : sans eux, on peut toujours en créer un.
+    rapport.depotsPartages = await window.toolkit.git.depotsPartages().catch(() => []);
     aller('rapport', {
       rapport,
+      erreurGithub: null,
       choix: {
         nom: p.nom,
         idProjet: p.idProjet,
@@ -75,7 +82,10 @@ async function lancerAnalyse(fonction) {
         garderOriginal: false,
         initialiserGit: !rapport.git.estDepot,
         commiterFiche: true,
-        creerGithub: false,
+        github: 'aucun', // 'aucun' | 'prive' | 'partage'
+        partageDepot: rapport.depotsPartages[0]?.remote || NOUVEAU,
+        partageTexte: rapport.depotsPartages.length ? '' : 'pages-html',
+        partageDossier: p.idProjet,
       },
     });
   } catch (e) {
@@ -103,13 +113,38 @@ function reanalyser() {
   if (rapport.mode !== 'clone') lancerAnalyse(() => api.analyser(rapport.source));
 }
 
+// Choix du dépôt partagé -> { choix: { remote } | { nouveau }, dossier }, ou { erreur }.
+function choixPartage(c) {
+  const dossier = c.partageDossier.trim();
+  const texte = c.partageTexte.trim();
+  if (!dossier) return { erreur: 'Indique le nom du dossier de ce projet dans le dépôt partagé.' };
+  if (c.partageDepot === NOUVEAU) {
+    return texte ? { choix: { nouveau: texte }, dossier } : { erreur: 'Indique le nom du nouveau dépôt partagé (par exemple : pages-html).' };
+  }
+  if (c.partageDepot === ADRESSE) {
+    return /^(https:\/\/|git@)/i.test(texte) ? { choix: { remote: texte }, dossier }
+      : { erreur: 'Indique l\'adresse du dépôt partagé, par exemple https://github.com/moi/mes-pages' };
+  }
+  return { choix: { remote: c.partageDepot }, dossier };
+}
+
 async function importer() {
   const c = assistant.choix;
+  const partage = c.github === 'partage' ? choixPartage(c) : null;
+  if (partage?.erreur) {
+    assistant.erreurGithub = partage.erreur;
+    dessiner();
+    return;
+  }
+  const { github, partageDepot, partageTexte, partageDossier, ...reste } = c;
   const choix = {
-    ...c,
+    ...reste,
+    creerGithub: github === 'prive',
+    partage,
     actions: c.actions.filter((a) => a.garder).map(({ garder, ...a }) => a),
     outilsLies: c.outilsLies.filter((o) => o.garder).map(({ garder, ...o }) => o),
   };
+  assistant.erreurGithub = null;
   aller('execution', { progression: { texte: 'Démarrage…' } });
   try {
     const resultat = await api.executer(assistant.rapport.id, choix);
@@ -134,11 +169,17 @@ function champTexte(libelle, cle, { zone = false, aide, suggestions } = {}) {
     aide ? el('span', { classe: 'champ-aide' }, aide) : null);
 }
 
-function champChoix(libelle, cle, options) {
-  const select = el('select', { onChange: (e) => { assistant.choix[cle] = e.target.value; } },
-    options.map(([valeur, texte]) => el('option', { value: valeur }, texte)));
+function champChoix(libelle, cle, options, { aide, desactive, redessiner } = {}) {
+  const select = el('select', {
+    disabled: Boolean(desactive),
+    onChange: (e) => {
+      assistant.choix[cle] = e.target.value;
+      if (redessiner) dessiner();
+    },
+  }, options.map(([valeur, texte]) => el('option', { value: valeur }, texte)));
   select.value = assistant.choix[cle] || '';
-  return el('label', { classe: 'champ-formulaire' }, el('span', { classe: 'champ-libelle' }, libelle), select);
+  return el('label', { classe: 'champ-formulaire' }, el('span', { classe: 'champ-libelle' }, libelle), select,
+    aide ? el('span', { classe: 'champ-aide' }, aide) : null);
 }
 
 // objet[cle] est modifié par la case ; redessiner : true si d'autres éléments en dépendent.
@@ -237,7 +278,8 @@ function rendreRapport() {
         : rapport.git.secretsSuivis.length ? 'Impossible : des fichiers sensibles sont enregistrés dans Git (voir Points d\'attention).'
           : (!rapport.git.estDepot && !choix.initialiserGit) ? 'Il faut d\'abord activer l\'historique Git (case ci-dessus).'
             : null;
-  if (raisonPasGithub) choix.creerGithub = false;
+  if (raisonPasGithub) choix.github = 'aucun';
+  const nomDepot = (remote) => remote.replace(/\.git$/i, '').split('/').pop();
 
   return [
     el('p', { classe: 'source-import' }, icone({ clone: 'git', fichier: 'code' }[rapport.mode] || 'dossier'), el('code', {}, rapport.source)),
@@ -295,10 +337,33 @@ function rendreRapport() {
         rapport.git.estDepot
           ? caseACocher('Enregistrer projet.json et CLAUDE.md dans Git (commit local)', choix, 'commiterFiche')
           : caseACocher('Activer l\'historique Git (recommandé)', choix, 'initialiserGit', { aide: 'Permet de revenir en arrière si une modification se passe mal. Rien n\'est envoyé sur Internet.', redessiner: true }),
-        caseACocher('Créer un dépôt GitHub PRIVÉ et y envoyer le projet', choix, 'creerGithub', {
+        champChoix('Envoyer sur GitHub', 'github', [
+          ['aucun', 'Non, pas maintenant'],
+          ['prive', 'Dans un nouveau dépôt PRIVÉ, rien que pour ce projet'],
+          ['partage', 'Dans un dépôt PARTAGÉ (un dossier par projet)'],
+        ], {
           desactive: Boolean(raisonPasGithub),
+          redessiner: true,
           aide: raisonPasGithub || `Sur le compte ${gh.compte}. Un .gitignore protège les fichiers sensibles (clés, keystores, .env).`,
-        }))),
+        })),
+      choix.github === 'partage'
+        ? el('div', { classe: 'page-formulaire' },
+          el('p', { classe: 'details-aide' }, 'Pratique pour les petits projets (pages HTML…) : un seul dépôt GitHub PRIVÉ commun, '
+            + 'avec un dossier pour chacun. L\'historique et le retour arrière restent propres à chaque projet, sur ce PC.'),
+          champChoix('Dépôt partagé', 'partageDepot', [
+            ...rapport.depotsPartages.map((d) => [d.remote,
+              `${nomDepot(d.remote)} (${d.projets.length} projet(s) : ${d.projets.slice(0, 3).join(', ')}${d.projets.length > 3 ? '…' : ''})`]),
+            [NOUVEAU, 'Créer un nouveau dépôt privé…'],
+            [ADRESSE, 'Un dépôt GitHub qui existe déjà (adresse)…'],
+          ], { redessiner: true }),
+          choix.partageDepot === NOUVEAU
+            ? champTexte('Nom du nouveau dépôt', 'partageTexte', { aide: 'Par exemple : pages-html' })
+            : choix.partageDepot === ADRESSE
+              ? champTexte('Adresse du dépôt existant', 'partageTexte', { aide: 'Par exemple : https://github.com/moi/mes-pages' })
+              : null,
+          champTexte('Nom du dossier de ce projet dans le dépôt', 'partageDossier'))
+        : null,
+      assistant.erreurGithub ? el('div', { classe: 'alerte risque-bloquant' }, icone('erreur'), el('div', {}, assistant.erreurGithub)) : null),
 
     rapport.mode !== 'clone'
       ? section('L\'original',
