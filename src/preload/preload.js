@@ -31,6 +31,9 @@ contextBridge.exposeInMainWorld('toolkit', {
     choisirIcone: (id) => appeler('projets:choisir-icone', id), // projet mis à jour, ou null si annulé
     renommerDossier: (id, nouveau) => appeler('projets:renommer-dossier', id, nouveau), // projet sous son nouvel id
     supprimer: (id) => appeler('projets:supprimer', id), // dossier envoyé à la Corbeille
+    // « Repartir de zéro » : { elements: [{ chemin, ignore, dossier, taille }], donneesOutils, modifies }
+    analyserRemiseAZero: (id) => appeler('projets:analyser-remise-a-zero', id),
+    remettreAZero: (id, chemins, donneesOutils) => appeler('projets:remettre-a-zero', id, chemins, donneesOutils),
     surChangement: (rappel) => ecouter('projets:changes', rappel),
   },
   outils: {

@@ -2,7 +2,7 @@
 // processus principal via window.toolkit, et affiche les erreurs proprement.
 import * as etat from './etat.js';
 import { notifier } from './notifications.js';
-import { demanderTexte, confirmer, choisir, formulaire, fenetre } from './dialogue.js';
+import { demanderTexte, confirmer, choisir, formulaire, fenetre, cocher, informer } from './dialogue.js';
 import { el } from './dom.js';
 import * as actionsGit from './actions-git.js';
 import { ouvrirMenu } from './menu.js';
@@ -284,6 +284,7 @@ export function elementsMenuProjet(projet, position) {
     { libelle: 'Renommer le dossier…', icone: 'dossier', desactive: bloque, action: () => renommerDossier(projet) },
     ...elementsMenuIcone(projet).map((e) => ({ ...e, desactive: e.desactive || bloque })),
     'separateur',
+    { libelle: 'Repartir de zéro…', icone: 'redemarrer', desactive: bloque, action: () => repartirDeZero(projet) },
     { libelle: 'Supprimer le projet…', icone: 'effacer', action: () => supprimerProjet(projet) },
   ];
 }
@@ -666,6 +667,68 @@ export async function supprimerProjet(projet) {
   if (selection === projet.id) selectionner(null);
   await chargerProjets();
   notifier(`« ${projet.fiche.nom} » est dans la Corbeille de Windows.`, 'succes');
+}
+
+// --- Repartir de zéro -------------------------------------------------------------------------
+// Remet le projet dans l'état d'un clone neuf (ce qu'un nouvel utilisateur verra) : ce qui
+// n'est pas dans Git part à la Corbeille, les données des outils HTML sont effacées.
+
+function texteTaille(octets) {
+  if (octets >= 1024 * 1024 * 1024) return `${(octets / 1024 / 1024 / 1024).toFixed(1).replace('.', ',')} Go`;
+  if (octets >= 1024 * 1024) return `${Math.round(octets / 1024 / 1024)} Mo`;
+  return `${Math.max(1, Math.round(octets / 1024))} Ko`;
+}
+
+export async function repartirDeZero(projet) {
+  if (projet.erreur) return;
+  const onglets = ongletsDuProjet(projet);
+  if (onglets.some((o) => o.enCours)) {
+    notifier('Un script, un serveur, un terminal ou Claude tourne encore dans ce projet : arrête-le d\'abord (il utilise sûrement ces fichiers).', 'erreur');
+    return;
+  }
+  if (onglets.some((o) => o.nonEnregistre)) {
+    notifier('Des fichiers de ce projet ne sont pas enregistrés : enregistre-les ou ferme leurs onglets d\'abord.', 'erreur');
+    return;
+  }
+  const analyse = await essayer(() => api.projets.analyserRemiseAZero(projet.id));
+  if (!analyse) return;
+  if (!analyse.elements.length && !analyse.donneesOutils) {
+    await informer({
+      titre: 'Repartir de zéro',
+      message: `« ${projet.fiche.nom} » est déjà comme un clone neuf : aucun fichier en dehors de Git, aucune donnée mémorisée par ses outils.`,
+    });
+    return;
+  }
+
+  // Ignoré par Git = généré par le projet (coché) ; jamais enregistré = peut-être du travail (décoché).
+  const elements = analyse.elements.map((e) => ({
+    valeur: e.chemin,
+    coche: e.ignore,
+    libelle: `${e.chemin}${e.dossier ? '/' : ''} — ${texteTaille(e.taille)}${e.ignore ? '' : ' · hors Git, peut-être ton travail'}`,
+  }));
+  if (analyse.donneesOutils) {
+    elements.push({ valeur: ':donnees-outils', coche: true, libelle: 'Données des pages HTML (réglages, cache)' });
+  }
+  const choix = await cocher({
+    titre: `Repartir de zéro — ${projet.fiche.nom}`,
+    message: 'Pour voir le projet comme un nouvel utilisateur : ce qui est coché part à la Corbeille de Windows (tu peux l\'en restaurer), et sera recréé comme au premier lancement.'
+      + (analyse.modifies ? `\n\nLes fichiers enregistrés dans Git ne sont pas touchés (${analyse.modifies} modifié(s) depuis le dernier commit : pour les annuler, utilise l'Historique des versions).` : ''),
+    elements,
+    bouton: 'Envoyer à la Corbeille',
+  });
+  if (!choix || !choix.choisis.length) return;
+  const donneesOutils = choix.choisis.includes(':donnees-outils');
+  const cheminsChoisis = choix.choisis.filter((c) => c !== ':donnees-outils');
+
+  // Les outils ouverts sont fermés : ils libèrent leurs données et leurs fichiers.
+  const ids = new Set(onglets.filter((o) => o.genre === 'code' || (donneesOutils && o.genre === 'outil')).map((o) => o.id));
+  if (ids.size) {
+    const { ongletActif } = etat.obtenir();
+    etat.modifier({ onglets: etat.obtenir().onglets.filter((o) => !ids.has(o.id)), ongletActif: ids.has(ongletActif) ? 'bibliotheque' : ongletActif });
+    await new Promise((r) => setTimeout(r, onglets.some((o) => ids.has(o.id) && o.genre === 'code') ? 1500 : 300));
+  }
+  const resultat = await essayer(() => api.projets.remettreAZero(projet.id, cheminsChoisis, donneesOutils));
+  if (resultat) notifier(`« ${projet.fiche.nom} » est reparti de zéro.`, 'succes');
 }
 
 // --- Renommer le dossier d'un projet ----------------------------------------------------------

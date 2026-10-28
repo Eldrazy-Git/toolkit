@@ -113,6 +113,7 @@ app/
     │   ├── lsp-python.js        Pyright (aide Python) : processus, messages LSP, traduction des adresses
     │   ├── outils-html.js       protocole toolkit-outil://, partitions, sécurité des <webview>
     │   ├── outils-donnees.js    export / import localStorage + IndexedDB en JSON
+    │   ├── remise-a-zero.js     « Repartir de zéro » : hors Git -> Corbeille, données des outils effacées
     │   ├── simulation-tactile.js la souris agit comme un doigt dans une page HTML (et seulement elle)
     │   ├── zone-notification.js icône près de l'horloge
     │   ├── demarrage-windows.js démarrage avec Windows (réduit dans la zone de notification)
@@ -185,6 +186,14 @@ Suppression d'un projet (`actions.supprimerProjet`) : refusée si un onglet du p
 ou n'est pas enregistré ; confirmation en retapant le nom ; onglets du projet fermés (libère
 le dossier), puis `projets:supprimer` = `shell.trashItem` (Corbeille, jamais d'effacement
 définitif) ; épingles, groupes et récents nettoyés.
+
+Repartir de zéro (`actions.repartirDeZero`, menu clic droit) : voir le projet comme un
+nouvel utilisateur (clone neuf). `src/main/remise-a-zero.js` : `analyser()` ne modifie rien
+(`git status --ignored=matching` : ignorés = cochés, non suivis = décochés ; projet.json,
+CLAUDE.md et l'icône exclus ; Git obligatoire) ; `executer()` -> `shell.trashItem` (seulement
+des chemins redonnés par `analyser()`) + `clearStorageData()` des partitions des pages HTML du
+projet (`outils-html.calculerHote`). Fichiers suivis par Git jamais touchés. Refusé si un
+onglet du projet tourne ; onglets Code (et outils si données effacées) fermés avant.
 
 Renommer un projet (`actions.renommerProjet`, clic sur le nom dans les détails ou menu
 clic droit) : change seulement `nom` dans projet.json (`modifierFiche`). Le dossier (= id)

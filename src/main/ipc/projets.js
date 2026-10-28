@@ -10,6 +10,7 @@ const contexteClaude = require('../contexte-claude');
 const reglages = require('../reglages');
 const sessionsClaude = require('../sessions-claude');
 const journal = require('../journal');
+const remiseAZero = require('../remise-a-zero');
 
 function enregistrer() {
   gerer('projets:lister', () => projets.listerProjets());
@@ -52,6 +53,10 @@ function enregistrer() {
       throw new Error(`Windows n'a pas pu ouvrir « ${action.fichier} » (fichier introuvable, ou aucun programme pour ce type de fichier).`);
     }
   });
+  // « Repartir de zéro » : ce qui n'est pas dans Git -> Corbeille, données des outils effacées.
+  gerer('projets:analyser-remise-a-zero', (id) => remiseAZero.analyser(String(id || '')));
+  gerer('projets:remettre-a-zero', (id, cheminsChoisis, donneesOutils) =>
+    remiseAZero.executer(String(id || ''), Array.isArray(cheminsChoisis) ? cheminsChoisis.map(String) : [], Boolean(donneesOutils)));
   gerer('projets:renommer-categorie', (ancienne, nouvelle) => projets.renommerCategorie(ancienne, nouvelle));
   gerer('projets:renommer-tag', (ancien, nouveau) => projets.renommerTag(ancien, nouveau));
 

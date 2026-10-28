@@ -313,6 +313,7 @@ module.exports = {
   preparerApercu,
   definirDisposition,
   attacher,
+  calculerHote,
   contenuOutil,
   fenetreDe,
 };
