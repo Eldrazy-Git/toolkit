@@ -4,6 +4,7 @@
 import { el, ilYA } from './dom.js';
 import { icone } from './icones.js';
 import { ouvrirMenu } from './menu.js';
+import { notifier } from './notifications.js';
 import * as etat from './etat.js';
 import * as git from './actions-git.js';
 import { afficherModifications, afficherCommits } from './details-git.js';
@@ -109,11 +110,22 @@ function ligne(e) {
     el('div', { classe: 'ligne-git-boutons' }, boutonsGit(e)));
 }
 
+// Page « Repositories » du compte connecté (gh renvoie son identifiant : lettres, chiffres, tirets).
+function ouvrirMesDepots() {
+  const { github } = etat.obtenir();
+  if (!github?.compte) return;
+  window.toolkit.liens.ouvrirExterne(`https://github.com/${encodeURIComponent(github.compte)}?tab=repositories`)
+    .catch(() => notifier('Impossible d\'ouvrir le navigateur.', 'erreur'));
+}
+
 function enteteGithub() {
   const { github } = etat.obtenir();
   if (!github) return el('p', { classe: 'details-aide' }, 'Vérification de la connexion à GitHub…');
   if (github.connecte) {
-    return el('p', { classe: 'statut ok' }, icone('coche'), `Connecté à GitHub : ${github.compte}`);
+    return el('div', { classe: 'compte-github' },
+      el('p', { classe: 'statut ok' }, icone('coche'), `Connecté à GitHub : ${github.compte}`),
+      el('button', { classe: 'bouton petit', title: 'Ouvre la liste de tes dépôts sur github.com dans le navigateur', onClick: ouvrirMesDepots },
+        icone('dossier'), 'Mes dépôts sur GitHub'));
   }
   return el('div', { classe: 'alerte risque-attention' }, icone('attention'),
     el('div', {},

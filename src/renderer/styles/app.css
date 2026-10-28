@@ -991,6 +991,7 @@ button.lien-sous-groupe:hover { text-decoration: underline; }
 .page-git { max-width: 980px; }
 .entete-git { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .entete-git h1 { margin: 0; }
+.compte-github { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .legende-git { margin: 10px 0 16px; }
 .liste-git { display: flex; flex-direction: column; gap: 8px; }
 .ligne-git {
