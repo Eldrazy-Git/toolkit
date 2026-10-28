@@ -1,5 +1,5 @@
 // Onglet « Git et GitHub » : état de Toolkit et de chaque projet, Commit / Push / Pull,
-// « Tout envoyer », création de dépôts GitHub privés.
+// « Tout commit », « Tout envoyer », création de dépôts GitHub privés.
 // pastillesGit() et boutonsGit() servent aussi au panneau de détails.
 import { el, ilYA } from './dom.js';
 import { icone } from './icones.js';
@@ -139,12 +139,14 @@ export function rendre() {
   if (!gitOuvert) return;
   const depots = gitOrdre.map((c) => etats[c]).filter(Boolean);
   const nbAEnvoyer = depots.filter(git.peutEnvoyer).length;
+  const nbACommiter = depots.filter(git.peutCommiter).length;
   panneau.replaceChildren(el('div', { classe: 'page-reglages page-git' },
     el('div', { classe: 'entete-git' },
       el('h1', {}, 'Git et GitHub'),
       el('div', { classe: 'details-boutons' },
         el('button', { classe: 'bouton', disabled: gitChargement, onClick: git.chargerTout }, icone('redemarrer'), gitChargement ? 'Chargement…' : 'Actualiser'),
         el('button', { classe: 'bouton', disabled: gitVerification, title: 'Interroge GitHub pour savoir s\'il y a des changements à récupérer', onClick: git.verifierEnLigne }, icone('recherche'), gitVerification ? 'Vérification…' : 'Vérifier en ligne'),
+        el('button', { classe: 'bouton', disabled: nbACommiter === 0, title: 'Enregistrer une version de chaque projet modifié (sur ce PC)', onClick: git.toutCommiter }, icone('coche'), `Tout commit${nbACommiter ? ` (${nbACommiter})` : ''}`),
         el('button', { classe: 'bouton principal', disabled: nbAEnvoyer === 0, onClick: git.toutPousser }, icone('exporter'), `Tout envoyer${nbAEnvoyer ? ` (${nbAEnvoyer})` : ''}`))),
     enteteGithub(),
     el('p', { classe: 'details-aide legende-git' },

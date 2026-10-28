@@ -158,6 +158,51 @@ export async function verifierEnLigne() {
   }
 }
 
+// Peut-on faire un commit de ce dépôt (fichiers modifiés, aucune opération en cours) ?
+export function peutCommiter(e) {
+  return Boolean(e?.estDepot && e.nbModifications > 0 && !etat.obtenir().gitOccupe?.[cle(e.cible)]);
+}
+
+// Commit de chaque projet modifié, avec le message proposé d'après ses fichiers changés.
+export async function toutCommiter() {
+  const { git, gitOrdre = [] } = etat.obtenir();
+  const aCommiter = gitOrdre.map((c) => git[c]).filter(peutCommiter);
+  if (aCommiter.length === 0) {
+    notifier('Rien à enregistrer : aucun projet n\'a de fichier modifié.');
+    return;
+  }
+  const messages = new Map(aCommiter.map((e) => [cle(e.cible), messageCommitPropose(e)]));
+  const lignes = aCommiter.map((e) => `• ${e.nom} : ${messages.get(cle(e.cible))}`);
+  const ok = await confirmer({
+    titre: 'Tout commit',
+    message: `Une version sera enregistrée dans l'historique de chaque projet (sur ce PC, rien n'est envoyé), avec ce message :\n${lignes.join('\n')}`,
+    bouton: `Commit de ${aCommiter.length} projet(s)`,
+  });
+  if (!ok) return;
+  const reussis = [];
+  const echecs = [];
+  for (const e of aCommiter) {
+    occuper(e.cible, 'Commit…');
+    try {
+      await api.commit(e.cible, messages.get(cle(e.cible)));
+      reussis.push(e.nom);
+    } catch (erreur) {
+      echecs.push(`${e.nom} : ${erreur.message}`);
+    } finally {
+      occuper(e.cible, null);
+      await rafraichir(e.cible);
+    }
+  }
+  if (echecs.length) {
+    informer({
+      titre: `${reussis.length} commit(s) fait(s), ${echecs.length} échec(s)`,
+      message: `${reussis.length ? `Réussis : ${reussis.join(', ')}\n\n` : ''}Échecs :\n${echecs.join('\n\n')}`,
+    });
+  } else {
+    notifier(`${reussis.length} projet(s) enregistré(s) dans l'historique Git.`, 'succes');
+  }
+}
+
 export async function toutPousser() {
   const { git, gitOrdre = [] } = etat.obtenir();
   const aEnvoyer = gitOrdre.map((c) => git[c]).filter(peutEnvoyer);

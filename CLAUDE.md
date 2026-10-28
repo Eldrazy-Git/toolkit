@@ -371,6 +371,8 @@ dans `docs/projet-json.md`. Points clés :
   n'est pas modifiée), `GIT_TERMINAL_PROMPT=0` (jamais de question bloquante), délai 2 min.
 - Pull = `--ff-only` : jamais de fusion automatique ; en cas de divergence, le message
   oriente vers Claude.
+- « Tout commit » : commit de chaque projet modifié avec le message proposé d'après ses
+  fichiers changés (`messageCommitPropose`), après confirmation listant projets et messages.
 - « Tout envoyer » : chaque dépôt vers SON remote, après confirmation listant les projets.
 - Dépôt GitHub : toujours PRIVÉ (`gh repo create --private`), refusé si des secrets sont
   suivis par Git ; l'adresse est notée dans `projet.json` (`git.remote`).
