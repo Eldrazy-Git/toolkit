@@ -85,6 +85,29 @@ async function operation(cible, texte, fonction, titreErreur) {
 
 // --- Opérations ------------------------------------------------------------------------------
 
+const VERBES_COMMIT = [
+  ['Ajout', ['nouveau', 'ajouté', 'copié']],
+  ['Modification', ['modifié']],
+  ['Renommage', ['renommé']],
+  ['Suppression', ['supprimé']],
+  ['Résolution du conflit', ['en conflit']],
+];
+
+// Message de commit proposé d'après les fichiers changés (modifiable par l'utilisateur),
+// par exemple « Ajout de aide.md ; Modification de index.html, style.css ».
+function messageCommitPropose(e) {
+  const nomDe = (chemin) => chemin.replace(/[\\/]+$/, '').split(/[\\/]/).pop();
+  const parties = [];
+  for (const [verbe, etats] of VERBES_COMMIT) {
+    const noms = [...new Set(e.modifications.filter((m) => etats.includes(m.etat)).map((m) => nomDe(m.chemin)))];
+    if (!noms.length) continue;
+    const liste = noms.length > 3 ? `${noms.slice(0, 3).join(', ')} et ${noms.length - 3} autre(s)` : noms.join(', ');
+    parties.push(`${verbe} de ${liste}`);
+  }
+  if (!parties.length || e.nbModifications > e.modifications.length) return `Mise à jour de ${e.nbModifications} fichiers`;
+  return parties.join(' ; ');
+}
+
 export async function commit(cible) {
   const e = etatDe(cible);
   if (!e || e.nbModifications === 0) {
@@ -98,8 +121,9 @@ export async function commit(cible) {
     message: `Enregistre une version de ces fichiers dans l'historique (sur ce PC, rien n'est envoyé) :\n${liste}${reste}`,
     champs: [{
       id: 'message',
-      libelle: 'Décris les changements en quelques mots',
+      libelle: 'Décris les changements en quelques mots (proposition à modifier si besoin)',
       type: 'texte',
+      valeur: messageCommitPropose(e),
       obligatoire: true,
       exemple: 'Par exemple : Ajout du bouton Effacer',
     }],
