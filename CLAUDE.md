@@ -248,6 +248,9 @@ Voir `src/main/outils-html.js` (explications en tête du fichier) et
 - Liens vers Internet : ouverts dans le navigateur par défaut.
 - Import : l'outil est remplacé par une page vide de même origine (pour fermer ses bases
   IndexedDB), les données sont restaurées, puis l'outil est rechargé.
+- Réinitialiser (`outils:reinitialiser`) : même page vide, puis `clearStorageData()` +
+  `clearCache()` de la partition de l'outil (propre à lui), puis rechargement. L'interface
+  propose d'exporter d'abord.
 - Aperçu smartphone / tablette (`composants/apercu-appareil.js`) : la webview est dans un
   cadre de la taille de l'appareil, réduit par `transform: scale()` si la place manque
   (les clics restent justes : vérifié) ; `outils:emulation` active
