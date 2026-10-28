@@ -196,6 +196,26 @@ export async function importerDonnees(onglet, idContenu) {
   }
 }
 
+export async function reinitialiserDonnees(onglet, idContenu) {
+  const choix = await choisir({
+    titre: 'Réinitialiser l\'outil',
+    message: `Toutes les données enregistrées par « ${onglet.nom} » vont être EFFACÉES (réglages, contenus sauvegardés, cache). L'outil repartira comme au premier lancement.\n\nLes fichiers du projet ne sont pas touchés.`,
+    // Le dernier bouton est celui d'Entrée : le plus prudent.
+    boutons: [
+      { libelle: 'Tout effacer', valeur: 'effacer', style: 'danger' },
+      { libelle: 'Exporter d\'abord, puis effacer', valeur: 'exporter', style: 'principal' },
+    ],
+  });
+  if (!choix) return;
+  if (choix === 'exporter') {
+    const fichier = await essayer(() => api.outils.exporter(idContenu, onglet.nom));
+    if (!fichier) return;
+    notifier(`Données exportées dans « ${fichier} ».`, 'succes');
+  }
+  const ok = await essayer(async () => { await api.outils.reinitialiser(idContenu); return true; });
+  if (ok) notifier(`« ${onglet.nom} » a été réinitialisé.`, 'succes');
+}
+
 export async function changerVue(vue) {
   etat.modifier({ vue });
   await essayer(() => api.reglages.modifier({ interface: { vue } }));

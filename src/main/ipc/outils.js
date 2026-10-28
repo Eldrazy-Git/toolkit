@@ -1,4 +1,4 @@
-// Canaux IPC « outils:* » : préparer l'ouverture d'un outil HTML, exporter/importer ses données.
+// Canaux IPC « outils:* » : préparer l'ouverture d'un outil HTML, exporter/importer/réinitialiser ses données.
 'use strict';
 
 const { gerer } = require('./gerer');
@@ -10,6 +10,7 @@ function enregistrer() {
   gerer('outils:preparer', (projetId, outilLie) => outilsHtml.preparer(projetId, outilLie));
   gerer('outils:exporter', (idContenu, nom) => outilsDonnees.exporter(idContenu, nom));
   gerer('outils:importer', (idContenu, nom) => outilsDonnees.importer(idContenu, nom));
+  gerer('outils:reinitialiser', (idContenu) => outilsDonnees.reinitialiser(idContenu));
 
   // Aperçu smartphone / tablette : simulation mobile de Chromium (viewport, taille d'écran,
   // barres de défilement fines). appareil : { largeur, hauteur } ou null pour l'ordinateur.

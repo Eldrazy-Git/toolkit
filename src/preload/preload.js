@@ -38,6 +38,8 @@ contextBridge.exposeInMainWorld('toolkit', {
     preparer: (projetId, outilLie) => appeler('outils:preparer', projetId, outilLie),
     exporter: (idContenu, nom) => appeler('outils:exporter', idContenu, nom),
     importer: (idContenu, nom) => appeler('outils:importer', idContenu, nom),
+    // Efface toutes les données de l'outil (retour aux réglages du premier lancement).
+    reinitialiser: (idContenu) => appeler('outils:reinitialiser', idContenu),
     // Aperçu appareil : { largeur, hauteur } (smartphone, tablette) ou null (ordinateur).
     emulation: (idContenu, appareil) => appeler('outils:emulation', idContenu, appareil),
     tactile: (idContenu, actif) => appeler('outils:tactile', idContenu, actif),

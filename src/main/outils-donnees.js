@@ -1,5 +1,5 @@
 // Export et import des données d'un outil HTML (localStorage + IndexedDB) dans un
-// fichier JSON lisible.
+// fichier JSON lisible, et réinitialisation (tout effacer).
 //
 // Les fonctions « collecter » et « restaurer » sont exécutées DANS la page de l'outil
 // (executeJavaScript) : elles doivent donc être autonomes (aucune variable extérieure).
@@ -241,4 +241,24 @@ async function importer(idContenu, nomOutil) {
   }
 }
 
-module.exports = { exporter, importer };
+// Efface toutes les données de l'outil (localStorage, IndexedDB, cookies, cache,
+// service workers…) : il repart comme au premier lancement. La partition est propre à
+// l'outil, rien d'autre n'est touché. Les fichiers du projet ne sont pas modifiés.
+async function reinitialiser(idContenu) {
+  const contenu = outilsHtml.contenuOutil(idContenu);
+  const urlOutil = contenu.getURL();
+  const origine = `${outilsHtml.SCHEMA}://${new URL(urlOutil).host}`;
+  // Page vide d'abord : l'outil ferme ses bases et ne réécrit rien pendant l'effacement.
+  await contenu.loadURL(`${origine}${outilsHtml.CHEMIN_PAGE_VIDE}`);
+  try {
+    await contenu.executeJavaScript('localStorage.clear(); sessionStorage.clear();').catch(() => {});
+    await contenu.session.clearStorageData();
+    await contenu.session.clearCache();
+  } catch (erreur) {
+    throw new Error(`La réinitialisation a échoué : ${erreur.message}`);
+  } finally {
+    await contenu.loadURL(urlOutil).catch(() => {});
+  }
+}
+
+module.exports = { exporter, importer, reinitialiser };
