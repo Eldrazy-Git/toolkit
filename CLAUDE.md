@@ -552,7 +552,8 @@ entrée dans `actions` de son `projet.json`.
   compilateur C# de Windows (.NET Framework 4, rien à installer) ; sources = `git archive
   HEAD` (le DERNIER COMMIT) incluses en ressource `app.zip` ; sortie `dist/` (ignoré par Git,
   à publier dans les Releases). Étapes : bienvenue, dossier + raccourcis (+ nom Git si
-  absent), logiciels (winget / installateur officiel de Claude, cases cochées), installation
+  absent), logiciels (winget / installateur officiel de Claude ; Node.js et Git cochés s'ils
+  manquent, Claude Code décoché par défaut), installation
   (journal), fin. Inscrit Toolkit dans « Applications installées » (HKCU), copie de lui-même
   en « Désinstaller Toolkit.exe » (`/desinstaller` : app + lanceur + raccourcis à la
   Corbeille, projets et donnees GARDÉS sauf case cochée). Le même exe a 3 rôles selon son

@@ -5,6 +5,9 @@ outils HTML, scripts Python ou Node, projets Java, applications Android…
 Tu peux les ouvrir, les lancer, les compiler, les rechercher, les sauvegarder sur GitHub et
 les modifier avec Claude Code, sans quitter l'application.
 
+Toolkit est un projet indépendant, non affilié à Anthropic ni soutenu par Anthropic. Claude
+Code s'installe séparément et s'utilise selon les conditions d'Anthropic.
+
 **Sommaire**
 
 1. [Installer Toolkit](#1-installer-toolkit)
@@ -34,8 +37,9 @@ les modifier avec Claude Code, sans quitter l'application.
    et double-clique dessus. Windows peut afficher « Windows a protégé votre ordinateur »
    (l'installateur n'est pas signé) : clique sur **Informations complémentaires** >
    **Exécuter quand même**.
-2. Suis l'assistant : dossier d'installation, raccourcis, logiciels à installer (cases
-   cochées pour toi), puis **Installer** et **Terminer**.
+2. Suis l'assistant : dossier d'installation, raccourcis, logiciels à installer (Node.js et
+   Git sont cochés s'ils manquent ; coche Claude Code si tu veux l'installer), puis
+   **Installer** et **Terminer**.
 3. Au premier lancement, Toolkit t'accueille : connexion à ton compte Claude (et GitHub si
    tu veux), préférences, consignes pour Claude, puis ton premier projet.
 4. Pour le désinstaller : Paramètres Windows > **Applications** > Toolkit. Tes projets et
