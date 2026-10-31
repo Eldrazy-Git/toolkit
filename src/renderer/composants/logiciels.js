@@ -116,7 +116,7 @@ export function rendre() {
       classe: 'logiciel logiciel-discussion',
       title: 'Discuter avec Claude de Toolkit et de tes projets (il lit tout, mais ne modifie rien)',
       onClick: (e) => ouvrirMenuDiscussion(e.currentTarget),
-    }, el('img', { classe: 'logiciel-icone', src: '../../assets/logo-discussion.svg', alt: '' }), el('span', { classe: 'logiciel-nom' }, 'Discuter')),
+    }, icone('claude'), el('span', { classe: 'logiciel-nom' }, 'Discuter')),
     el('span', { classe: 'logiciel-separateur' }),
     ...liste.map(bouton),
     el('button', {
