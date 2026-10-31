@@ -8,6 +8,7 @@ import * as onglets from './composants/onglets.js';
 import * as reglages from './composants/reglages.js';
 import * as assistantImport from './composants/import.js';
 import * as panneauGit from './composants/git.js';
+import * as panneauKits from './composants/kits.js';
 import * as groupes from './composants/groupes.js';
 import * as recents from './composants/recents.js';
 import { notifier } from './composants/notifications.js';
@@ -31,6 +32,7 @@ etat.abonner(() => {
   reglages.rendre();
   assistantImport.rendre();
   panneauGit.rendre();
+  panneauKits.rendre();
   session.suivre();
 });
 

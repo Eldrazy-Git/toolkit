@@ -97,6 +97,16 @@ contextBridge.exposeInMainWorld('toolkit', {
     // valeurs : { nom, modeleId, categorie, description } -> { id, nom, demande, avertissement }
     creerProjet: (valeurs) => appeler('modeles:creer-projet', valeurs),
   },
+  // Bibliothèque de kits et de skills (onglet « Kits »).
+  kits: {
+    lister: () => appeler('kits:lister'), // { existe, kits: [{ id, nom, description, version, genre, types, langages, adaptation, erreur }], skills: [{ id, nom, description }] }
+    preparer: () => appeler('kits:preparer'), // crée la bibliothèque si besoin ; même résultat que lister
+    creer: (valeurs) => appeler('kits:creer', valeurs), // { nom, description, genre, types, langages } -> { id, nom }
+    creerSkill: (valeurs) => appeler('kits:creer-skill', valeurs), // { nom, description } -> { id }
+    analyserProjet: (id) => appeler('kits:analyser-projet', id), // { id, nom, type, fichiers: [chemins relatifs], tronque }
+    creerDepuisProjet: (valeurs) => appeler('kits:creer-depuis-projet', valeurs), // { projet, chemins, nom, description, types } -> { id, nom, fichiers, paquet, projet }
+    recupererDepot: (url) => appeler('kits:recuperer-depot', url), // clone dans Toolkit/kits/ ; même résultat que lister
+  },
   // Actions de projet.json (scripts lancés avec une console).
   executions: {
     // Lance l'action n° indexAction ; valeurs : { idParametre: valeur }. Renvoie { commande, dossier }.
@@ -127,7 +137,7 @@ contextBridge.exposeInMainWorld('toolkit', {
   github: {
     etat: () => appeler('github:etat'), // { installe, connecte, compte }
   },
-  // Panneau Git. cible : { type: 'projet', id } | { type: 'toolkit' }
+  // Panneau Git. cible : { type: 'projet', id } | { type: 'toolkit' } | { type: 'kits' }
   git: {
     etats: () => appeler('git:etats'), // état de Toolkit et de chaque projet
     etat: (cible) => appeler('git:etat', cible),

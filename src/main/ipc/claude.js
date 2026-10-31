@@ -25,6 +25,8 @@ function enregistrer() {
       const resultat = await terminal.creer(id, { mode: 'commande', commande, dossier: require('node:os').homedir(), colonnes, lignes }, contenu);
       return { ...resultat, chemin: connexion === 'claude' ? 'claude auth login' : 'gh auth login' };
     }
+    // « Améliorer avec Claude » : consignes et catalogue de la bibliothèque à jour.
+    if (mode === 'claude' && cible?.type === 'kits') await kits.preparerPourClaude();
     const dossier = await dossierCible(cible);
     // Claude peut lire les projets liés à celui-ci (voir contexte-claude.js).
     let dossiersLies = mode === 'claude' && cible.type === 'projet' ? await contexteClaude.dossiersLies(cible.id) : [];

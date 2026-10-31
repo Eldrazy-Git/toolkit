@@ -102,7 +102,7 @@ app/
     │   ├── recherche.js         index MiniSearch (projets + .md), liens [[…]], rétroliens
     │   ├── notes.js             notes .md : rendu markdown-it (HTML brut désactivé), lecture, écriture
     │   ├── modeles.js           modèles de « Nouvel outil » et création du projet
-    │   ├── kits.js              bibliothèque de kits : lecture, catalogue, plan et ajout à un projet
+    │   ├── kits.js              bibliothèque de kits : catalogue, ajout à un projet, création, récupération
     │   ├── claude-md.js         génération du CLAUDE.md d'un projet
     │   ├── comptes.js           comptes Claude / GitHub : état, changement, déconnexion
     │   ├── proprietaires-raccourcis.js quel programme (AMD, PowerToys) a réservé un raccourci
@@ -145,6 +145,7 @@ app/
             ├── terminal.js      panneau de terminal (xterm.js), copier/coller, relance
             ├── console.js       panneau d'exécution d'une action (sortie en direct)
             ├── import.js        onglet « Importer un projet » (assistant en étapes)
+            ├── kits.js          onglet « Kits et skills » + section « Kits » des détails d'un projet
             ├── git.js           onglet « Git et GitHub » + pastilles/boutons réutilisés dans les détails
             ├── actions-git.js   actions Git (commit, push, pull, tout envoyer, dépôt GitHub privé)
             ├── details-git.js   fenêtres de détail : fichiers modifiés + différences, commits
@@ -332,9 +333,21 @@ Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
   seulement : ni « Modifier Toolkit », ni « Discuter »). Claude Code charge ses skills, mais pas de
   `CLAUDE.md` depuis un `--add-dir` : les règles sont donc dans la section `toolkit:kits` de
   `projets/CLAUDE.md` (toujours écrite, même sans kit). `--add-dir` donne aussi le droit d'écrire :
-  seule une règle écrite empêche Claude de modifier `kits/` depuis un projet.
+  seule une règle écrite empêche Claude de modifier `kits/` depuis un projet (toute modification non
+  validée reste visible dans l'onglet « Git et GitHub »).
   Ajout à un projet : `planifierAjout()` vérifie tout sans rien écrire, `executerAjout()` copie (tout ou
   rien), ajoute une section `toolkit:kit=<id>=` au CLAUDE.md du projet et note `kits` dans projet.json.
+- Onglet « Kits et skills » (`composants/kits.js`, `ipc/kits.js`, état `kits`, `kitsFiltre`) : cible
+  `{ type: 'kits' }` de `cibles.js` (terminal, sauvegarde Git, onglet Code, panneau Git : rien de
+  particulier à faire). `kits/CLAUDE.md`, généré et ignoré par Git, reprend `docs/kits.md` pour les
+  sessions lancées DANS la bibliothèque. Créer depuis un projet (`analyserProjet`, `creerDepuisProjet`) :
+  seuls les chemins renvoyés par l'analyse sont acceptés ; Java / Android : le package devient
+  `{{package}}` ; le kit reste à relire (`adaptation: true`), Claude est proposé ensuite. Le signal de
+  mise à jour des détails compare `fiche.kits` à la bibliothèque : jamais de mise à jour automatique.
+- Dépôt GitHub de la bibliothèque : dépôt privé NORMAL `toolkit-kits` (pas la fonction « dépôt
+  partagé »), ligne « Kits et skills » de l'onglet Git. `recupererDepot()` clone dans `donnees/`, refuse
+  un dépôt sans `propositions/` dans son `.gitignore` et une bibliothèque non vide
+  (`bibliothequeVide()`), met une bibliothèque vide à la Corbeille, puis range le clone dans `kits/`.
   Tests : copier `src/`, `scripts/` et `package.json` dans un dossier temporaire `<t>/app/` : la racine
   étant calculée depuis le code, `<t>/kits` et `<t>/projets` remplacent les vrais dossiers.
 - « Modifier avec Claude » / « Modifier Toolkit avec Claude » : commit de sauvegarde

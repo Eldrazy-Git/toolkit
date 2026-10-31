@@ -115,6 +115,11 @@ export async function fermerOnglet(id) {
     etat.modifier({ gitOuvert: false, ongletActif: ongletActif === 'git' ? 'bibliotheque' : ongletActif });
     return;
   }
+  if (id === 'kits') {
+    const { ongletActif } = etat.obtenir();
+    etat.modifier({ kitsOuvert: false, ongletActif: ongletActif === 'kits' ? 'bibliotheque' : ongletActif });
+    return;
+  }
   if (id === 'reglages') {
     const { ongletActif } = etat.obtenir();
     etat.modifier({ reglagesOuverts: false, ongletActif: ongletActif === 'reglages' ? 'bibliotheque' : ongletActif });
@@ -171,8 +176,8 @@ export function fermerOngletActif() {
 
 // Tous les onglets, dans l'ordre de la barre.
 function idsOnglets() {
-  const { onglets, reglagesOuverts, importOuvert, gitOuvert } = etat.obtenir();
-  return ['bibliotheque', ...(reglagesOuverts ? ['reglages'] : []), ...(gitOuvert ? ['git'] : []),
+  const { onglets, reglagesOuverts, importOuvert, gitOuvert, kitsOuvert } = etat.obtenir();
+  return ['bibliotheque', ...(reglagesOuverts ? ['reglages'] : []), ...(gitOuvert ? ['git'] : []), ...(kitsOuvert ? ['kits'] : []),
     ...(importOuvert ? ['import'] : []), ...onglets.map((o) => o.id)];
 }
 
@@ -380,7 +385,7 @@ function elementsRetirerDuGroupe(projet) {
 // chemin relatif à ouvrir tout de suite (facultatif).
 // fichiers : plusieurs fichiers à ouvrir (fichier = celui à afficher), ex. à la restauration.
 export function ouvrirCode(cible, nom, fichier = null, fichiers = null) {
-  const cle = cible.type === 'projet' ? `p-${cible.id}` : 'toolkit';
+  const cle = cible.type === 'projet' ? `p-${cible.id}` : cible.type === 'kits' ? 'kits' : 'toolkit';
   const id = `code:${cle}`;
   const { onglets } = etat.obtenir();
   const demande = fichiers?.length ? { chemins: fichiers, actif: fichier, n: Date.now() } : fichier ? { chemin: fichier, n: Date.now() } : null;
@@ -1048,6 +1053,10 @@ export async function changerEditeurParDefaut(projet, editeur) {
   remplacerProjet(await essayer(() => api.projets.modifier(projet.id, { ouvrir_avec: editeur || null })));
 }
 
+export function ouvrirKits() {
+  etat.modifier({ kitsOuvert: true, ongletActif: 'kits' });
+}
+
 export function ouvrirGit() {
   etat.modifier({ gitOuvert: true, ongletActif: 'git' });
   actionsGit.chargerTout();
@@ -1333,7 +1342,7 @@ async function lancerClaude(cible, nomCible, demande, { continuer = false } = {}
     etat.modifier({ ongletActif: existant.id });
     if (demande) {
       await navigator.clipboard.writeText(demande).catch(() => {});
-      notifier('Claude est déjà ouvert sur ce projet : la description de l\'erreur est copiée, colle-la-lui (clic droit ou Ctrl+V).');
+      notifier('Claude est déjà ouvert ici : la demande est copiée, colle-la-lui (clic droit ou Ctrl+V).');
     }
     return;
   }
@@ -1368,6 +1377,14 @@ export function demanderCorrection(projetId, nomAction, commande, erreur) {
 
 export function modifierToolkitAvecClaude(demande) {
   return lancerClaude({ type: 'toolkit' }, 'Toolkit', typeof demande === 'string' ? demande : undefined);
+}
+
+// Claude dans la bibliothèque de kits (créée si besoin), après une sauvegarde Git.
+export async function ameliorerKitsAvecClaude(demande) {
+  const donnees = await essayer(() => api.kits.preparer());
+  if (!donnees) return;
+  etat.modifier({ kits: donnees, kitsDate: Date.now() });
+  await lancerClaude({ type: 'kits' }, 'Kits et skills', typeof demande === 'string' ? demande : undefined);
 }
 
 export async function nouvelOutil() {

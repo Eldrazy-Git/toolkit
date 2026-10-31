@@ -10,6 +10,7 @@ import * as actionsGit from './actions-git.js';
 import { pastillesGit, boutonsGit, dernierCommit } from './git.js';
 import * as groupes from './groupes.js';
 import { afficherHistorique } from './historique.js';
+import { sectionKitsDuProjet } from './kits.js';
 
 // Notes d'un projet et rétroliens, gardés quelques secondes (le panneau se redessine souvent).
 const cacheNotes = new Map();
@@ -309,6 +310,7 @@ function rendreProjet(projet) {
         }, icone('claude'), 'Modifier avec Claude')),
 
       section('Actions', listeActions(projet)),
+      sectionKitsDuProjet(projet),
 
       f.outils_lies.length > 0
         ? section('Outils liés',

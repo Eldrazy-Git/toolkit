@@ -1,5 +1,5 @@
 // Canaux IPC « git:* » : panneau Git et GitHub (état des dépôts, commit, push, pull…).
-// Les dépôts sont désignés par des cibles : { type: 'projet', id } ou { type: 'toolkit' }.
+// Les dépôts sont désignés par des cibles : { type: 'projet', id }, { type: 'toolkit' } ou { type: 'kits' }.
 'use strict';
 
 const { shell } = require('electron');
@@ -10,7 +10,9 @@ const github = require('../github');
 const depotPartage = require('../depot-partage');
 const projets = require('../projets');
 const { dossierCible } = require('../cibles');
-const { lireJson, ecrireJson } = require('../fichiers');
+const { lireJson, ecrireJson, existe } = require('../fichiers');
+const chemins = require('../chemins');
+const kits = require('../kits');
 
 // Exécute des tâches asynchrones avec un nombre limité en parallèle.
 async function parLots(elements, taille, fonction) {
@@ -25,9 +27,14 @@ async function parLots(elements, taille, fonction) {
   return resultats;
 }
 
-// Toolkit (dossier app/) puis chaque projet.
+const NOM_BIBLIOTHEQUE = 'Kits et skills';
+
+// Toolkit (dossier app/), la bibliothèque de kits, puis chaque projet.
 async function listeDepots() {
-  const liste = [{ cible: { type: 'toolkit' }, nom: 'Toolkit (l\'application)', projet: null }];
+  const liste = [
+    { cible: { type: 'toolkit' }, nom: 'Toolkit (l\'application)', projet: null },
+    { cible: { type: 'kits' }, nom: NOM_BIBLIOTHEQUE, projet: null },
+  ];
   for (const p of await projets.listerProjets()) {
     liste.push({ cible: { type: 'projet', id: p.id }, nom: p.fiche.nom, projet: p });
   }
@@ -44,6 +51,8 @@ async function partageDe(cible) {
 
 async function etatDe(cible, nom) {
   try {
+    // Bibliothèque pas encore créée : on peut la créer ou la récupérer depuis GitHub.
+    if (cible.type === 'kits' && !(await existe(chemins.kits))) return { cible, nom, absente: true };
     const dossier = await dossierCible(cible);
     const etat = await git.etatDepot(dossier);
     const p = etat.estDepot ? await partageDe(cible) : null;
@@ -143,6 +152,7 @@ function enregistrer() {
     });
     await parLots(liste.filter((d) => !d.projet?.fiche.git.partage), 4, async ({ cible, nom }) => {
       try {
+        if (cible.type === 'kits' && !(await existe(chemins.kits))) return;
         const dossier = await dossierCible(cible);
         if (await git.estDepot(dossier) && await git.urlRemote(dossier)) await git.verifierEnLigne(dossier);
       } catch (erreur) {
@@ -179,6 +189,9 @@ function enregistrer() {
       const projet = await projets.chargerProjet(cible.id);
       nom = cible.id;
       description = projet?.fiche.description || '';
+    } else if (cible.type === 'kits') {
+      nom = kits.NOM_DEPOT_GITHUB;
+      description = 'Mes kits et skills pour Toolkit.';
     }
     const url = await github.creerDepotPrive(dossier, nom, description);
     await noterRemoteDansFiche(cible, dossier, url);

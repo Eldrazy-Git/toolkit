@@ -30,6 +30,7 @@ function pastille(texte, classe, titre, action) {
 export function pastillesGit(e) {
   if (!e) return [pastille('Chargement…', 'neutre')];
   if (e.erreur) return [pastille('Erreur', 'rouge', e.erreur)];
+  if (e.absente) return [pastille('Pas encore créée', 'neutre', 'La bibliothèque est créée à ta première utilisation. Sur un autre PC, tu peux la récupérer depuis GitHub.')];
   if (!e.estDepot) return [pastille('Pas d\'historique Git', 'neutre', 'Active Git pour pouvoir revenir en arrière et envoyer le projet sur GitHub.')];
   const liste = [];
   if (e.secretsSuivis?.length) liste.push(pastille('Fichiers sensibles dans Git', 'rouge', `Enregistrés dans l'historique : ${e.secretsSuivis.join(', ')}. Ne rends jamais ce dépôt public.`));
@@ -65,6 +66,7 @@ function elementsMenu(e) {
   return [
     !e.estDepot ? { libelle: 'Activer l\'historique Git', icone: 'git', action: () => git.initialiser(e.cible) } : null,
     e.estDepot && !e.remote ? { libelle: 'Créer un dépôt GitHub privé…', icone: 'plus', action: () => git.creerGithub(e.cible) } : null,
+    e.cible.type === 'kits' && !e.remote ? { libelle: 'Récupérer mes kits depuis GitHub…', icone: 'importer', infobulle: 'Sur un autre PC : copie ton dépôt GitHub privé de kits dans ce Toolkit', action: git.recupererBibliotheque } : null,
     e.estDepot && !e.remote && e.cible.type === 'projet'
       ? { libelle: 'Envoyer dans un dépôt GitHub partagé…', icone: 'dossier', infobulle: 'Un seul dépôt pour plusieurs petits projets (un dossier chacun)', action: () => git.rejoindrePartage(e.cible) }
       : null,
@@ -81,6 +83,12 @@ export function boutonsGit(e) {
   if (!e || e.erreur) return [];
   const occupe = etat.obtenir().gitOccupe[git.cle(e.cible)];
   if (occupe) return [el('span', { classe: 'statut ok' }, `● ${occupe}`)];
+  if (e.absente) {
+    return [
+      el('button', { classe: 'bouton petit', title: 'Crée le dossier « kits » de Toolkit, avec son historique Git', onClick: git.creerBibliotheque }, icone('plus'), 'Créer'),
+      el('button', { classe: 'bouton petit', title: 'Sur un autre PC : copie ton dépôt GitHub privé de kits dans ce Toolkit', onClick: git.recupererBibliotheque }, icone('importer'), 'Récupérer depuis GitHub'),
+    ];
+  }
   const menu = el('button', { classe: 'bouton-icone', title: 'Autres actions', onClick: () => ouvrirMenu(menu, elementsMenu(e)) }, '⋯');
   if (!e.estDepot) {
     return [el('button', { classe: 'bouton petit', onClick: () => git.initialiser(e.cible) }, icone('git'), 'Activer Git'), menu];
