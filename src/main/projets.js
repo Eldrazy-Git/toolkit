@@ -22,6 +22,19 @@ const ACTIONS_PAR_DEFAUT = ['outil', 'editeur', 'code', 'claude'];
 // Action « fichier » : où l'ouvrir (absent = automatique : page HTML et texte dans Toolkit,
 // le reste avec le programme de Windows).
 const OUVRIR_DANS = ['toolkit', 'windows'];
+// Action « script » : extension -> début de la commande (vide = le fichier se lance lui-même).
+// ExecutionPolicy Bypass : sinon Windows refuse par défaut tout .ps1, pour ce lancement seulement.
+const LANCEURS_SCRIPTS = {
+  py: 'python',
+  pyw: 'python',
+  js: 'node',
+  cjs: 'node',
+  mjs: 'node',
+  ps1: 'powershell -NoProfile -ExecutionPolicy Bypass -File',
+  bat: '',
+  cmd: '',
+};
+const EXTENSIONS_SCRIPTS = Object.keys(LANCEURS_SCRIPTS);
 
 // --- Identifiants -------------------------------------------------------------
 
@@ -411,11 +424,29 @@ async function modifierFiche(id, changements) {
 
 // --- Actions (boutons du panneau de détails) ----------------------------------------------
 
+// Action « script » : devient une action « commande » ordinaire, lancée dans le dossier du
+// script (comme un double-clic : ses chemins relatifs restent justes).
+function commandeDuScript(fichier) {
+  const nom = path.posix.basename(fichier);
+  const extension = path.posix.extname(nom).slice(1).toLowerCase();
+  if (!EXTENSIONS_SCRIPTS.includes(extension)) {
+    throw new Error(`Toolkit ne sait pas exécuter ce type de fichier. Scripts acceptés : ${EXTENSIONS_SCRIPTS.map((e) => `.${e}`).join(', ')}. Pour un autre, utilise « Lancer une commande ».`);
+  }
+  // Des accolades seraient lues comme un paramètre {id} de la commande.
+  if (/[{}]/.test(nom)) throw new Error('Le nom de ce script contient des accolades : renomme-le d\'abord.');
+  const cible = /\s/.test(nom) ? `"${nom}"` : nom;
+  return {
+    commande: [LANCEURS_SCRIPTS[extension], cible].filter(Boolean).join(' '),
+    dossier: path.posix.dirname(fichier),
+  };
+}
+
 // operation : { type: 'ajouter', action } | { type: 'modifier', index, action }
 //           | { type: 'supprimer', index } | { type: 'deplacer', index, sens: -1 | 1 }
 // index = position dans fiche.actions (actions valides seulement, comme l'interface les
 // voit). Seuls nom, commande, description et dossier sont écrits : les autres champs de
 // l'action (parametres, ouvrir_dossier_apres…) sont conservés.
+// action.genre : 'commande', 'fichier' ou 'script' (écrit comme une commande).
 async function modifierActions(id, operation) {
   const chemin = path.join(dossierDuProjet(id), 'projet.json');
   let brut;
@@ -441,9 +472,9 @@ async function modifierActions(id, operation) {
     const autre = positions.findIndex((p, i) => texte(liste[p].nom) === nom && (type === 'ajouter' || i !== index));
     if (autre >= 0) throw new Error(`Une action s'appelle déjà « ${nom} ».`);
     const description = texte(a.description);
-    if (a.genre === 'fichier') {
+    if (a.genre === 'fichier' || a.genre === 'script') {
       const fichier = texte(a.fichier).replace(/\\/g, '/').replace(/^\.\//, '');
-      if (!fichier) throw new Error('Choisis le fichier à ouvrir.');
+      if (!fichier) throw new Error(a.genre === 'script' ? 'Choisis le script à exécuter.' : 'Choisis le fichier à ouvrir.');
       const racine = dossierDuProjet(id);
       const complet = path.resolve(racine, fichier);
       if (path.isAbsolute(fichier) || !complet.startsWith(racine + path.sep)) {
@@ -454,6 +485,7 @@ async function modifierActions(id, operation) {
       } catch {
         throw new Error(`Le fichier « ${fichier} » est introuvable dans le dossier du projet.`);
       }
+      if (a.genre === 'script') return { genre: 'commande', nom, description, ...commandeDuScript(fichier) };
       const ouvrirDans = OUVRIR_DANS.includes(a.ouvrir_dans) ? a.ouvrir_dans : null;
       return { genre: 'fichier', nom, description, fichier, ouvrirDans };
     }
@@ -666,6 +698,7 @@ function arreterSurveillance() {
 
 module.exports = {
   TYPES,
+  EXTENSIONS_SCRIPTS,
   EDITEURS,
   SANS_CATEGORIE,
   normaliserFiche,

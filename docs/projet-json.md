@@ -91,6 +91,11 @@ monter, descendre, supprimer). Le formulaire ne gère que `nom`, `commande`, `de
 et `dossier` ; les autres champs (`parametres`, `ouvrir_dossier_apres`) sont conservés et
 s'écrivent dans projet.json.
 
+« Exécuter un script » est un raccourci de ce formulaire : on choisit un fichier du projet
+(`.py`, `.pyw`, `.js`, `.cjs`, `.mjs`, `.ps1`, `.bat`, `.cmd`) et Toolkit écrit une action
+`commande` ordinaire, lancée dans le dossier du script (ex. `scripts/nettoyer.py` →
+`"commande": "python nettoyer.py", "dossier": "scripts"`).
+
 Une action fait l'une de ces deux choses :
 - **lancer une commande** (`commande`, voir ci-dessous) ;
 - **ouvrir un fichier du projet** (`fichier`, sans `commande`) : `{ "nom": "Aide", "fichier": "pages/aide.html" }`.

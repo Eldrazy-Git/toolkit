@@ -188,7 +188,9 @@ l'action par défaut suit un renommage). Action « fichier » (`fichier` sans `c
 `genre: 'fichier'` dans la fiche normalisée) : `actions.ouvrirFichierAction` (HTML -> outil,
 `outils:preparer` l'accepte comme un outil lié ; texte/code/images -> onglet Code ; sinon
 `projets:ouvrir-fichier` = `shell.openPath`) ; fichier choisi par `projets:choisir-fichier`
-(chemin relatif, refusé hors du projet). Les consoles ouvertes sont recalées
+(chemin relatif, refusé hors du projet). Choix « Exécuter un script » (`genre: 'script'` dans
+`modifierActions`) : écrit une action commande ordinaire (`projets.js > commandeDuScript`,
+extension -> `LANCEURS_SCRIPTS`, lancée dans le dossier du script). Les consoles ouvertes sont recalées
 (`recalerConsoles`, elles désignent leur action par sa position).
 
 Clic droit sur un onglet (`actions.elementsMenuOnglet`) : si l'onglet parle d'un projet ou de
