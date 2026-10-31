@@ -8,6 +8,7 @@
 // (changer d'onglet ne recharge pas l'outil et n'interrompt pas le terminal).
 import { el } from './dom.js';
 import { icone } from './icones.js';
+import { ouvrirMenu } from './menu.js';
 import { iconeProjet } from './icone-projet.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
@@ -49,6 +50,11 @@ function onglet({ id, titre, visuel, actif, fermable, attention = false }) {
     onClick: () => actions.activerOnglet(id),
     // Clic molette : fermer l'onglet
     onAuxclick: (e) => { if (e.button === 1 && fermable) fermer(e); },
+    onContextmenu: (e) => {
+      e.preventDefault();
+      const position = { x: e.clientX, y: e.clientY };
+      ouvrirMenu(position, actions.elementsMenuOnglet(id, position));
+    },
   },
   visuel,
   el('span', { classe: 'onglet-titre' }, titre),

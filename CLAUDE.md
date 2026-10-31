@@ -186,6 +186,11 @@ l'action par défaut suit un renommage). Action « fichier » (`fichier` sans `c
 (chemin relatif, refusé hors du projet). Les consoles ouvertes sont recalées
 (`recalerConsoles`, elles désignent leur action par sa position).
 
+Clic droit sur un onglet (`actions.elementsMenuOnglet`) : si l'onglet parle d'un projet ou de
+Toolkit (`cibleOnglet`), ouvrir l'outil, explorer le code, ouvrir avec…, modifier avec Claude,
+historique, afficher dans la bibliothèque (sans ce qui ferait doublon avec l'onglet lui-même) ;
+pour tous : fermer, fermer les autres, fermer à droite (chaque onglet garde sa confirmation).
+
 Suppression d'un projet (`actions.supprimerProjet`) : refusée si un onglet du projet tourne
 ou n'est pas enregistré ; confirmation en retapant le nom ; onglets du projet fermés (libère
 le dossier), puis `projets:supprimer` = `shell.trashItem` (Corbeille, jamais d'effacement

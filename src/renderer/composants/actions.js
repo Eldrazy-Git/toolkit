@@ -169,12 +169,91 @@ export function fermerOngletActif() {
   if (ongletActif !== 'bibliotheque') fermerOnglet(ongletActif);
 }
 
-export function ongletSuivant(sens = 1) {
-  const { onglets, ongletActif, reglagesOuverts, importOuvert, gitOuvert } = etat.obtenir();
-  const ids = ['bibliotheque', ...(reglagesOuverts ? ['reglages'] : []), ...(gitOuvert ? ['git'] : []),
+// Tous les onglets, dans l'ordre de la barre.
+function idsOnglets() {
+  const { onglets, reglagesOuverts, importOuvert, gitOuvert } = etat.obtenir();
+  return ['bibliotheque', ...(reglagesOuverts ? ['reglages'] : []), ...(gitOuvert ? ['git'] : []),
     ...(importOuvert ? ['import'] : []), ...onglets.map((o) => o.id)];
-  const position = ids.indexOf(ongletActif);
+}
+
+export function ongletSuivant(sens = 1) {
+  const ids = idsOnglets();
+  const position = ids.indexOf(etat.obtenir().ongletActif);
   etat.modifier({ ongletActif: ids[(position + sens + ids.length) % ids.length] });
+}
+
+// --- Clic droit sur un onglet ---------------------------------------------------------------
+
+// Projet ou Toolkit dont parle un onglet (null : Réglages, discussion, projet supprimé…).
+function cibleOnglet(o) {
+  if (!o) return null;
+  if (o.genre === 'terminal' || o.genre === 'code') return o.cible.type === 'racine' ? null : o.cible;
+  if (o.genre === 'note') {
+    // Chemin relatif à la racine : app/… ou <dossier des projets>/<id>/…
+    const dossiers = o.chemin.split('/').slice(0, -1);
+    if (dossiers[0] === 'app') return { type: 'toolkit' };
+    const projet = etat.obtenir().projets.find((p) => dossiers.includes(p.id));
+    return projet ? { type: 'projet', id: projet.id } : null;
+  }
+  return o.projetId ? { type: 'projet', id: o.projetId } : null;
+}
+
+// Fermer plusieurs onglets : chacun garde sa confirmation (fichier non enregistré, script en cours).
+async function fermerOnglets(ids) {
+  for (const id of ids) await fermerOnglet(id);
+}
+
+// Entrées du menu d'un onglet qui parle d'un projet ou de Toolkit.
+function elementsOngletCible(o, cible, position) {
+  const estToolkit = cible.type === 'toolkit';
+  const projet = estToolkit ? null : etat.obtenir().projets.find((p) => p.id === cible.id);
+  if (!estToolkit && !projet) return [];
+  const nom = estToolkit ? 'Toolkit' : projet.fiche.nom;
+  const bloque = Boolean(projet?.erreur);
+  const ongletClaude = o.genre === 'terminal' && o.mode === 'claude';
+  return [
+    !projet || o.genre === 'outil' || !estOuvrableCommeOutil(projet) ? null
+      : { libelle: 'Ouvrir l\'outil', icone: 'lecture', action: () => ouvrirOutil(projet.id) },
+    o.genre === 'code' ? null : { libelle: 'Explorer le code', icone: 'code', action: () => ouvrirCode(cible, nom) },
+    {
+      libelle: 'Ouvrir avec…',
+      icone: 'ouvrirAvec',
+      detail: '▸',
+      desactive: bloque,
+      action: () => ouvrirMenu(position, estToolkit ? elementsMenuOuvrirToolkit() : elementsMenuOuvrirAvec(projet)),
+    },
+    ongletClaude ? null : {
+      libelle: estToolkit ? 'Modifier Toolkit avec Claude' : 'Modifier avec Claude',
+      icone: 'claude',
+      desactive: bloque,
+      action: () => (estToolkit ? modifierToolkitAvecClaude() : modifierAvecClaude(projet)),
+    },
+    { libelle: 'Historique des versions…', icone: 'historique', action: () => import('./historique.js').then((h) => h.afficherHistorique(cible, nom)) },
+    projet ? { libelle: 'Afficher dans la bibliothèque', icone: 'grille', action: () => allerAuProjet(projet.id) } : null,
+    'separateur',
+  ];
+}
+
+// position : { x, y } du clic, où s'ouvre le second menu « Ouvrir avec… ».
+export function elementsMenuOnglet(id, position) {
+  const o = etat.obtenir().onglets.find((x) => x.id === id);
+  const cible = cibleOnglet(o);
+  const ids = idsOnglets();
+  const autres = ids.filter((x) => x !== id && x !== 'bibliotheque');
+  const aDroite = ids.slice(ids.indexOf(id) + 1);
+  return [
+    ...(cible ? elementsOngletCible(o, cible, position) : []),
+    id === 'bibliotheque' ? null : { libelle: 'Fermer', icone: 'croix', detail: 'clic molette', action: () => fermerOnglet(id) },
+    {
+      libelle: 'Fermer les autres onglets',
+      desactive: !autres.length,
+      action: () => {
+        activerOnglet(id);
+        return fermerOnglets(autres);
+      },
+    },
+    { libelle: 'Fermer les onglets à droite', desactive: !aDroite.length, action: () => fermerOnglets(aDroite) },
+  ];
 }
 
 export async function exporterDonnees(onglet, idContenu) {
