@@ -405,6 +405,7 @@ button.lien-sous-groupe:hover { text-decoration: underline; }
 .onglet:hover { background: var(--fond-survol); }
 .onglet.actif { background: var(--fond); color: var(--texte-fort); border-top-color: var(--accent); }
 .onglet .icone-projet { border-radius: 3px; font-size: 8px; }
+.onglet .ico-claude { color: var(--claude); }
 .onglet-titre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .onglet:first-child { padding-right: 12px; }
 .onglet-fermer {
