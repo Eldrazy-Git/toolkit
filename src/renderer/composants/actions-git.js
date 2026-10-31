@@ -264,7 +264,7 @@ export async function creerGithub(cible) {
     return;
   }
   const e = etatDe(cible);
-  const nom = cible.type === 'projet' ? cible.id : 'toolkit';
+  const nom = cible.type === 'projet' ? cible.id : cible.type === 'kits' ? 'toolkit-kits' : 'toolkit';
   const ok = await confirmer({
     titre: 'Créer un dépôt GitHub privé',
     message: `Un dépôt PRIVÉ nommé « ${nom} » va être créé sur le compte GitHub « ${github.compte} », et l'historique de « ${e?.nom} » y sera envoyé.\n\nSeul toi pourras le voir.`,
@@ -273,6 +273,51 @@ export async function creerGithub(cible) {
   if (!ok) return;
   const resultat = await operation(cible, 'Création du dépôt…', () => api.creerGithub(cible), 'La création du dépôt GitHub a échoué');
   if (resultat) notifier(`Dépôt privé créé : ${resultat.url}`, 'succes');
+}
+
+// --- Bibliothèque de kits ------------------------------------------------------------------------
+
+// Après une création ou une récupération : les onglets Kits et Git et GitHub se mettent à jour.
+function noterKits(donnees) {
+  etat.modifier({ kits: donnees, kitsDate: Date.now() });
+  return rafraichir({ type: 'kits' });
+}
+
+export async function creerBibliotheque() {
+  try {
+    await noterKits(await window.toolkit.kits.preparer());
+    notifier('Bibliothèque de kits créée (dossier « kits » de Toolkit, avec son historique Git).', 'succes');
+  } catch (erreur) {
+    notifier(erreur.message, 'erreur');
+  }
+}
+
+// Sur un autre PC : récupère le dépôt GitHub privé de la bibliothèque dans Toolkit/kits/.
+export async function recupererBibliotheque() {
+  const { github } = etat.obtenir();
+  if (!github?.installe || !github.connecte) {
+    informer({ titre: 'GitHub n\'est pas connecté', message: AIDE_GITHUB });
+    return;
+  }
+  const valeurs = await formulaire({
+    titre: 'Récupérer mes kits depuis GitHub',
+    message: 'Le dépôt est copié dans le dossier « kits » de Toolkit, sur ce PC. Si la bibliothèque de ce PC contient déjà des kits ou des skills, Toolkit refuse de la remplacer ; si elle est vide, elle part à la Corbeille.',
+    champs: [{
+      id: 'url',
+      libelle: 'Adresse du dépôt GitHub',
+      obligatoire: true,
+      valeur: `https://github.com/${github.compte}/toolkit-kits`,
+      exemple: 'https://github.com/moi/toolkit-kits',
+    }],
+    bouton: 'Récupérer',
+  });
+  if (!valeurs) return;
+  const cible = { type: 'kits' };
+  const donnees = await operation(cible, 'Récupération…', () => window.toolkit.kits.recupererDepot(valeurs.url), 'La récupération de tes kits a échoué');
+  if (donnees) {
+    await noterKits(donnees);
+    notifier(`Bibliothèque récupérée : ${donnees.kits.length} kit(s), ${donnees.skills.length} skill(s).`, 'succes');
+  }
 }
 
 // Dépôt GitHub PARTAGÉ : le projet est envoyé dans un dossier d'un dépôt commun à plusieurs
