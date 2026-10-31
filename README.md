@@ -62,7 +62,7 @@ lancement.
 |---|---|---|
 | Node.js (version 20 ou plus) | fait tourner Toolkit | oui |
 | Git | sauvegarde l'historique de tes projets | oui |
-| Claude Code (`claude`) | modifie et crée des outils | oui |
+| Claude Code (`claude`) | modifie et crée des outils | seulement pour les fonctions Claude |
 | GitHub CLI (`gh`) | envoie tes projets sur GitHub | seulement pour GitHub |
 | Python | lance les scripts Python | seulement pour ces scripts |
 | Java (JDK 17 ou 21) | compile les projets Java et les applis Android | seulement pour compiler |

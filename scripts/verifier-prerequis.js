@@ -73,12 +73,12 @@ const verifications = [
   },
   {
     nom: 'Claude Code (commande « claude »)',
-    obligatoire: true,
+    obligatoire: false,
     verifier() {
       const r = executer('claude --version');
       return {
         ok: r.ok,
-        detail: r.ok ? premiereLigne(r.sortie) : 'introuvable',
+        detail: r.ok ? premiereLigne(r.sortie) : 'introuvable (nécessaire seulement pour les fonctions Claude)',
         solution: 'Installe Claude Code. Dans PowerShell :\n    irm https://claude.ai/install.ps1 | iex\n  Puis tape « claude » une fois pour te connecter avec ton compte Claude (abonnement Pro, Max…).',
       };
     },
