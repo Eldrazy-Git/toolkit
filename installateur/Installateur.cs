@@ -654,9 +654,9 @@ namespace InstallateurToolkit
                 if (cle != null) dossier = cle.GetValue("InstallLocation") as string;
             if (dossier == null) dossier = Path.GetDirectoryName(Application.ExecutablePath);
 
-            var texte = new Label { Text = "Toolkit va être retiré de ce PC (dossier « " + dossier + " »).\n\nTes projets (dossier « projets ») et tes réglages (dossier « donnees ») sont GARDÉS, sauf si tu coches la case ci-dessous. Les logiciels installés à côté (Node.js, Git, Claude Code…) ne sont pas touchés." };
+            var texte = new Label { Text = "Toolkit va être retiré de ce PC (dossier « " + dossier + " »).\n\nTes projets (dossier « projets »), tes kits (dossier « kits ») et tes réglages (dossier « donnees ») sont GARDÉS, sauf si tu coches la case ci-dessous. Les logiciels installés à côté (Node.js, Git, Claude Code…) ne sont pas touchés." };
             texte.SetBounds(20, 18, 520, 120);
-            var tout = new CheckBox { Text = "Supprimer aussi mes projets et mes réglages (Corbeille)" };
+            var tout = new CheckBox { Text = "Supprimer aussi mes projets, mes kits et mes réglages (Corbeille)" };
             tout.SetBounds(20, 146, 520, 24);
             var ok = new Button { Text = "Désinstaller" };
             ok.SetBounds(316, 220, 110, 30);
@@ -665,7 +665,7 @@ namespace InstallateurToolkit
             non.Click += (s, e) => Close();
             ok.Click += (s, e) =>
             {
-                if (tout.Checked && MessageBox.Show(this, "Mettre aussi TES PROJETS et tes réglages à la Corbeille ?\nTu pourras les y récupérer tant qu'elle n'est pas vidée.", "Toolkit", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+                if (tout.Checked && MessageBox.Show(this, "Mettre aussi TES PROJETS, tes kits et tes réglages à la Corbeille ?\nTu pourras les y récupérer tant qu'elle n'est pas vidée.", "Toolkit", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
                 // Toolkit ouvert : ses fichiers sont verrouillés. On ne le ferme jamais de force
                 // (travail non enregistré) : on demande de le quitter.
                 if (Process.GetProcessesByName("electron").Length > 0 && MessageBox.Show(this,
@@ -674,7 +674,13 @@ namespace InstallateurToolkit
                 foreach (var lien in new[] { Path.Combine(Outils.Bureau(), "Toolkit.lnk"), Path.Combine(Outils.MenuDemarrer(), "Toolkit.lnk") })
                     try { if (File.Exists(lien)) File.Delete(lien); } catch (Exception x) { erreurs.Add(x.Message); }
                 var aRetirer = new List<string> { Path.Combine(dossier, "app"), Path.Combine(dossier, "Lancer Toolkit.vbs"), Path.Combine(dossier, "Toolkit.exe") };
-                if (tout.Checked) { aRetirer.Add(Path.Combine(dossier, "projets")); aRetirer.Add(Path.Combine(dossier, "donnees")); }
+                if (tout.Checked)
+                {
+                    aRetirer.Add(Path.Combine(dossier, "projets"));
+                    aRetirer.Add(Path.Combine(dossier, "donnees"));
+                    // Peut ne pas exister : la bibliothèque est créée à la première utilisation.
+                    if (Directory.Exists(Path.Combine(dossier, "kits"))) aRetirer.Add(Path.Combine(dossier, "kits"));
+                }
                 foreach (var chemin in aRetirer)
                 {
                     try { Corbeille.Envoyer(chemin); } catch (Exception x) { erreurs.Add(chemin + " : " + x.Message); }
@@ -688,7 +694,7 @@ namespace InstallateurToolkit
                 }
                 catch { }
                 MessageBox.Show(this, erreurs.Count == 0
-                    ? "Toolkit a été désinstallé." + (tout.Checked ? "" : "\nTes projets et réglages sont toujours dans « " + dossier + " ».")
+                    ? "Toolkit a été désinstallé." + (tout.Checked ? "" : "\nTes projets, tes kits et tes réglages sont toujours dans « " + dossier + " ».")
                     : "Toolkit a été désinstallé, mais certains éléments n'ont pas pu être retirés (Toolkit est peut-être encore ouvert) :\n" + string.Join("\n", erreurs),
                     "Toolkit", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 // Ce fichier (« Désinstaller Toolkit.exe ») se retire lui-même juste après sa fermeture.

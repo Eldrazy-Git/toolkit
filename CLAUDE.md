@@ -35,6 +35,7 @@ Toolkit/                  ← racine (déplaçable n'importe où)
 ├── app/                  ← CE dossier : code de l'appli, seul repo Git de l'appli
 ├── projets/              ← projets de l'utilisateur (un repo Git par projet, hors repo appli)
 ├── templates/            ← (facultatif) modèles personnels de l'utilisateur
+├── kits/                 ← kits et skills de l'utilisateur (son propre dépôt Git, créé à la première utilisation)
 ├── donnees/              ← réglages + données des outils (jamais versionné)
 ├── Toolkit.exe           ← lanceur créé par l'installateur (cible des raccourcis)
 └── Lancer Toolkit.vbs    ← généré automatiquement (lanceur.js), lance l'appli sans console
@@ -72,6 +73,7 @@ app/
 ├── assets/                  icône de Toolkit (générée par scripts/generer-icones.js)
 ├── docs/
 │   ├── projet-json.md           format complet de la fiche projet.json
+│   ├── kits.md                  kits et skills : règles pour Claude, format de kit.json, commande
 │   ├── PROTOCOLE-MISE-A-JOUR.md procédure pour publier une nouvelle version (local, non versionné)
 │   └── notes-de-version/        nouveautés de chaque version (<version>.md, montrées aux utilisateurs)
 ├── installateur/Installateur.cs installateur graphique / lanceur Toolkit.exe / désinstallateur
@@ -100,6 +102,7 @@ app/
     │   ├── recherche.js         index MiniSearch (projets + .md), liens [[…]], rétroliens
     │   ├── notes.js             notes .md : rendu markdown-it (HTML brut désactivé), lecture, écriture
     │   ├── modeles.js           modèles de « Nouvel outil » et création du projet
+    │   ├── kits.js              bibliothèque de kits : lecture, catalogue, plan et ajout à un projet
     │   ├── claude-md.js         génération du CLAUDE.md d'un projet
     │   ├── comptes.js           comptes Claude / GitHub : état, changement, déconnexion
     │   ├── proprietaires-raccourcis.js quel programme (AMD, PowerToys) a réservé un raccourci
@@ -322,6 +325,18 @@ Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
   `projets/`. Liens dans `projet.json > liens`. Au lancement de Claude sur un projet :
   `--add-dir` avec les dossiers des projets reliés (placé APRÈS la demande initiale, car
   l'option prend tous les arguments qui la suivent).
+- Kits et skills (`src/main/kits.js`, `scripts/kit.js`, format et règles dans `docs/kits.md`) :
+  bibliothèque de l'utilisateur dans `Toolkit/kits/`, hors du dépôt de l'application ; AUCUN kit livré
+  avec Toolkit. Créée par `kits.preparerPourClaude()` au premier lancement de Claude sur un projet
+  (dépôt Git local, `propositions/` et `CATALOGUE.md` ignorés), puis passée en `--add-dir` (projets
+  seulement : ni « Modifier Toolkit », ni « Discuter »). Claude Code charge ses skills, mais pas de
+  `CLAUDE.md` depuis un `--add-dir` : les règles sont donc dans la section `toolkit:kits` de
+  `projets/CLAUDE.md` (toujours écrite, même sans kit). `--add-dir` donne aussi le droit d'écrire :
+  seule une règle écrite empêche Claude de modifier `kits/` depuis un projet.
+  Ajout à un projet : `planifierAjout()` vérifie tout sans rien écrire, `executerAjout()` copie (tout ou
+  rien), ajoute une section `toolkit:kit=<id>=` au CLAUDE.md du projet et note `kits` dans projet.json.
+  Tests : copier `src/`, `scripts/` et `package.json` dans un dossier temporaire `<t>/app/` : la racine
+  étant calculée depuis le code, `<t>/kits` et `<t>/projets` remplacent les vrais dossiers.
 - « Modifier avec Claude » / « Modifier Toolkit avec Claude » : commit de sauvegarde
   (`sauvegarde:faire`, propose d'activer Git si besoin), puis onglet Claude. Une session
   Claude déjà en cours sur le même dossier est réutilisée. « Reprendre la conversation »
@@ -556,7 +571,7 @@ entrée dans `actions` de son `projet.json`.
   manquent, Claude Code décoché par défaut), installation
   (journal), fin. Inscrit Toolkit dans « Applications installées » (HKCU), copie de lui-même
   en « Désinstaller Toolkit.exe » (`/desinstaller` : app + lanceur + raccourcis à la
-  Corbeille, projets et donnees GARDÉS sauf case cochée). Le même exe a 3 rôles selon son
+  Corbeille, projets, kits et donnees GARDÉS sauf case cochée). Le même exe a 3 rôles selon son
   NOM de fichier : installateur, `Toolkit.exe` (lanceur à la racine : lance
   `app\node_modules\electron\dist\electron.exe app`, cible des raccourcis) et
   `Désinstaller Toolkit.exe` (désinstallation, même sans argument). `/auto <dossier> <journal>` :
@@ -621,8 +636,8 @@ local `git init --bare`).
   scripts) ; `package-lock.json` : nouvelle version (npm install le recalcule).
 - Application : commit de sauvegarde (dépôt créé si besoin, identité « Toolkit » par défaut),
   écriture, commit « Mise à jour de Toolkit … ». Puis redémarrage, ou `npm install` Toolkit
-  fermé si les dépendances changent (script de mises-a-jour.js). `donnees/` et `projets/`
-  ne sont jamais touchés.
+  fermé si les dépendances changent (script de mises-a-jour.js). `donnees/`, `projets/` et
+  `kits/` ne sont jamais touchés.
 - Point à côté du nom dans la barre latérale (`barre-laterale.js > pointMiseAJour`, état
   `majToolkit`) : vert = à jour, orange = nouvelle version, gris = inconnu. `toolkit-maj:etat`
   = `mise-a-jour-toolkit.etat()` (une requête, résultat gardé 6 h ; demandé 3 s après le
