@@ -373,7 +373,7 @@ button.lien-sous-groupe:hover { text-decoration: underline; }
 .logiciel-discussion { flex-shrink: 0; }
 .logiciel-separateur { width: 1px; height: 20px; margin: 0 4px; flex-shrink: 0; background: var(--bordure); }
 .logiciel-icone { width: 16px; height: 16px; flex-shrink: 0; }
-.logiciel-discussion .logiciel-icone { width: 22px; height: 22px; }
+.logiciel-discussion .logiciel-icone { width: 24px; height: 24px; }
 .logiciel .ico { width: 15px; height: 15px; flex-shrink: 0; }
 .logiciel-nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bouton-icone.logiciel-ajouter { width: 24px; height: 24px; flex-shrink: 0; }
