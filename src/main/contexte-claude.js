@@ -16,7 +16,11 @@ const chemins = require('./chemins');
 const projets = require('./projets');
 const reglages = require('./reglages');
 const journal = require('./journal');
+const kits = require('./kits');
+const { ecrireSection } = require('./fichiers');
 
+const DEBUT_KITS = '<!-- toolkit:kits (section tenue à jour par Toolkit : ne pas la modifier à la main) -->';
+const FIN_KITS = '<!-- /toolkit:kits -->';
 const DEBUT_LIES = '<!-- toolkit:projets-lies (section tenue à jour par Toolkit : ne pas la modifier à la main) -->';
 const FIN_LIES = '<!-- /toolkit:projets-lies -->';
 const DEBUT_CONSIGNES = '<!-- toolkit:consignes (section tenue à jour par Toolkit depuis Réglages > Claude : ne pas la modifier ici) -->';
@@ -148,43 +152,28 @@ function sectionCatalogue(liste, aretes) {
   return lignes.join('\n');
 }
 
-// --- Écriture des sections ------------------------------------------------------------------
-
-// Remplace (ou ajoute, ou retire si section = null) la section entre debut et fin.
-// Renvoie true si le fichier a changé.
-async function ecrireSection(fichier, debut, fin, section, { creerSi = null } = {}) {
-  let actuel = null;
-  try {
-    actuel = await fs.readFile(fichier, 'utf8');
-  } catch (erreur) {
-    if (erreur.code !== 'ENOENT') throw erreur;
-  }
-  if (actuel === null) {
-    if (!section) return false;
-    await fs.writeFile(fichier, `${creerSi || ''}${section}\n`, 'utf8');
-    return true;
-  }
-  const crlf = actuel.includes('\r\n');
-  const texte = actuel.replace(/\r\n/g, '\n');
-  const i = texte.indexOf(debut.split(' (')[0]);
-  const j = texte.indexOf(fin);
-  let nouveau;
-  if (i >= 0 && j > i) {
-    const avant = texte.slice(0, i);
-    const apres = texte.slice(j + fin.length);
-    nouveau = section ? `${avant}${section}${apres}` : `${avant.replace(/\n+$/, '\n')}${apres.replace(/^\n+/, '')}`;
-  } else {
-    if (!section) return false;
-    nouveau = `${texte.replace(/\n*$/, '\n\n')}${section}\n`;
-  }
-  if (nouveau === texte) return false;
-  // Fichier qui ne contenait que la section retirée : supprimé plutôt que laissé vide.
-  if (!nouveau.trim()) {
-    await fs.unlink(fichier);
-    return true;
-  }
-  await fs.writeFile(fichier, crlf ? nouveau.replace(/\n/g, '\r\n') : nouveau, 'utf8');
-  return true;
+// Règles de base des kits (voir docs/kits.md). Toujours présente, même sans aucun kit.
+function sectionKits() {
+  const depuisProjet = (absolu, repli) => {
+    const relatif = path.relative(path.join(chemins.projets(), 'projet'), absolu);
+    return path.isAbsolute(relatif) ? repli : relatif.split(path.sep).join('/');
+  };
+  const dossierKits = depuisProjet(chemins.kits, '<racine de Toolkit>/kits');
+  const script = depuisProjet(path.join(chemins.app, 'scripts', 'kit.js'), '<racine de Toolkit>/app/scripts/kit.js');
+  const doc = depuisProjet(path.join(chemins.app, 'docs', 'kits.md'), '<racine de Toolkit>/app/docs/kits.md');
+  return [
+    DEBUT_KITS,
+    '# Kits et skills réutilisables',
+    '',
+    `L'utilisateur a sa propre bibliothèque : \`${dossierKits}/\` depuis un projet. Règles complètes : \`${doc}\`.`,
+    '',
+    `- Avant de coder, consulte le catalogue \`${dossierKits}/CATALOGUE.md\` (absent ou vide : aucun kit pour l'instant).`,
+    `- Si un kit convient, utilise-le : \`node ${script} ajouter <kit> --projet <dossier du projet>\``,
+    '  (`--essai` montre ce qui serait fait sans rien écrire). S\'il doit être adapté, termine en suivant son guide.',
+    '- Ne recode jamais ce qu\'un kit fournit.',
+    '- Ne modifie pas la bibliothèque depuis un projet, sauf si l\'utilisateur le demande.',
+    FIN_KITS,
+  ].join('\n');
 }
 
 let enCours = null;
@@ -213,6 +202,9 @@ async function toutMettreAJour() {
   if (await ecrireSection(fichierConsignes, DEBUT_CONSIGNES, FIN_CONSIGNES, sectionConsignes)) modifies.push(fichierConsignes);
   const catalogue = path.join(chemins.projets(), 'CLAUDE.md');
   if (await ecrireSection(catalogue, DEBUT_CATALOGUE, FIN_CATALOGUE, sectionCatalogue(liste, aretes))) modifies.push(catalogue);
+  if (await ecrireSection(catalogue, DEBUT_KITS, FIN_KITS, sectionKits())) modifies.push(catalogue);
+  // Catalogue des kits : seulement si la bibliothèque existe (créée à la première utilisation).
+  await kits.ecrireCatalogue().catch((erreur) => journal.erreur('Catalogue des kits :', erreur));
   for (const p of liste) {
     const fichier = path.join(chemins.projets(), p.id, 'CLAUDE.md');
     try {
@@ -259,6 +251,8 @@ async function preparerDiscussion() {
     '  `app/CLAUDE.md` avant de répondre à une question sur Toolkit.',
     `- Chaque projet est dans \`${dossierProjets}/<dossier>/\` (\`projet.json\`, souvent un \`CLAUDE.md\`) :`,
     '  lis-les avant de parler d\'un projet en détail, sans inventer ce que tu n\'as pas vérifié.',
+    '- `kits/` est la bibliothèque personnelle de kits et de skills (`kits/CATALOGUE.md`, règles dans',
+    '  `app/docs/kits.md`). Elle peut ne pas exister encore.',
     '- N\'explore pas `donnees/` (données internes de Toolkit) ni les `node_modules`.',
     '- Cette conversation est en lecture seule : tu ne peux ni modifier de fichier ni lancer de',
     '  commande. Quand une décision mène à du travail, dis où le faire et donne une demande prête à',

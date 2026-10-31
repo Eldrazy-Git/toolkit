@@ -58,6 +58,21 @@ function normaliserLiens(valeur) {
     .filter((l) => !vus.has(l.projet) && vus.add(l.projet));
 }
 
+// Kits ajoutés au projet : [{ id, version, variables }] (voir kits.js et docs/projet-json.md).
+function normaliserKits(valeur) {
+  if (!Array.isArray(valeur)) return [];
+  const vus = new Set();
+  return valeur
+    .filter((k) => k && texte(k.id) && texte(k.version))
+    .map((k) => {
+      const variables = k.variables && typeof k.variables === 'object' && !Array.isArray(k.variables)
+        ? Object.fromEntries(Object.entries(k.variables).filter(([, v]) => typeof v === 'string'))
+        : {};
+      return { id: texte(k.id), version: texte(k.version), ...(Object.keys(variables).length ? { variables } : {}) };
+    })
+    .filter((k) => !vus.has(k.id) && vus.add(k.id));
+}
+
 // Rend une fiche utilisable par l'interface, même incomplète, et liste les problèmes.
 // La fiche d'origine sur le disque n'est jamais réécrite par cette fonction.
 function normaliserFiche(brut, id) {
@@ -86,6 +101,7 @@ function normaliserFiche(brut, id) {
         : null,
     },
     liens: normaliserLiens(b.liens),
+    kits: normaliserKits(b.kits),
     action_par_defaut: null,
   };
 
@@ -360,6 +376,11 @@ async function modifierFiche(id, changements) {
     const liens = normaliserLiens(changements.liens).filter((l) => l.projet !== id);
     if (liens.length) brut.liens = liens;
     else delete brut.liens;
+  }
+  if ('kits' in changements) {
+    const liste = normaliserKits(changements.kits);
+    if (liste.length) brut.kits = liste;
+    else delete brut.kits;
   }
   if ('action_par_defaut' in changements) {
     const valeur = texte(changements.action_par_defaut);

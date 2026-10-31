@@ -6,14 +6,18 @@ const fs = require('node:fs');
 const chemins = require('./chemins');
 
 const TAILLE_MAX = 1024 * 1024;
+// Une commande (scripts/) montre ses propres messages : la trace technique reste au journal.
+let avecConsole = true;
 
 function ecrire(niveau, elements) {
   const texte = elements
     .map((e) => (e instanceof Error ? e.stack || e.message : String(e)))
     .join(' ');
   const ligne = `[${new Date().toISOString()}] ${niveau} ${texte}\n`;
-  if (niveau === 'ERREUR') console.error(texte);
-  else console.log(texte);
+  if (avecConsole) {
+    if (niveau === 'ERREUR') console.error(texte);
+    else console.log(texte);
+  }
   try {
     fs.mkdirSync(chemins.donnees, { recursive: true });
     if (fs.existsSync(chemins.journal) && fs.statSync(chemins.journal).size > TAILLE_MAX) {
@@ -28,4 +32,5 @@ function ecrire(niveau, elements) {
 module.exports = {
   info: (...e) => ecrire('INFO', e),
   erreur: (...e) => ecrire('ERREUR', e),
+  sansConsole: () => { avecConsole = false; },
 };

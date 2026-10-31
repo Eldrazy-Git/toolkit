@@ -50,4 +50,41 @@ async function existe(chemin) {
   }
 }
 
-module.exports = { lireJson, ecrireJson, existe, messageErreurJson };
+// Remplace (ou ajoute, ou retire si section = null) la section entre debut et fin d'un fichier
+// texte ; le reste du fichier n'est pas touché. Renvoie true si le fichier a changé.
+async function ecrireSection(fichier, debut, fin, section, { creerSi = null } = {}) {
+  let actuel = null;
+  try {
+    actuel = await fs.readFile(fichier, 'utf8');
+  } catch (erreur) {
+    if (erreur.code !== 'ENOENT') throw erreur;
+  }
+  if (actuel === null) {
+    if (!section) return false;
+    await fs.writeFile(fichier, `${creerSi || ''}${section}\n`, 'utf8');
+    return true;
+  }
+  const crlf = actuel.includes('\r\n');
+  const texte = actuel.replace(/\r\n/g, '\n');
+  const i = texte.indexOf(debut.split(' (')[0]);
+  const j = texte.indexOf(fin);
+  let nouveau;
+  if (i >= 0 && j > i) {
+    const avant = texte.slice(0, i);
+    const apres = texte.slice(j + fin.length);
+    nouveau = section ? `${avant}${section}${apres}` : `${avant.replace(/\n+$/, '\n')}${apres.replace(/^\n+/, '')}`;
+  } else {
+    if (!section) return false;
+    nouveau = `${texte.replace(/\n*$/, '\n\n')}${section}\n`;
+  }
+  if (nouveau === texte) return false;
+  // Fichier qui ne contenait que la section retirée : supprimé plutôt que laissé vide.
+  if (!nouveau.trim()) {
+    await fs.unlink(fichier);
+    return true;
+  }
+  await fs.writeFile(fichier, crlf ? nouveau.replace(/\n/g, '\r\n') : nouveau, 'utf8');
+  return true;
+}
+
+module.exports = { lireJson, ecrireJson, existe, messageErreurJson, ecrireSection };

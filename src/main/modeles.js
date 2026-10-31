@@ -131,7 +131,9 @@ async function creerDepuisModele({ nom, modeleId, categorie, description }) {
   }
 
   const demande = `Crée l'outil « ${nom} » décrit ci-dessous. Commence par lire CLAUDE.md et projet.json, `
-    + 'puis transforme les fichiers de départ du modèle pour réaliser l\'outil. Mets à jour projet.json '
+    + 'puis transforme les fichiers de départ du modèle pour réaliser l\'outil. Avant de coder, consulte le '
+    + 'catalogue des kits (section « Kits et skills réutilisables » de ../CLAUDE.md), utilise ceux qui conviennent '
+    + 'et ne recode jamais ce qu\'ils fournissent. Mets à jour projet.json '
     + '(description, actions…) si nécessaire, puis fais un commit local quand c\'est terminé.\n\n'
     + `Ce que l'outil doit faire :\n${description}`;
 
