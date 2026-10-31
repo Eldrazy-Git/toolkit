@@ -19,7 +19,7 @@ Ce fichier est la référence complète pour modifier l'application.
 
 ## L'utilisateur
 
-- Il ne sait pas coder. Parle-lui **en français**, simplement.
+- Parle-lui **en français**, simplement.
 - Quand il doit agir lui-même, donne-lui les étapes exactes (commande à copier, où cliquer,
   ce qu'il doit voir).
 - **Demande confirmation** avant toute action risquée : déplacement ou suppression de

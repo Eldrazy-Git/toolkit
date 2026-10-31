@@ -254,7 +254,7 @@ async function preparerDiscussion() {
     'de bureau qui centralise ses projets. Il vient réfléchir avec toi : idées, choix, organisation,',
     'priorités, questions sur ses projets ou sur Toolkit.',
     '',
-    '- Réponds en français, simplement : il ne sait pas forcément coder.',
+    '- Réponds en français, simplement.',
     '- Ton dossier de travail est la racine de Toolkit. `app/` contient le code de Toolkit : lis',
     '  `app/CLAUDE.md` avant de répondre à une question sur Toolkit.',
     `- Chaque projet est dans \`${dossierProjets}/<dossier>/\` (\`projet.json\`, souvent un \`CLAUDE.md\`) :`,
