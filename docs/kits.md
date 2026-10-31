@@ -98,6 +98,68 @@ section « Kits et skills réutilisables » de `projets/CLAUDE.md`, écrite par 
   normal (`toolkit-kits`), créé seulement à la demande, et envoyé seulement par Push ou « Tout envoyer ».
 - **Autre PC** : « Récupérer depuis GitHub » copie ce dépôt dans `Toolkit/kits/`. Une bibliothèque vide
   part à la Corbeille ; une bibliothèque qui contient quelque chose n'est jamais remplacée.
+- **« Vérifier les projets »** (onglet « Kits et skills ») : compare les projets choisis à la bibliothèque,
+  sans Claude et sans rien modifier, puis liste les ajustements. Voir ci-dessous.
+
+## Vérifier les projets
+
+Toolkit cherche, dans chaque projet choisi :
+
+- un kit du projet qui a une version plus récente dans la bibliothèque, ou qui n'y est plus ;
+- du code très proche d'un kit que le projet ne déclare pas (au moins 35 % de ses lignes significatives). Un kit
+  qui écrit à la racine du projet est un point de départ pour un nouveau projet : il n'entre pas dans ce contrôle ;
+- ce que les skills et les kits demandent de vérifier, avec leur fichier `verification.json`.
+
+Pour chaque ajustement :
+
+- **Faire** : sauvegarde Git, puis Claude s'ouvre dans le projet avec la demande. Il explique ce qu'il compte faire avant de modifier.
+- **Ignorer** : retire la ligne du rapport. La prochaine vérification la retrouve.
+- **Exception** : ne plus la détecter dans ce projet. Notée dans `projet.json` (champ `exceptions_verification`, lu par
+  la vérification) et dans le `CLAUDE.md` du projet (section `toolkit:exceptions`, lue par Claude). Le rapport la liste, et elle se retire de là.
+
+### Format de `verification.json`
+
+À placer dans le dossier d'un skill (`.claude/skills/<nom>/`) ou d'un kit. Une erreur dans ce fichier est signalée dans le rapport
+et n'empêche pas le reste. Une proposition n'est jamais lue tant qu'elle n'est pas acceptée.
+
+```json
+{
+  "schema": 1,
+  "regles": [
+    {
+      "id": "alarmes-sans-redemarrage",
+      "titre": "Les alarmes ne sont pas reprogrammées après un redémarrage",
+      "detail": "Android perd les alarmes quand le téléphone redémarre.",
+      "gravite": "important",
+      "types": ["android"],
+      "si": [
+        { "fichiers": "**/*.{kt,java}", "contient": "setExact" },
+        { "fichiers": "**/AndroidManifest.xml", "ne_contient_pas": "BOOT_COMPLETED" }
+      ],
+      "demande": "Suis le skill `android-rappels-fiables` pour {{fichiers}}."
+    }
+  ],
+  "script": {
+    "chemin": "scripts/mon-controle.cjs",
+    "arguments": ["--json"],
+    "types": ["html"],
+    "demande": "Point à traiter : {{titre}} ({{detail}})."
+  }
+}
+```
+
+- `id` (minuscules, chiffres, tirets) et `titre` sont obligatoires. `id` ne doit plus changer : les exceptions s'en servent.
+- `gravite` : `important`, ou `conseil` par défaut. `types` : facultatif, les types de projets concernés.
+- `si` : toutes les conditions doivent être vraies. `fichiers` est un motif (`*`, `**/`, `{a,b}`), avec au choix :
+  `contient` et `ne_contient_pas` (expression régulière, multiligne), `existe` (`true` ou `false`), `taille_min_ko`.
+  Les fichiers sensibles, binaires ou de plus de 2 Mo ne sont jamais lus.
+- `demande` : ce que Claude reçoit avec « Faire ». Variables : `{{fichiers}}`, `{{titre}}`, `{{detail}}`. Sans `demande`, Toolkit en écrit une
+  qui renvoie au skill ou au guide. Toolkit ajoute toujours : expliquer d'abord, attendre l'accord, commit local sans push.
+- `script` : facultatif, pour ce qu'une expression ne peut pas vérifier. Il est lancé avec le Node intégré à Toolkit, avec le dossier du
+  projet en premier argument, et doit **ne rien modifier**. Il écrit sur sa sortie :
+  `{ "ajustements": [{ "cle": "stable", "titre": "…", "detail": "…", "fichiers": ["…"], "gravite": "conseil" }] }`.
+  Aucune valeur secrète ne doit apparaître, ni dans la sortie ni dans `cle`. Durée maximale : 3 minutes par projet.
+  Seul ton dossier `kits/` contient ces scripts : n'accepte que des skills que tu as relus.
 
 ## Format de `kit.json`
 

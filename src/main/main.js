@@ -214,6 +214,7 @@ async function demarrer() {
   require('./ipc/code').enregistrer();
   require('./ipc/logiciels').enregistrer();
   require('./ipc/kits').enregistrer();
+  require('./ipc/verification').enregistrer();
   ipcMain.on('application:non-enregistre', (_e, valeur) => { travailNonEnregistre = Boolean(valeur); });
 
   zoneNotification.creer({ afficher: afficherFenetre, quitter });

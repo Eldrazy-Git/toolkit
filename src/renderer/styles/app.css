@@ -1043,6 +1043,13 @@ button.lien-sous-groupe:hover { text-decoration: underline; }
 .proposition-alerte { margin: 0; }
 .proposition-alerte ul { margin: 4px 0 0; padding-left: 18px; }
 .ligne-proposition { border-color: var(--accent); }
+.bloc-verification { margin-bottom: 8px; }
+.bloc-verification > summary { display: flex; align-items: center; gap: 8px; padding: 6px 2px; cursor: pointer; }
+.bloc-verification > summary::before { content: '▸'; color: var(--texte-attenue, inherit); }
+.bloc-verification[open] > summary::before { content: '▾'; }
+.bloc-verification > summary::-webkit-details-marker { display: none; }
+.progression-verification { align-items: center; }
+.boutons-cases { margin: 4px 0; }
 .kit-utilisateurs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; }
 .kit-retard { border-color: var(--attention, #d7a02b); }
 .liste-kits-projet { display: flex; flex-direction: column; gap: 6px; }

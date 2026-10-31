@@ -30,6 +30,8 @@ const etat = {
   kits: null, // { existe, kits, skills } (voir composants/kits.js), chargé à la demande
   kitsDate: 0, // quand kits a été lu (pour le relire de temps en temps)
   kitsFiltre: '', // filtre par type de projet de l'onglet « Kits »
+  verification: null, // { projets, exceptions } : rapport de vérification (voir composants/verification.js)
+  verificationEnCours: null, // { fait, total, nom } pendant une vérification
   git: {}, // état Git par cible (clé : 'toolkit:' ou 'projet:<id>'), voir actions-git.js
   gitOccupe: {}, // clé -> texte de l'opération en cours (ex. « Envoi… »)
   github: null, // { installe, connecte, compte }

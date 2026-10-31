@@ -103,6 +103,7 @@ app/
     │   ├── notes.js             notes .md : rendu markdown-it (HTML brut désactivé), lecture, écriture
     │   ├── modeles.js           modèles de « Nouvel outil » et création du projet
     │   ├── kits.js              bibliothèque de kits : catalogue, ajout à un projet, création, récupération
+    │   ├── verification.js      « Vérifier les projets » : compare les projets à la bibliothèque, rapport, exceptions
     │   ├── claude-md.js         génération du CLAUDE.md d'un projet
     │   ├── comptes.js           comptes Claude / GitHub : état, changement, déconnexion
     │   ├── proprietaires-raccourcis.js quel programme (AMD, PowerToys) a réservé un raccourci
@@ -146,6 +147,7 @@ app/
             ├── console.js       panneau d'exécution d'une action (sortie en direct)
             ├── import.js        onglet « Importer un projet » (assistant en étapes)
             ├── kits.js          onglet « Kits et skills » + section « Kits » des détails d'un projet
+            ├── verification.js  bouton « Vérifier les projets » et rapport de l'onglet « Kits et skills »
             ├── git.js           onglet « Git et GitHub » + pastilles/boutons réutilisés dans les détails
             ├── actions-git.js   actions Git (commit, push, pull, tout envoyer, dépôt GitHub privé)
             ├── details-git.js   fenêtres de détail : fichiers modifiés + différences, commits
@@ -353,6 +355,14 @@ Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
   `accepterProposition()` revérifie, déplace, commite ; `refuserProposition()` = Corbeille + ligne dans
   `REFUS.md`. Compteur dans la barre latérale, relu au retour dans Toolkit et quand Claude finit (pas de
   lecture périodique). `kit.js propositions` : le même contrôle pour Claude.
+- « Vérifier les projets » (`verification.js`, `ipc/verification.js`, `composants/verification.js`, format dans `docs/kits.md`) : déterministe,
+  JAMAIS de demande à Claude ni de clé API. `analyserProjet()` n'écrit rien ; l'interface appelle `verifierProjet()` projet par projet
+  (progression, bouton Arrêter). Rapport : `donnees/verification-kits.json` (remplacé projet par projet). Ce qu'il faut contrôler vient de la
+  bibliothèque de l'utilisateur (`verification.json` d'un skill ou d'un kit) : rien de propre à un skill dans le code de Toolkit. Seule détection
+  codée ici : version des kits et code recopié d'un kit (lignes significatives communes). Les scripts d'un skill tournent avec `process.execPath`
+  + `ELECTRON_RUN_AS_NODE`. « Faire » = `modifierAvecClaude()` (sauvegarde Git, puis Claude) ; « Ignorer » = retiré du rapport seulement ;
+  « Exception » = `exceptions_verification` de projet.json + section `toolkit:exceptions` du CLAUDE.md du projet, sans commit (l'utilisateur
+  commite depuis l'onglet Git, comme après l'ajout d'un kit).
 - Dépôt GitHub de la bibliothèque : dépôt privé NORMAL `toolkit-kits` (pas la fonction « dépôt
   partagé »), ligne « Kits et skills » de l'onglet Git. `recupererDepot()` clone dans `donnees/`, refuse
   un dépôt sans `propositions/` dans son `.gitignore` et une bibliothèque non vide

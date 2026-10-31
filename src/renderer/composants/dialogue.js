@@ -213,7 +213,7 @@ export function formulaire({ titre, message, champs, bouton = 'Valider' }) {
 // filtrable : champ pour filtrer une longue liste ;
 // nouveau : libellé d'un champ texte facultatif en dessous (ex. « Créer aussi un groupe »).
 // Renvoie { choisis: [valeurs cochées], nouveau: texte saisi } ou null si annulé.
-export function cocher({ titre, message, elements, bouton = 'Valider', filtrable = false, nouveau = null, vide = 'Aucun élément.' }) {
+export function cocher({ titre, message, elements, bouton = 'Valider', filtrable = false, toutCocher = false, nouveau = null, vide = 'Aucun élément.' }) {
   return ouvrir((fermer) => {
     const lignes = elements.map((e) => {
       const caseACocher = el('input', { type: 'checkbox' });
@@ -245,6 +245,9 @@ export function cocher({ titre, message, elements, bouton = 'Valider', filtrable
         el('h2', {}, titre),
         message ? el('p', {}, message) : null,
         champFiltre,
+        toutCocher && lignes.length ? el('div', { classe: 'details-boutons boutons-cases' },
+          el('button', { classe: 'bouton petit', onClick: () => lignes.forEach((l) => { if (!l.ligne.hidden) l.caseACocher.checked = true; }) }, 'Tout cocher'),
+          el('button', { classe: 'bouton petit', onClick: () => lignes.forEach((l) => { if (!l.ligne.hidden) l.caseACocher.checked = false; }) }, 'Tout décocher')) : null,
         lignes.length
           ? el('div', { classe: 'liste-cases' }, lignes.map((l) => l.ligne))
           : el('p', { classe: 'details-aide' }, vide),
