@@ -62,7 +62,11 @@ function onglet({ id, titre, visuel, actif, fermable, attention = false }) {
 }
 
 function visuelOutil(o) {
-  if (o.genre === 'terminal') return icone({ claude: 'claude', connexion: 'utilisateur' }[o.mode] || 'terminal');
+  if (o.genre === 'terminal') {
+    const visuel = icone({ claude: 'claude', connexion: 'utilisateur' }[o.mode] || 'terminal');
+    if (o.mode === 'claude') visuel.classList.add('ico-claude');
+    return visuel;
+  }
   if (o.genre === 'console') return icone('lecture');
   if (o.genre === 'note') return icone('note');
   if (o.genre === 'code') return icone('code');
