@@ -1142,7 +1142,8 @@ export async function lancerAction(projet, index) {
 // Ouvre un onglet de terminal. cible : { type: 'projet', id } | { type: 'toolkit' } | { type: 'racine' }
 // nomCible : nom lisible du dossier (pour le titre de l'onglet).
 // continuer : Claude reprend la dernière conversation (claude --continue).
-export function ouvrirTerminal({ mode, cible, nomCible, demande, continuer = false }) {
+// reprendre : id d'une conversation précise. nom : titre de l'onglet, s'il n'est pas le titre habituel.
+export function ouvrirTerminal({ mode, cible, nomCible, demande, continuer = false, reprendre, nom }) {
   const onglet = {
     id: `terminal-${crypto.randomUUID()}`,
     genre: 'terminal',
@@ -1151,7 +1152,8 @@ export function ouvrirTerminal({ mode, cible, nomCible, demande, continuer = fal
     nomCible,
     demande,
     continuer,
-    nom: `${mode === 'claude' ? 'Claude' : 'PowerShell'} · ${nomCible}`,
+    reprendre,
+    nom: nom || `${mode === 'claude' ? 'Claude' : 'PowerShell'} · ${nomCible}`,
     enCours: true,
   };
   etat.modifier({ onglets: [...etat.obtenir().onglets, onglet], ongletActif: onglet.id });
@@ -1162,6 +1164,13 @@ export function marquerTerminal(id, enCours) {
   const { onglets } = etat.obtenir();
   if (!onglets.some((o) => o.id === id && o.enCours !== enCours)) return;
   etat.modifier({ onglets: onglets.map((o) => (o.id === id ? { ...o, enCours } : o)) });
+}
+
+// Appelé par le panneau du terminal : quelle conversation Claude affiche cet onglet.
+export function noterSessionTerminal(id, idSession) {
+  const { onglets } = etat.obtenir();
+  if (!onglets.some((o) => o.id === id && o.idSession !== idSession)) return;
+  etat.modifier({ onglets: onglets.map((o) => (o.id === id ? { ...o, idSession } : o)) });
 }
 
 // Connexion à un compte (service : 'claude' | 'github') dans un terminal : l'outil officiel

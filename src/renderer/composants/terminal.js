@@ -234,7 +234,10 @@ export function creerPanneauTerminal(onglet, parent) {
       });
       chemin.replaceChildren(resultat.chemin || '');
       chemin.title = resultat.chemin || '';
-      if (resultat.idSession) idSession = resultat.idSession;
+      if (resultat.idSession) {
+        idSession = resultat.idSession;
+        actions.noterSessionTerminal(onglet.id, idSession);
+      }
       if (!resultat.ok) {
         actifs.delete(id);
         idProcessus = null;
@@ -350,7 +353,7 @@ export function creerPanneauTerminal(onglet, parent) {
     relancer(session ? { reprendre: session.id } : {});
   }
 
-  demarrer({ continuer: Boolean(onglet.continuer) });
+  demarrer({ continuer: Boolean(onglet.continuer), reprendre: onglet.reprendre });
 
   return {
     element,

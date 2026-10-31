@@ -8,6 +8,7 @@ import { ouvrirRecherche } from './recherche.js';
 import { focaliserFiltre } from './bibliotheque.js';
 import { afficherHistorique } from './historique.js';
 import * as actionsGit from './actions-git.js';
+import { nouvelleDiscussion } from './discussion.js';
 
 const ZOOMS = [50, 67, 75, 80, 90, 100, 110, 125, 150, 175, 200];
 
@@ -50,6 +51,7 @@ export function executer(id) {
     case 'git': actions.ouvrirGit(); break;
     case 'nouvelOutil': actions.nouvelOutil(); break;
     case 'terminal': actions.ouvrirPowerShell({ type: 'racine' }, 'Toolkit'); break;
+    case 'discussion': nouvelleDiscussion(); break;
     case 'zoomPlus': zoomer(1); break;
     case 'zoomMoins': zoomer(-1); break;
     case 'zoomNormal': zoomer(0); break;
@@ -66,6 +68,7 @@ export function listePalette() {
   const r = (id) => raccourcis.afficher(raccourcis.touche(id));
   const liste = [
     { titre: 'Nouvel outil (avec Claude)', groupe: 'Toolkit', icone: 'plus', raccourci: r('nouvelOutil'), action: actions.nouvelOutil },
+    { titre: 'Discuter avec Claude', detail: 'de Toolkit et des projets, sans rien modifier', groupe: 'Toolkit', icone: 'claude', raccourci: r('discussion'), action: nouvelleDiscussion },
     { titre: 'Importer un projet', groupe: 'Toolkit', icone: 'importer', action: actions.ouvrirImport },
     { titre: 'Rechercher dans les projets et les notes', groupe: 'Toolkit', icone: 'recherche', raccourci: r('recherche'), action: ouvrirRecherche },
     { titre: 'Git et GitHub', groupe: 'Toolkit', icone: 'git', raccourci: r('git'), action: actions.ouvrirGit },

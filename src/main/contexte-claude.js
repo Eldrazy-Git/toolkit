@@ -240,4 +240,37 @@ async function dossiersLies(projetId) {
   return relies(projetId, graphe(liste)).map((r) => path.join(chemins.projets(), r.id));
 }
 
-module.exports = { toutMettreAJour, planifier, dossiersLies };
+// Bouton « Discuter » : Claude lancé à la racine de Toolkit, en lecture seule. Réécrit à chaque
+// lancement pour que le catalogue soit à jour ; un fichier, car la ligne de commande de Windows
+// est limitée (environ 32 000 caractères) et le catalogue grandit avec les projets.
+// Renvoie { fichier, dossiers } : les consignes, et le dossier des projets s'il est hors de la racine.
+async function preparerDiscussion() {
+  const liste = (await projets.listerProjets()).filter((p) => !p.erreur);
+  const dossierProjets = chemins.versRelatif(chemins.projets());
+  const texte = [
+    '# Discussion avec l\'utilisateur de Toolkit',
+    '',
+    'L\'utilisateur a ouvert cette conversation avec le bouton « Discuter » de Toolkit, l\'application',
+    'de bureau qui centralise ses projets. Il vient réfléchir avec toi : idées, choix, organisation,',
+    'priorités, questions sur ses projets ou sur Toolkit.',
+    '',
+    '- Réponds en français, simplement : il ne sait pas forcément coder.',
+    '- Ton dossier de travail est la racine de Toolkit. `app/` contient le code de Toolkit : lis',
+    '  `app/CLAUDE.md` avant de répondre à une question sur Toolkit.',
+    `- Chaque projet est dans \`${dossierProjets}/<dossier>/\` (\`projet.json\`, souvent un \`CLAUDE.md\`) :`,
+    '  lis-les avant de parler d\'un projet en détail, sans inventer ce que tu n\'as pas vérifié.',
+    '- N\'explore pas `donnees/` (données internes de Toolkit) ni les `node_modules`.',
+    '- Cette conversation est en lecture seule : tu ne peux ni modifier de fichier ni lancer de',
+    '  commande. Quand une décision mène à du travail, dis où le faire et donne une demande prête à',
+    '  copier : « Modifier avec Claude » dans les détails d\'un projet, « Modifier Toolkit avec Claude »',
+    '  dans ceux de Toolkit, ou « Nouvel outil ». Toolkit y fait d\'abord une sauvegarde Git.',
+    '',
+    sectionCatalogue(liste, graphe(liste)).replace(/<!--.*?-->\n?/g, ''),
+    '',
+  ].join('\n');
+  const fichier = path.join(chemins.donnees, 'discussion-claude.md');
+  await fs.writeFile(fichier, texte, 'utf8');
+  return { fichier, dossiers: dossierProjets.startsWith('..') ? [chemins.projets()] : [] };
+}
+
+module.exports = { toutMettreAJour, planifier, dossiersLies, preparerDiscussion };

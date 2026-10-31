@@ -16,6 +16,7 @@ const { environnementPropre, sortieDe } = require('./processus');
 const { ID_SESSION } = require('./sessions-claude');
 
 const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];
+const OUTILS_LECTURE = 'Read,Glob,Grep,WebSearch,WebFetch';
 
 const DELAI_ENVOI = 8;
 
@@ -116,8 +117,9 @@ function viderTampon(id) {
 // Renvoie { ok: true, idSession } ou { ok: false, raison: 'claude-introuvable' } ;
 // idSession = conversation utilisée (null si inconnue : « --continue » sans session trouvée).
 // dossiersLies : dossiers en plus que Claude peut lire et modifier (« --add-dir », projets liés).
+// consignes : fichier de consignes en plus (bouton « Discuter ») ; Claude est alors en lecture seule.
 // mode 'commande' : un programme précis (ex. connexion à un compte), voir comptes.js.
-async function creer(id, { mode, dossier, demande, continuer, reprendre, nouvelleSession, modele, effort, colonnes, lignes, dossiersLies = [], commande = null }, contenu) {
+async function creer(id, { mode, dossier, demande, continuer, reprendre, nouvelleSession, modele, effort, colonnes, lignes, dossiersLies = [], consignes, commande = null }, contenu) {
   if (terminaux.has(id)) throw new Error('Ce terminal existe déjà.');
 
   let executable;
@@ -133,7 +135,10 @@ async function creer(id, { mode, dossier, demande, continuer, reprendre, nouvell
     const options = [];
     if (/^[a-z0-9.\[\]-]+$/i.test(modeleChoisi || '')) options.push('--model', modeleChoisi);
     if (EFFORTS.includes(effortChoisi)) options.push('--effort', effortChoisi);
-    if (['manual', 'acceptEdits', 'auto', 'plan'].includes(pref.autonomie)) options.push('--permission-mode', pref.autonomie);
+    // Discussion : seulement des outils de lecture (les connecteurs MCP pourraient écrire),
+    // l'autonomie des Réglages n'a donc pas de sens ici.
+    if (consignes) options.push('--tools', OUTILS_LECTURE, '--strict-mcp-config', '--append-system-prompt-file', consignes);
+    else if (['manual', 'acceptEdits', 'auto', 'plan'].includes(pref.autonomie)) options.push('--permission-mode', pref.autonomie);
     if (ID_SESSION.test(reprendre || '')) {
       idSession = reprendre;
       args = [...options, '--resume', reprendre];
