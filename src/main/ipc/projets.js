@@ -22,13 +22,15 @@ function enregistrer() {
   });
   // Ajouter, modifier, supprimer ou déplacer une action (voir projets.modifierActions).
   gerer('projets:modifier-actions', (id, operation) => projets.modifierActions(id, operation));
-  // Action « fichier » : choisir un fichier du projet (renvoie son chemin relatif, ou null).
-  gerer('projets:choisir-fichier', async (contenu, id) => {
+  // Action « fichier » ou « script » : choisir un fichier du projet (renvoie son chemin relatif, ou null).
+  gerer('projets:choisir-fichier', async (contenu, id, genre) => {
     if (!(await projets.chargerProjet(id))) throw new Error('Ce projet n\'existe plus.');
     const racine = path.join(chemins.projets(), id);
+    const script = genre === 'script';
     const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.fromWebContents(contenu) || undefined, {
-      title: 'Choisis le fichier à ouvrir (dans le dossier du projet)',
+      title: script ? 'Choisis le script à exécuter (dans le dossier du projet)' : 'Choisis le fichier à ouvrir (dans le dossier du projet)',
       defaultPath: racine,
+      filters: script ? [{ name: 'Scripts', extensions: projets.EXTENSIONS_SCRIPTS }] : undefined,
       properties: ['openFile'],
     });
     if (canceled || filePaths.length === 0) return null;

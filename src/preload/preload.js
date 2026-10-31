@@ -24,7 +24,7 @@ contextBridge.exposeInMainWorld('toolkit', {
     modifier: (id, changements) => appeler('projets:modifier', id, changements),
     // operation : { type: 'ajouter' | 'modifier' | 'supprimer' | 'deplacer', index, action, sens }
     modifierActions: (id, operation) => appeler('projets:modifier-actions', id, operation),
-    choisirFichier: (id) => appeler('projets:choisir-fichier', id), // chemin relatif au projet, ou null
+    choisirFichier: (id, genre) => appeler('projets:choisir-fichier', id, genre), // chemin relatif au projet, ou null
     ouvrirFichier: (id, indexAction) => appeler('projets:ouvrir-fichier', id, indexAction), // avec le programme de Windows
     renommerCategorie: (ancienne, nouvelle) => appeler('projets:renommer-categorie', ancienne, nouvelle),
     renommerTag: (ancien, nouveau) => appeler('projets:renommer-tag', ancien, nouveau),

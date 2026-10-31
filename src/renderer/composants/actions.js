@@ -440,9 +440,24 @@ export async function changerActionParDefaut(projet, valeur) {
 
 // --- Actions du projet (boutons « Actions » des détails) ------------------------------------
 
-// genre : 'commande' (lancer une commande) ou 'fichier' (ouvrir un fichier du projet).
+// genre : 'commande' (lancer une commande), 'fichier' (ouvrir un fichier du projet) ou 'script'
+// (exécuter un script du projet : enregistré comme une commande, modifiable ensuite comme telle).
 async function demanderAction(projet, action = null, genre = action?.genre || 'commande') {
   const titre = action ? `Modifier l'action « ${action.nom} »` : 'Nouvelle action';
+  if (genre === 'script') {
+    const valeurs = await formulaire({
+      titre,
+      message: 'Le bouton exécutera ce script du projet et affichera ce qu\'il écrit. Scripts acceptés : Python, Node.js, PowerShell, .bat et .cmd.',
+      champs: [
+        { id: 'fichier', libelle: 'Script à exécuter', type: 'fichier', obligatoire: true, choisir: () => api.projets.choisirFichier(projet.id, 'script') },
+        { id: 'nom', libelle: 'Nom du bouton', obligatoire: false, exemple: 'Vide = le nom du script' },
+        { id: 'description', libelle: 'Description (au survol du bouton)', obligatoire: false },
+      ],
+      bouton: 'Ajouter',
+    });
+    if (!valeurs) return null;
+    return { ...valeurs, genre, nom: valeurs.nom || valeurs.fichier.split('/').pop() };
+  }
   if (genre === 'fichier') {
     const valeurs = await formulaire({
       titre,
@@ -514,6 +529,7 @@ export async function ajouterAction(projet) {
     message: 'Que doit faire ce bouton ?',
     boutons: [
       { libelle: 'Ouvrir un fichier', valeur: 'fichier' },
+      { libelle: 'Exécuter un script', valeur: 'script' },
       { libelle: 'Lancer une commande', valeur: 'commande', style: 'principal' },
     ],
   });
