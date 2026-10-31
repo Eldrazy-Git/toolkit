@@ -48,8 +48,6 @@ contextBridge.exposeInMainWorld('toolkit', {
     tactile: (idContenu, actif) => appeler('outils:tactile', idContenu, actif),
     // Raccourcis clavier pressés dans un outil (ex. 'fermer' pour Ctrl+W).
     surRaccourci: (rappel) => ecouter('outils:raccourci', rappel),
-    // Un outil demande la connexion à Claude (pont Claude, voir pont-claude.js).
-    surConnexionClaude: (rappel) => ecouter('outils:connexion-claude', rappel),
   },
   editeurs: {
     // [{ id, nom, chemin, source: 'reglage' | 'auto' | 'systeme' | null, disponible }]

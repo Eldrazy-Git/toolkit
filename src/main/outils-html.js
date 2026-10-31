@@ -21,7 +21,6 @@ const { pathToFileURL } = require('node:url');
 const chemins = require('./chemins');
 const projets = require('./projets');
 const journal = require('./journal');
-const pontClaude = require('./pont-claude');
 
 const SCHEMA = 'toolkit-outil';
 const PREFIXE_PARTITION = 'persist:outil-';
@@ -29,7 +28,7 @@ const PREFIXE_PARTITION = 'persist:outil-';
 const CHEMIN_PAGE_VIDE = '/__toolkit__/vide.html';
 const PREFIXE_APERCU = 'apercu-';
 
-// hote -> { racine, entree, nom, projetId }
+// hote -> { racine, entree, nom }
 const registre = new Map();
 const sessionsConfigurees = new Set();
 
@@ -84,19 +83,13 @@ function echapper(texte) {
   return texte.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
-// partition : celle de la page qui fait la requête (voir configurerSession).
-async function repondre(requete, partition) {
+async function repondre(requete) {
   const url = new URL(requete.url);
   if (url.pathname === CHEMIN_PAGE_VIDE) {
     return new Response('<!doctype html><title>Toolkit</title>', { headers: { 'content-type': 'text/html' } });
   }
   const outil = registre.get(url.host);
   if (!outil) return pageErreur(404, 'Cet outil n\'est plus ouvert. Ferme cet onglet et rouvre l\'outil depuis la bibliothèque.');
-  // Pont Claude (voir pont-claude.js) : seulement pour l'outil de cette partition.
-  if (pontClaude.estCheminPont(url.pathname)) {
-    if (partition !== `${PREFIXE_PARTITION}${url.host}`) return new Response('', { status: 403 });
-    return pontClaude.repondre(requete, outil, url.host);
-  }
 
   let relatif;
   try {
@@ -121,7 +114,7 @@ async function repondre(requete, partition) {
 function configurerSession(partition) {
   if (sessionsConfigurees.has(partition)) return;
   const ses = session.fromPartition(partition);
-  ses.protocol.handle(SCHEMA, (requete) => repondre(requete, partition).catch((erreur) => {
+  ses.protocol.handle(SCHEMA, (requete) => repondre(requete).catch((erreur) => {
     journal.erreur('Service d\'un fichier d\'outil :', erreur);
     return pageErreur(404, 'Erreur pendant la lecture du fichier.');
   }));
@@ -176,7 +169,7 @@ async function preparer(projetId, outilLie) {
 
   const hote = calculerHote(projetId, outilLie);
   const partition = `${PREFIXE_PARTITION}${hote}`;
-  registre.set(hote, { racine, entree, nom, projetId });
+  registre.set(hote, { racine, entree, nom });
   configurerSession(partition);
 
   const cheminUrl = entree.split('/').map(encodeURIComponent).join('/');

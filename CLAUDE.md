@@ -113,7 +113,6 @@ app/
     │   ├── explorateur.js       onglet « Code » : lister, lire, écrire, créer, renommer, Corbeille, surveiller
     │   ├── lsp-python.js        Pyright (aide Python) : processus, messages LSP, traduction des adresses
     │   ├── outils-html.js       protocole toolkit-outil://, partitions, sécurité des <webview>
-    │   ├── pont-claude.js       Claude pour les outils HTML (« permissions »: ["claude"], « claude -p » sans outils)
     │   ├── outils-donnees.js    export / import localStorage + IndexedDB en JSON
     │   ├── remise-a-zero.js     « Repartir de zéro » : hors Git -> Corbeille, données des outils effacées
     │   ├── simulation-tactile.js la souris agit comme un doigt dans une page HTML (et seulement elle)
@@ -283,14 +282,6 @@ Voir `src/main/outils-html.js` (explications en tête du fichier) et
   les appuis (binding), touchers envoyés par `Input.dispatchTouchEvent` à la FENÊTRE aux
   coordonnées de la webview (envoyés à la page, le tap ne cliquait pas). Réappliqué à chaque
   `dom-ready`, retenu par page (`toolkit:tactile:<id>` / `code:<cle>`).
-
-- Pont Claude (`src/main/pont-claude.js`, explications en tête) : un outil dont projet.json
-  contient `"permissions": ["claude"]` appelle `/__toolkit__/claude/*` sur sa propre origine
-  (refusé si la partition de la requête n'est pas celle de l'hôte). Accord demandé une fois
-  (`reglages.outilsClaude`), puis `claude -p --tools "" --strict-mcp-config
-  --no-session-persistence` dans le dossier temporaire. « connexion » envoie
-  `outils:connexion-claude` à l'interface (`actions.connecterCompte('claude')`). Format
-  documenté dans `docs/projet-json.md`.
 
 Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
 
@@ -561,7 +552,8 @@ entrée dans `actions` de son `projet.json`.
   compilateur C# de Windows (.NET Framework 4, rien à installer) ; sources = `git archive
   HEAD` (le DERNIER COMMIT) incluses en ressource `app.zip` ; sortie `dist/` (ignoré par Git,
   à publier dans les Releases). Étapes : bienvenue, dossier + raccourcis (+ nom Git si
-  absent), logiciels (winget / installateur officiel de Claude, cases cochées), installation
+  absent), logiciels (winget / installateur officiel de Claude ; Node.js et Git cochés s'ils
+  manquent, Claude Code décoché par défaut), installation
   (journal), fin. Inscrit Toolkit dans « Applications installées » (HKCU), copie de lui-même
   en « Désinstaller Toolkit.exe » (`/desinstaller` : app + lanceur + raccourcis à la
   Corbeille, projets et donnees GARDÉS sauf case cochée). Le même exe a 3 rôles selon son

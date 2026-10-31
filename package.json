@@ -3,7 +3,7 @@
   "productName": "Toolkit",
   "version": "1.17.0",
   "private": true,
-  "description": "Application de bureau qui centralise mes projets et intègre Claude Code.",
+  "description": "Application de bureau qui centralise mes projets et fonctionne avec Claude Code.",
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",

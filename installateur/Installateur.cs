@@ -155,7 +155,7 @@ namespace InstallateurToolkit
     class Logiciel
     {
         public string Nom, Role, Commande, IdWinget;
-        public bool Obligatoire, Recommande;
+        public bool Obligatoire;
         public string Version; // null = absent
         public CheckBox Case;
         public Label Etat;
@@ -387,7 +387,7 @@ namespace InstallateurToolkit
             logiciels.Clear();
             logiciels.Add(new Logiciel { Nom = "Node.js (20 ou plus)", Role = "fait tourner Toolkit", Commande = "node", IdWinget = "OpenJS.NodeJS.LTS", Obligatoire = true });
             logiciels.Add(new Logiciel { Nom = "Git", Role = "historique et sauvegardes des projets", Commande = "git", IdWinget = "Git.Git", Obligatoire = true });
-            logiciels.Add(new Logiciel { Nom = "Claude Code", Role = "créer et modifier tes projets avec Claude", Commande = "claude", Recommande = true });
+            logiciels.Add(new Logiciel { Nom = "Claude Code", Role = "créer et modifier tes projets avec Claude (facultatif)", Commande = "claude" });
             logiciels.Add(new Logiciel { Nom = "GitHub CLI", Role = "sauvegarder tes projets en ligne (facultatif)", Commande = "gh", IdWinget = "GitHub.cli" });
             logiciels.Add(new Logiciel { Nom = "Python", Role = "lancer des scripts Python (facultatif)", Commande = "python", IdWinget = "Python.Python.3.13" });
             int y = 0;
@@ -427,7 +427,7 @@ namespace InstallateurToolkit
                             l.Etat.Text = installable ? (l.Obligatoire ? "manquant — sera installé" : "absent — coche pour l'installer") : "manquant — winget indisponible";
                             l.Etat.ForeColor = l.Obligatoire ? Color.DarkOrange : Color.DimGray;
                             l.Case.Enabled = installable;
-                            l.Case.Checked = installable && (l.Obligatoire || l.Recommande);
+                            l.Case.Checked = installable && l.Obligatoire;
                         }
                     }
                     sousTitre.Text = "Coche ce que l'installateur doit installer pour toi.";
