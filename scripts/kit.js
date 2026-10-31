@@ -13,6 +13,7 @@ const AIDE = `Bibliothèque de kits de Toolkit
 
   node kit.js lister [--type <type>] [--langage <langage>] [--projet <dossier>]
   node kit.js ajouter <kit> [--projet <dossier>] [--var nom=valeur]... [--essai]
+  node kit.js propositions     contrôle ce qui attend dans kits/propositions/ (rien n'est modifié)
 
 --projet   dossier du projet dans projets/ (par défaut : le projet où la commande est lancée)
 --var      valeur d'une variable du kit (ex. --var package=fr.exemple.outil)
@@ -121,6 +122,17 @@ async function ajouter(options) {
   }
 }
 
+// Pour que Claude voie aussitôt si ce qu'il a déposé pourra être accepté.
+async function propositions() {
+  const liste = await kits.listerPropositions();
+  if (!liste.length) console.log('Aucune proposition en attente.');
+  for (const p of liste) {
+    console.log(`${p.id} [${p.genre || 'genre inconnu'}] : ${p.problemes.length ? 'à corriger' : 'prête, en attente de la décision de l\'utilisateur'}`);
+    for (const t of p.problemes) console.log(`  problème : ${t}`);
+    for (const t of p.avertissements) console.log(`  à vérifier : ${t}`);
+  }
+}
+
 async function principal() {
   const options = lireArguments(process.argv.slice(2));
   const commande = options.positions[0];
@@ -132,7 +144,8 @@ async function principal() {
   chemins.definirDossierProjets(reglages.obtenir().dossierProjets);
   if (commande === 'lister') await lister(options);
   else if (commande === 'ajouter') await ajouter(options);
-  else throw new Error(`Commande inconnue : « ${commande} ». Commandes : lister, ajouter.`);
+  else if (commande === 'propositions') await propositions();
+  else throw new Error(`Commande inconnue : « ${commande} ». Commandes : lister, ajouter, propositions.`);
 }
 
 journal.sansConsole();

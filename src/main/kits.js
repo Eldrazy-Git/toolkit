@@ -311,6 +311,8 @@ async function ecrireConsignesBibliotheque() {
     '- Un skill suit le format standard de Claude Code : `.claude/skills/<nom>/SKILL.md`.',
     '- Ne modifie aucun projet. Toolkit signale aux projets qu\'une nouvelle version existe.',
     '- Ne modifie pas `CATALOGUE.md` ni ce fichier : Toolkit les génère.',
+    '- `propositions/` attend la décision de l\'utilisateur (Accepter / Refuser dans Toolkit) : n\'y déplace',
+    '  rien toi-même vers la bibliothèque, et n\'y touche que s\'il te le demande.',
     '- Fais des commits locaux avec des messages clairs en français. **Ne fais jamais de push** :',
     '  l\'utilisateur envoie lui-même depuis l\'onglet « Git et GitHub » de Toolkit.',
     '',
@@ -706,14 +708,195 @@ async function annulerAjout(dossierProjet, ecrits, claudeMd) {
   }
 }
 
+// --- Propositions de Claude (kits/propositions/) ------------------------------------------------
+// Dossier ignoré par Git, jamais lu par le catalogue ni par « ajouter » : une proposition n'est
+// utilisée qu'après avoir été acceptée. Le contrôle de « rien de propre à un projet » est une
+// aide pour l'utilisateur (mots repérés), pas une garantie : c'est lui qui décide.
+
+const dossierPropositions = () => path.join(chemins.kits, 'propositions');
+const FICHIER_MOTIF = 'proposition.md'; // pourquoi Claude propose : retiré à l'acceptation
+const FICHIER_REFUS = 'REFUS.md'; // ce qui a été refusé, pour ne pas le reproposer
+const TAILLE_MAX_CONTROLE = 2 * 1024 * 1024;
+const FICHIERS_MAX_CONTROLE = 300;
+const TAILLE_MAX_MOTIF = 1500;
+
+function verifierNomProposition(id) {
+  if (typeof id !== 'string' || !id || id === '.' || id === '..' || /[\\/:*?"<>|]/.test(id)) {
+    throw new Error('Cette proposition n\'existe plus.');
+  }
+  return path.join(dossierPropositions(), id);
+}
+
+// Tous les fichiers, et ce qui ne doit jamais entrer dans la bibliothèque.
+async function contenuProposition(dossier, relatif = '') {
+  const resultat = { fichiers: [], problemes: [] };
+  for (const e of await fs.readdir(path.join(dossier, relatif), { withFileTypes: true })) {
+    const r = relatif ? `${relatif}/${e.name}` : e.name;
+    if (e.isSymbolicLink()) resultat.problemes.push(`« ${r} » est un lien symbolique.`);
+    else if (e.isDirectory()) {
+      // « .claude » surtout : Claude Code pourrait charger un skill qui n'a pas été accepté.
+      if (e.name.startsWith('.') || e.name === 'node_modules' || e.name === '__pycache__') {
+        resultat.problemes.push(`Le dossier « ${r} » n'a pas sa place dans une proposition.`);
+        continue;
+      }
+      const dedans = await contenuProposition(dossier, r);
+      resultat.fichiers.push(...dedans.fichiers);
+      resultat.problemes.push(...dedans.problemes);
+    } else if (e.isFile()) {
+      if (git.EXPRESSION_SECRETS.test(r)) resultat.problemes.push(`« ${r} » ressemble à un fichier secret.`);
+      resultat.fichiers.push(r);
+    }
+  }
+  return resultat;
+}
+
+// Ce qui semble propre à un projet ou à ce PC : noms de projets et chemins absolus.
+async function avertissementsProposition(dossier, fichiers) {
+  const liste = (await projets.listerProjets()).filter((p) => !p.erreur);
+  const echapper = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const termes = new Map();
+  for (const p of liste) {
+    for (const t of [p.id, p.fiche.nom]) {
+      if (t.length >= 4) termes.set(t.toLowerCase(), new RegExp(`(?<![\\p{L}\\p{N}])${echapper(t)}(?![\\p{L}\\p{N}])`, 'iu'));
+    }
+  }
+  const CHEMIN_ABSOLU = /(?<![A-Za-z])[A-Za-z]:[\\/](?!\/)|(?<![\w.])\/(?:Users|home)\/[\w.-]+/;
+  const avertissements = new Set();
+  for (const relatif of fichiers.filter((f) => f !== FICHIER_MOTIF).slice(0, FICHIERS_MAX_CONTROLE)) {
+    for (const [terme, expression] of termes) {
+      if (expression.test(relatif)) avertissements.add(`Le nom de fichier « ${relatif} » mentionne « ${terme} », l'un de tes projets.`);
+    }
+    const chemin = path.join(dossier, ...relatif.split('/'));
+    const infos = await fs.stat(chemin).catch(() => null);
+    if (!infos || infos.size > TAILLE_MAX_CONTROLE) continue;
+    const tampon = await fs.readFile(chemin).catch(() => null);
+    if (!tampon || tampon.includes(0)) continue;
+    const texte = tampon.toString('utf8');
+    for (const [terme, expression] of termes) {
+      if (expression.test(texte)) avertissements.add(`« ${relatif} » mentionne « ${terme} », l'un de tes projets.`);
+    }
+    if (CHEMIN_ABSOLU.test(texte)) avertissements.add(`« ${relatif} » contient un chemin propre à ce PC.`);
+  }
+  return [...avertissements];
+}
+
+// Décrit une proposition. problemes : acceptation impossible ; avertissements : à vérifier.
+async function inspecterProposition(id) {
+  const dossier = verifierNomProposition(id);
+  const infos = await fs.lstat(dossier).catch(() => null);
+  if (!infos) throw new Error('Cette proposition n\'existe plus.');
+  const base = { id, genre: null, nom: id, description: '', version: '', types: null, langages: null, motif: '', fichiers: [], problemes: [], avertissements: [] };
+  if (!infos.isDirectory()) return { ...base, problemes: ['Une proposition doit être un dossier.'] };
+  const contenu = await contenuProposition(dossier);
+  const p = { ...base, fichiers: contenu.fichiers, problemes: contenu.problemes };
+  const motif = await fs.readFile(path.join(dossier, FICHIER_MOTIF), 'utf8').catch(() => '');
+  p.motif = motif.replace(/^﻿/, '').trim().slice(0, TAILLE_MAX_MOTIF);
+  if (!ID_KIT.test(id) || NOMS_RESERVES.has(id) || NOM_RESERVE_WINDOWS.test(id)) {
+    p.problemes.push('Le nom du dossier doit être en minuscules, chiffres et tirets, et ne pas être réservé.');
+  }
+  const aKit = contenu.fichiers.includes('kit.json');
+  const aSkill = contenu.fichiers.includes('SKILL.md');
+  if (aKit && aSkill) p.problemes.push('Une proposition est un kit (kit.json) OU un skill (SKILL.md), pas les deux.');
+  else if (aKit) {
+    p.genre = 'kit';
+    try {
+      const k = await lireJson(path.join(dossier, 'kit.json'));
+      p.nom = typeof k.nom === 'string' && k.nom.trim() ? k.nom : id;
+      p.description = typeof k.description === 'string' ? k.description : '';
+      p.version = typeof k.version === 'string' ? k.version : '';
+      p.types = k.types ?? null;
+      p.langages = k.langages ?? null;
+      p.problemes.push(...(await problemesDuKit(k, dossier)));
+      for (const n of Array.isArray(k.necessite) ? k.necessite : []) {
+        const necessaire = n?.kit ? await lireKit(n.kit) : null;
+        if (!necessaire || necessaire.erreur) p.problemes.push(`Elle nécessite le kit « ${n?.kit} », absent de ta bibliothèque.`);
+      }
+    } catch (erreur) {
+      p.problemes.push(`kit.json est illisible : ${erreur instanceof SyntaxError ? messageErreurJson(erreur) : erreur.message}.`);
+    }
+    if (ID_KIT.test(id) && await existe(path.join(chemins.kits, id))) p.problemes.push(`Un kit « ${id} » existe déjà dans ta bibliothèque.`);
+  } else if (aSkill) {
+    p.genre = 'skill';
+    const enTete = lireEnTeteSkill(await fs.readFile(path.join(dossier, 'SKILL.md'), 'utf8').catch(() => ''));
+    p.description = enTete.description || '';
+    if (!p.description) p.problemes.push('SKILL.md doit donner une « description ».');
+    if (ID_KIT.test(id) && await existe(path.join(chemins.kits, '.claude', 'skills', id))) p.problemes.push(`Un skill « ${id} » existe déjà dans ta bibliothèque.`);
+  } else {
+    p.problemes.push('Il manque kit.json (pour un kit) ou SKILL.md (pour un skill).');
+  }
+  p.avertissements = await avertissementsProposition(dossier, contenu.fichiers);
+  return p;
+}
+
+// Toutes les propositions (une proposition invalide reste listée). Bibliothèque absente = liste vide.
+async function listerPropositions() {
+  const entrees = await fs.readdir(dossierPropositions(), { withFileTypes: true }).catch(() => []);
+  const noms = entrees.filter((e) => e.isDirectory() || e.isSymbolicLink()).map((e) => e.name).sort((a, b) => a.localeCompare(b, 'fr'));
+  return Promise.all(noms.map(inspecterProposition));
+}
+
+// Windows garde parfois un dossier occupé pendant quelques instants.
+async function renommerAvecEssais(de, vers) {
+  for (let essai = 0; ; essai += 1) {
+    try {
+      await fs.rename(de, vers);
+      return;
+    } catch (erreur) {
+      if (essai >= 19 || !['EBUSY', 'EPERM', 'EACCES'].includes(erreur.code)) throw erreur;
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  }
+}
+
+// Tout est revérifié au moment d'accepter. La proposition devient un kit ou un skill de la
+// bibliothèque, enregistré dans son historique Git. Renvoie { id, genre, nom }.
+async function accepterProposition(id) {
+  const p = await inspecterProposition(id);
+  if (p.problemes.length) throw new Error(`Cette proposition ne peut pas être acceptée :\n${p.problemes.join('\n')}`);
+  const dossier = verifierNomProposition(id);
+  const destination = p.genre === 'kit' ? path.join(chemins.kits, id) : path.join(chemins.kits, '.claude', 'skills', id);
+  await fs.mkdir(path.dirname(destination), { recursive: true });
+  try {
+    await renommerAvecEssais(dossier, destination);
+  } catch (erreur) {
+    journal.erreur('Acceptation d\'une proposition :', erreur);
+    throw new Error('Le dossier de cette proposition est utilisé par un programme (l\'onglet Code, un terminal ?). Ferme-le puis réessaie.');
+  }
+  await fs.rm(path.join(destination, FICHIER_MOTIF), { force: true });
+  const genre = p.genre === 'kit' ? 'kit' : 'skill';
+  await commiterCreation(p.genre === 'kit' ? id : `.claude/skills/${id}`, `Proposition acceptée : ${genre} « ${p.nom} »`);
+  await ecrireCatalogue();
+  return { id, genre: p.genre, nom: p.nom };
+}
+
+// Corbeille, jamais d'effacement définitif. Noté dans REFUS.md pour que Claude ne repropose pas la
+// même chose. corbeille(chemin) : fournie par l'appelant (Electron).
+async function refuserProposition(id, corbeille) {
+  const dossier = verifierNomProposition(id);
+  if (!(await fs.lstat(dossier).catch(() => null))) throw new Error('Cette proposition n\'existe plus.');
+  const p = await inspecterProposition(id).catch(() => ({ description: '' }));
+  try {
+    await corbeille(dossier);
+  } catch (erreur) {
+    journal.erreur('Refus d\'une proposition :', erreur);
+    throw new Error('Le dossier de cette proposition est utilisé par un programme (l\'onglet Code, un terminal ?). Ferme-le puis réessaie.');
+  }
+  const fichier = path.join(dossierPropositions(), FICHIER_REFUS);
+  const entete = (await existe(fichier)) ? '' : '# Propositions refusées par l\'utilisateur (ne pas les reproposer)\n\n';
+  const ligne = `- \`${id}\` (${new Date().toISOString().slice(0, 10)})${p.description ? ` : ${cellule(p.description)}` : ''}\n`;
+  await fs.appendFile(fichier, `${entete}${ligne}`, 'utf8').catch((erreur) => journal.erreur('REFUS.md :', erreur));
+  return { id };
+}
+
 // --- Onglet « Kits » : ce que l'interface affiche ----------------------------------------------
 
-// { existe, kits, skills } sans aucun chemin absolu. Le catalogue est tenu à jour au passage.
+// { existe, kits, skills, propositions } sans aucun chemin absolu. Catalogue tenu à jour au passage.
 async function instantane() {
   await ecrireCatalogue();
   const kits = await listerKits();
   return {
     existe: await existe(chemins.kits),
+    propositions: await listerPropositions(),
     kits: kits.map(({ id, kit: k, erreur }) => ({
       id,
       erreur,
@@ -983,7 +1166,8 @@ async function bibliothequeVide() {
     if (e.name === '.git') continue;
     if (e.isDirectory() ? !['.claude', 'propositions'].includes(e.name) : !fichiersGeneres.has(e.name)) return false;
   }
-  if ((await fs.readdir(path.join(chemins.kits, 'propositions')).catch(() => [])).length) return false;
+  const propositions = await fs.readdir(path.join(chemins.kits, 'propositions')).catch(() => []);
+  if (propositions.some((n) => n !== FICHIER_REFUS)) return false;
   const claude = await fs.readdir(path.join(chemins.kits, '.claude')).catch(() => []);
   if (claude.some((n) => n !== 'skills')) return false;
   if ((await fs.readdir(path.join(chemins.kits, '.claude', 'skills')).catch(() => [])).length) return false;
@@ -1013,16 +1197,7 @@ async function recupererDepot(url, corbeille, surProgression) {
         throw new Error('Le dossier « kits » actuel est utilisé par un programme (Claude, un terminal, l\'onglet Code ?). Ferme-le puis réessaie.');
       }
     }
-    // Windows garde souvent un dossier juste cloné occupé pendant quelques instants.
-    for (let essai = 0; ; essai += 1) {
-      try {
-        await fs.rename(temporaire, chemins.kits);
-        break;
-      } catch (erreur) {
-        if (essai >= 19 || !['EBUSY', 'EPERM', 'EACCES'].includes(erreur.code)) throw erreur;
-        await new Promise((r) => setTimeout(r, 500));
-      }
-    }
+    await renommerAvecEssais(temporaire, chemins.kits);
   } finally {
     await fs.rm(temporaire, { recursive: true, force: true }).catch(() => {});
   }
@@ -1040,6 +1215,9 @@ module.exports = {
   creerDepuisProjet,
   bibliothequeVide,
   recupererDepot,
+  listerPropositions,
+  accepterProposition,
+  refuserProposition,
   LANGAGES,
   comparerVersions,
   listerKits,

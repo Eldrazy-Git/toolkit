@@ -4,7 +4,7 @@ import { el } from './dom.js';
 import { icone } from './icones.js';
 import { ouvrirMenu } from './menu.js';
 import { notifier } from './notifications.js';
-import { choisir, cocher, formulaire } from './dialogue.js';
+import { choisir, cocher, confirmer, formulaire } from './dialogue.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
 import * as actionsGit from './actions-git.js';
@@ -52,7 +52,13 @@ let lecture = null;
 export function chargerKits() {
   if (lecture) return lecture;
   lecture = api.lister()
-    .then((donnees) => etat.modifier({ kits: donnees, kitsDate: Date.now() }))
+    .then((donnees) => {
+      const avant = etat.obtenir().kits?.propositions?.length;
+      etat.modifier({ kits: donnees, kitsDate: Date.now() });
+      if (avant !== undefined && donnees.propositions.length > avant) {
+        notifier('Claude propose un nouveau kit ou skill : à accepter ou à refuser dans l\'onglet « Kits et skills ».');
+      }
+    })
     .catch((erreur) => {
       etat.modifier({ kitsDate: Date.now() }); // pas de nouvel essai à chaque rendu
       notifier(erreur.message, 'erreur');
@@ -270,6 +276,81 @@ async function creerDepuisProjet() {
     demandeKitDepuisProjet(cree));
 }
 
+// --- Propositions de Claude ------------------------------------------------------------------
+
+async function accepterProposition(p) {
+  const ou = p.genre === 'kit' ? `kits/${p.id}` : `kits/.claude/skills/${p.id}`;
+  const ok = await confirmer({
+    titre: `Accepter « ${p.nom} »`,
+    message: `${p.fichiers.length} fichier(s) entreront dans ta bibliothèque (${ou}) et dans son historique Git. Claude pourra ensuite ${p.genre === 'kit' ? 'l\'utiliser dans tes projets' : 'utiliser ce skill'}.`
+      + (p.avertissements.length ? `\n\nÀ vérifier avant d'accepter :\n${p.avertissements.map((a) => `• ${a}`).join('\n')}` : ''),
+    bouton: 'Accepter',
+  });
+  if (!ok) return;
+  const resultat = await essayer(() => api.accepterProposition(p.id));
+  await chargerKits();
+  if (resultat) {
+    actionsGit.rafraichir(CIBLE_KITS);
+    notifier(`« ${resultat.nom} » est dans ta bibliothèque.`, 'succes');
+  }
+}
+
+async function refuserProposition(p) {
+  const ok = await confirmer({
+    titre: `Refuser « ${p.nom} »`,
+    message: 'La proposition part à la Corbeille et n\'entre pas dans ta bibliothèque. Toolkit note ce refus pour que Claude ne la propose plus.',
+    bouton: 'Refuser',
+    danger: true,
+  });
+  if (!ok) return;
+  await essayer(() => api.refuserProposition(p.id));
+  await chargerKits();
+}
+
+function demandeProposition(p) {
+  const correction = p.problemes.length ? ` Elle ne peut pas être acceptée pour l'instant :\n${p.problemes.map((t) => `- ${t}`).join('\n')}\nCorrige ces problèmes.` : ' Lis-la, puis demande-moi ce que je veux changer.';
+  return `Je veux retoucher la proposition \`propositions/${p.id}/\` avant de décider.${correction} Reste dans ce dossier : elle n'entre pas dans la bibliothèque tant que je ne l'ai pas acceptée dans Toolkit.`;
+}
+
+function ligneProposition(p) {
+  const fichierPrincipal = p.genre === 'skill' ? 'SKILL.md' : p.genre === 'kit' ? 'kit.json' : p.fichiers[0];
+  const menu = el('button', {
+    classe: 'bouton-icone',
+    title: 'Autres actions',
+    onClick: () => ouvrirMenu(menu, [
+      { libelle: 'Voir les fichiers', icone: 'code', action: () => actions.ouvrirCode(CIBLE_KITS, 'Kits et skills', fichierPrincipal ? `propositions/${p.id}/${fichierPrincipal}` : null) },
+      { libelle: 'Retoucher avec Claude', icone: 'claude', action: () => actions.ameliorerKitsAvecClaude(demandeProposition(p)) },
+    ]),
+  }, icone('points'));
+  const bloquee = p.problemes.length > 0;
+  return el('div', { classe: 'ligne-git ligne-kit ligne-proposition' },
+    el('div', { classe: 'ligne-git-infos' },
+      el('div', { classe: 'ligne-git-nom' },
+        el('strong', {}, p.nom),
+        p.version ? el('span', { classe: 'etiquette' }, p.version) : null,
+        el('span', { classe: 'etiquette type' }, p.genre === 'skill' ? 'Skill' : 'Kit'),
+        el('span', { classe: 'details-aide' }, p.genre === 'kit' && !bloquee ? libelleTypes(p) : '')),
+      p.description ? el('p', { classe: 'kit-description' }, p.description) : null,
+      p.motif ? el('p', { classe: 'details-aide proposition-motif' }, p.motif) : null,
+      bloquee ? el('div', { classe: 'alerte erreur proposition-alerte' }, icone('erreur'),
+        el('div', {}, 'À corriger avant de pouvoir l\'accepter :', el('ul', {}, p.problemes.map((t) => el('li', {}, t))))) : null,
+      p.avertissements.length ? el('div', { classe: 'alerte attention proposition-alerte' }, icone('attention'),
+        el('div', {}, 'Peut-être propre à un projet ou à ce PC :', el('ul', {}, p.avertissements.map((t) => el('li', {}, t))))) : null),
+    el('div', { classe: 'ligne-git-boutons' },
+      el('button', { classe: 'bouton petit principal', disabled: bloquee, title: bloquee ? 'À corriger d\'abord (voir la liste)' : 'Faire entrer cette proposition dans ta bibliothèque', onClick: () => accepterProposition(p) }, icone('coche'), 'Accepter'),
+      el('button', { classe: 'bouton petit', title: 'Envoyer cette proposition à la Corbeille', onClick: () => refuserProposition(p) }, icone('croix'), 'Refuser'),
+      menu));
+}
+
+function sectionPropositions(propositions) {
+  if (!propositions.length) return null;
+  return [
+    el('h2', { classe: 'titre-kits' }, `Propositions de Claude (${propositions.length})`),
+    el('p', { classe: 'details-aide' }, 'Rien de tout cela n\'est utilisé tant que tu ne l\'as pas accepté.'),
+    el('div', { classe: 'liste-git' }, propositions.map(ligneProposition)),
+  ];
+}
+
 // --- Affichage -------------------------------------------------------------------------------
 
 function ligneUtilisateurs(k) {
@@ -382,6 +463,7 @@ export function rendre() {
       el('button', { classe: 'bouton principal', onClick: creerKit }, icone('plus'), 'Créer un kit'),
       el('button', { classe: 'bouton', onClick: creerSkill }, icone('plus'), 'Créer un skill'),
       el('button', { classe: 'bouton', title: 'Reprendre des fichiers d\'un projet de n\'importe quel type', onClick: creerDepuisProjet }, icone('importer'), 'Créer depuis un projet')),
+    sectionPropositions(donnees.propositions || []),
     el('h2', { classe: 'titre-kits' }, `Kits (${kits.length})`),
     kits.length
       ? el('div', { classe: 'liste-git' }, kits.map(ligneKit))
