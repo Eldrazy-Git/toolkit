@@ -69,7 +69,7 @@ Toolkit/                  ← racine (déplaçable n'importe où)
 ```
 app/
 ├── package.json
-├── assets/                  icône de Toolkit (générée par scripts/generer-icones.js)
+├── assets/                  icône de Toolkit (générée par scripts/generer-icones.js), logo du bouton « Discuter »
 ├── docs/
 │   ├── projet-json.md           format complet de la fiche projet.json
 │   ├── PROTOCOLE-MISE-A-JOUR.md procédure pour publier une nouvelle version (local, non versionné)
