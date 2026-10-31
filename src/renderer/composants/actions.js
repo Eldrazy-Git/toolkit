@@ -1336,6 +1336,7 @@ async function sauvegarderAvantClaude(cible, nomCible) {
 // Lance Claude Code sur une cible (après sauvegarde), avec éventuellement une demande
 // initiale. Si une session Claude tourne déjà sur ce dossier, on y retourne ; la demande
 // est alors copiée dans le presse-papiers (on ne peut pas l'écrire à la place de l'utilisateur).
+// Renvoie false si l'utilisateur renonce à l'étape de sauvegarde.
 async function lancerClaude(cible, nomCible, demande, { continuer = false } = {}) {
   const existant = etat.obtenir().onglets.find((o) => o.genre === 'terminal' && o.mode === 'claude' && o.enCours && memeCible(o.cible, cible));
   if (existant) {
@@ -1344,11 +1345,12 @@ async function lancerClaude(cible, nomCible, demande, { continuer = false } = {}
       await navigator.clipboard.writeText(demande).catch(() => {});
       notifier('Claude est déjà ouvert ici : la demande est copiée, colle-la-lui (clic droit ou Ctrl+V).');
     }
-    return;
+    return true;
   }
-  if (!(await sauvegarderAvantClaude(cible, nomCible))) return;
+  if (!(await sauvegarderAvantClaude(cible, nomCible))) return false;
   ouvrirTerminal({ mode: 'claude', cible, nomCible, demande, continuer });
   recents.noter({ type: 'claude', cible, nom: nomCible });
+  return true;
 }
 
 // Depuis « Récents » : rouvre Claude sur ce dossier en reprenant la dernière conversation.

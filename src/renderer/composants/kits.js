@@ -8,6 +8,7 @@ import { choisir, cocher, confirmer, formulaire } from './dialogue.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
 import * as actionsGit from './actions-git.js';
+import { boutonVerifier, sectionRapport } from './verification.js';
 
 export const ID_KITS = 'kits';
 
@@ -445,6 +446,7 @@ export function rendre() {
     el('h1', {}, 'Kits et skills'),
     donnees?.existe ? el('div', { classe: 'details-boutons' },
       el('button', { classe: 'bouton', onClick: chargerKits }, icone('redemarrer'), 'Actualiser'),
+      boutonVerifier(),
       el('button', { classe: 'bouton', title: 'Ouvre Claude dans la bibliothèque (sauvegarde Git avant)', onClick: () => actions.ameliorerKitsAvecClaude() }, icone('claude'), 'Améliorer avec Claude'),
       el('button', { classe: 'bouton', title: 'Commit, Push, Pull et dépôt GitHub privé de la bibliothèque', onClick: actions.ouvrirGit }, icone('git'), 'Git et GitHub')) : null);
   if (!donnees) {
@@ -463,6 +465,7 @@ export function rendre() {
       el('button', { classe: 'bouton principal', onClick: creerKit }, icone('plus'), 'Créer un kit'),
       el('button', { classe: 'bouton', onClick: creerSkill }, icone('plus'), 'Créer un skill'),
       el('button', { classe: 'bouton', title: 'Reprendre des fichiers d\'un projet de n\'importe quel type', onClick: creerDepuisProjet }, icone('importer'), 'Créer depuis un projet')),
+    sectionRapport(),
     sectionPropositions(donnees.propositions || []),
     el('h2', { classe: 'titre-kits' }, `Kits (${kits.length})`),
     kits.length

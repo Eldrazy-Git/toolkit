@@ -109,6 +109,16 @@ contextBridge.exposeInMainWorld('toolkit', {
     accepterProposition: (id) => appeler('kits:accepter-proposition', id), // { id, genre, nom }
     refuserProposition: (id) => appeler('kits:refuser-proposition', id), // Corbeille
   },
+  // Vérification des projets par rapport aux kits et aux skills (onglet « Kits »).
+  verification: {
+    lire: () => appeler('verification:lire'), // { projets: [{ id, nom, date, ajustements, problemes }], exceptions }
+    commencer: () => appeler('verification:commencer'), // relit la bibliothèque
+    verifierProjet: (id) => appeler('verification:verifier-projet', id),
+    ignorer: (id, cle) => appeler('verification:ignorer', id, cle),
+    marquerLance: (id, cle) => appeler('verification:marquer-lance', id, cle),
+    ajouterException: (id, cle, raison) => appeler('verification:ajouter-exception', id, cle, raison),
+    retirerException: (id, cle) => appeler('verification:retirer-exception', id, cle),
+  },
   // Actions de projet.json (scripts lancés avec une console).
   executions: {
     // Lance l'action n° indexAction ; valeurs : { idParametre: valeur }. Renvoie { commande, dossier }.

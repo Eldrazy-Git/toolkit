@@ -1225,6 +1225,7 @@ module.exports = {
   lireKit,
   convientAuType,
   projetALangage,
+  parcourirProjet,
   detecterPackage,
   texteCatalogue,
   ecrireCatalogue,

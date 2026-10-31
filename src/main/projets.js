@@ -73,6 +73,16 @@ function normaliserKits(valeur) {
     .filter((k) => !vus.has(k.id) && vus.add(k.id));
 }
 
+// Ajustements que la vérification ne doit plus proposer : [{ cle, titre, raison, date }] (voir verification.js).
+function normaliserExceptions(valeur) {
+  if (!Array.isArray(valeur)) return [];
+  const vues = new Set();
+  return valeur
+    .filter((e) => e && texte(e.cle))
+    .map((e) => ({ cle: texte(e.cle), titre: texte(e.titre) || texte(e.cle), raison: texte(e.raison), date: texte(e.date) }))
+    .filter((e) => !vues.has(e.cle) && vues.add(e.cle));
+}
+
 // Rend une fiche utilisable par l'interface, même incomplète, et liste les problèmes.
 // La fiche d'origine sur le disque n'est jamais réécrite par cette fonction.
 function normaliserFiche(brut, id) {
@@ -102,6 +112,7 @@ function normaliserFiche(brut, id) {
     },
     liens: normaliserLiens(b.liens),
     kits: normaliserKits(b.kits),
+    exceptions_verification: normaliserExceptions(b.exceptions_verification),
     action_par_defaut: null,
   };
 
@@ -381,6 +392,11 @@ async function modifierFiche(id, changements) {
     const liste = normaliserKits(changements.kits);
     if (liste.length) brut.kits = liste;
     else delete brut.kits;
+  }
+  if ('exceptions_verification' in changements) {
+    const liste = normaliserExceptions(changements.exceptions_verification);
+    if (liste.length) brut.exceptions_verification = liste;
+    else delete brut.exceptions_verification;
   }
   if ('action_par_defaut' in changements) {
     const valeur = texte(changements.action_par_defaut);
