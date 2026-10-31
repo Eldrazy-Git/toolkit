@@ -172,6 +172,10 @@ function sectionKits() {
     '  (`--essai` montre ce qui serait fait sans rien écrire). S\'il doit être adapté, termine en suivant son guide.',
     '- Ne recode jamais ce qu\'un kit fournit.',
     '- Ne modifie pas la bibliothèque depuis un projet, sauf si l\'utilisateur le demande.',
+    `- Tu as écrit quelque chose de réutilisable TEL QUEL, sans rien de propre au projet ? Dépose-le dans`,
+    `  \`${dossierKits}/propositions/<nom>/\` (format et conditions dans \`${doc}\`) et dis-le à l'utilisateur.`,
+    '  C\'est le seul endroit où tu peux écrire sans qu\'il le demande. Une proposition ne sert à rien tant qu\'il',
+    '  ne l\'a pas acceptée : n\'utilise jamais ce dossier, ni pour ce projet ni pour un autre.',
     FIN_KITS,
   ].join('\n');
 }

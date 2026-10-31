@@ -106,6 +106,8 @@ contextBridge.exposeInMainWorld('toolkit', {
     analyserProjet: (id) => appeler('kits:analyser-projet', id), // { id, nom, type, fichiers: [chemins relatifs], tronque }
     creerDepuisProjet: (valeurs) => appeler('kits:creer-depuis-projet', valeurs), // { projet, chemins, nom, description, types } -> { id, nom, fichiers, paquet, projet }
     recupererDepot: (url) => appeler('kits:recuperer-depot', url), // clone dans Toolkit/kits/ ; même résultat que lister
+    accepterProposition: (id) => appeler('kits:accepter-proposition', id), // { id, genre, nom }
+    refuserProposition: (id) => appeler('kits:refuser-proposition', id), // Corbeille
   },
   // Actions de projet.json (scripts lancés avec une console).
   executions: {

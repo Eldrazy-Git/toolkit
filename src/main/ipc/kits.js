@@ -15,6 +15,8 @@ function enregistrer() {
   gerer('kits:creer-skill', (valeurs) => kits.creerSkill(valeurs));
   gerer('kits:analyser-projet', (id) => kits.analyserProjet(id));
   gerer('kits:creer-depuis-projet', (valeurs) => kits.creerDepuisProjet(valeurs));
+  gerer('kits:accepter-proposition', (id) => kits.accepterProposition(id));
+  gerer('kits:refuser-proposition', (id) => kits.refuserProposition(id, (chemin) => shell.trashItem(chemin)));
   gerer('kits:recuperer-depot', (url) => {
     const adresse = String(url || '').trim();
     // Seulement une adresse GitHub ordinaire : jamais d'option ni de transport exotique pour git.

@@ -344,6 +344,15 @@ Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
   seuls les chemins renvoyés par l'analyse sont acceptés ; Java / Android : le package devient
   `{{package}}` ; le kit reste à relire (`adaptation: true`), Claude est proposé ensuite. Le signal de
   mise à jour des détails compare `fiche.kits` à la bibliothèque : jamais de mise à jour automatique.
+- Propositions (`kits/propositions/<nom>/`, ignoré par Git, règles dans `docs/kits.md`) : Claude y dépose
+  ce qui est réutilisable tel quel, quel que soit le type du projet. Jamais utilisées avant acceptation :
+  `NOMS_RESERVES` les exclut du catalogue et de `ajouter`, et un skill y est un `SKILL.md` à plat (pas
+  de `.claude`, que Claude Code pourrait charger). `inspecterProposition()` : `problemes` (bloquants :
+  format, secret, lien symbolique, nom déjà pris, kit nécessaire absent), `avertissements` (noms de
+  projets, chemins de ce PC : une aide, pas une garantie ; `proposition.md` n'est pas contrôlé).
+  `accepterProposition()` revérifie, déplace, commite ; `refuserProposition()` = Corbeille + ligne dans
+  `REFUS.md`. Compteur dans la barre latérale, relu au retour dans Toolkit et quand Claude finit (pas de
+  lecture périodique). `kit.js propositions` : le même contrôle pour Claude.
 - Dépôt GitHub de la bibliothèque : dépôt privé NORMAL `toolkit-kits` (pas la fonction « dépôt
   partagé »), ligne « Kits et skills » de l'onglet Git. `recupererDepot()` clone dans `donnees/`, refuse
   un dépôt sans `propositions/` dans son `.gitignore` et une bibliothèque non vide

@@ -394,6 +394,8 @@ export function rendre() {
       elementNav({
         libelle: 'Kits et skills',
         visuel: icone('kit'),
+        // Propositions de Claude en attente d'une décision.
+        compteur: etat.obtenir().kits?.propositions?.length || undefined,
         actif: ongletActif === 'kits',
         auClic: actions.ouvrirKits,
       }),

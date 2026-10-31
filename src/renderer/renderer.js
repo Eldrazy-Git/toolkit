@@ -73,6 +73,15 @@ window.addEventListener('focus', () => {
   if (onglets.some((o) => o.id === ongletActif && o.attention)) actions.activerOnglet(ongletActif);
 });
 
+// Propositions de Claude : relues quand il a fini ou qu'on revient dans Toolkit (jamais de lecture
+// périodique). Le délai évite de relire à chaque retour rapide dans la fenêtre.
+const relireKits = () => {
+  if (Date.now() - etat.obtenir().kitsDate > 5000) panneauKits.chargerKits();
+};
+window.toolkit.terminal.surClaudeAttend(relireKits);
+window.toolkit.terminal.surFin(relireKits);
+window.addEventListener('focus', relireKits);
+
 // Raccourci pressé à l'intérieur d'un outil (les touches n'arrivent pas jusqu'ici).
 window.toolkit.outils.surRaccourci((id) => commandes.executer(id));
 
@@ -118,6 +127,7 @@ async function demarrer() {
   (await import('./composants/mises-a-jour.js')).proposerFinDeFusion();
   // Point de mise à jour : un peu après le démarrage, pour ne pas le ralentir.
   setTimeout(actions.chargerEtatToolkit, 3000);
+  setTimeout(panneauKits.chargerKits, 3000);
 }
 
 demarrer();

@@ -14,12 +14,37 @@ appartiennent à chaque utilisateur et vivent dans `Toolkit/kits/`, hors du dép
 4. **Kit à adapter** : si la commande annonce une adaptation, termine le travail en suivant le guide
    du kit (`kits/<kit>/guide.md`).
 5. **Ne modifie pas `kits/` depuis un projet**, sauf si l'utilisateur le demande. Claude a techniquement
-   le droit d'y écrire (`--add-dir`) : cette règle est la seule barrière. N'utilise jamais ce qui se
-   trouve dans `kits/propositions/`.
+   le droit d'y écrire (`--add-dir`) : cette règle est la seule barrière. Seule exception :
+   déposer une proposition (voir ci-dessous). N'utilise jamais ce qui se trouve dans `kits/propositions/`.
 6. **Ne mets à jour aucun kit dans un projet sans demande** : aucune mise à jour n'est automatique.
    Quand c'est demandé : compare le projet avec `kits/<kit>/`, reporte les changements en gardant ce
    qui a été adapté au projet, puis mets à jour la version dans `projet.json` et la section
    `toolkit:kit=<kit>=` du `CLAUDE.md` du projet.
+
+## Proposer un kit ou un skill
+
+Quel que soit le type du projet, tu peux déposer dans `kits/propositions/<nom>/` ce que tu viens d'écrire.
+
+**Seulement si** c'est réutilisable tel quel dans un autre projet, sans rien de propre à celui-ci : pas de
+nom de projet, de chemin de ce PC, de réglage, de texte ou de donnée du projet, aucun secret. En cas de
+doute, ne propose rien. Vérifie d'abord le catalogue (déjà fourni par un kit ?) et
+`kits/propositions/REFUS.md` (déjà refusé ? ne le repropose pas).
+
+Le dossier, à un seul niveau, porte le nom du kit ou du skill (minuscules, chiffres, tirets) :
+
+- **Kit** : le format complet d'un kit (`kit.json`, `guide.md`, `fichiers/`…), voir ci-dessous.
+- **Skill** : `SKILL.md` directement dans le dossier, jamais de dossier `.claude` : Claude Code pourrait le
+  charger avant qu'il soit accepté.
+- **Toujours** : `proposition.md`, deux ou trois lignes : le projet d'origine et pourquoi c'est réutilisable
+  (ce fichier est le seul à pouvoir nommer le projet ; il est retiré à l'acceptation).
+
+Vérifie avec `node ../../app/scripts/kit.js propositions`, puis dis à l'utilisateur ce que tu as déposé.
+Il décide dans l'onglet « Kits et skills » (Accepter / Refuser).
+
+**Une proposition n'est jamais utilisée avant d'être acceptée** : ne la copie pas dans un projet, n'en dépends
+pas, ne la déplace pas toi-même vers la bibliothèque. Elle n'est ni dans le catalogue, ni ajoutable, ni
+envoyée sur GitHub (dossier ignoré par Git). Accepter la fait entrer dans la bibliothèque et son
+historique ; refuser l'envoie à la Corbeille.
 
 ## Commande
 
@@ -48,7 +73,7 @@ kits/
 ├── .claude/skills/<nom>/SKILL.md   skills de l'utilisateur (format standard de Claude Code)
 ├── CATALOGUE.md             généré par Toolkit à partir des kit.json
 ├── CLAUDE.md                généré : consignes quand Claude travaille DANS la bibliothèque
-├── propositions/            jamais utilisé
+├── propositions/            attend la décision de l'utilisateur (jamais utilisé avant), REFUS.md
 └── <kit>/                   le nom du dossier est l'identifiant (a-z, 0-9, tirets)
     ├── kit.json
     ├── guide.md             guide court
@@ -65,7 +90,8 @@ section « Kits et skills réutilisables » de `projets/CLAUDE.md`, écrite par 
 
 - **Onglet « Kits et skills »** : liste avec filtre par type de projet, projets qui utilisent chaque
   kit, créer un kit ou un skill, créer un kit depuis un projet (fichiers choisis un par un ; le projet
-  n'est pas modifié), « Améliorer avec Claude » (sauvegarde Git de la bibliothèque avant).
+  n'est pas modifié), « Améliorer avec Claude » (sauvegarde Git de la bibliothèque avant), propositions
+  de Claude avec Accepter / Refuser.
 - **Détails d'un projet** : version de chaque kit et signal si la bibliothèque en a une plus récente.
   Rien n'est mis à jour tout seul : le bouton lance Claude sur le projet, à la demande.
 - **Onglet « Git et GitHub »** : la bibliothèque a sa ligne, comme un projet. Un seul dépôt GitHub PRIVÉ
