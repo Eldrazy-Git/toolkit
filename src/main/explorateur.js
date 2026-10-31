@@ -132,7 +132,11 @@ function encoder(texte, encodage) {
 // { image: 'data:…' } pour une image.
 async function lire(dossier, relatif) {
   const chemin = absolu(dossier, relatif);
-  const infos = await fsp.stat(chemin);
+  // Un onglet restauré ou un « Récent » peut désigner un fichier supprimé depuis.
+  const infos = await fsp.stat(chemin).catch((erreur) => {
+    if (erreur.code === 'ENOENT') throw new Error(`Ce fichier n'existe plus : ${relatif}`);
+    throw erreur;
+  });
   if (infos.isDirectory()) throw new Error('C\'est un dossier.');
   const extension = path.extname(chemin).toLowerCase();
   if (IMAGES[extension] && infos.size <= TAILLE_MAX) {
