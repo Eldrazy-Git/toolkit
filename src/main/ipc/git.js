@@ -174,7 +174,7 @@ function enregistrer() {
       throw new Error(`Des fichiers sensibles sont enregistrés dans Git (${etat.secretsSuivis.join(', ')}). Retire-les du suivi avant de créer un dépôt GitHub.`);
     }
     let nom = 'toolkit';
-    let description = 'Toolkit : application de bureau qui centralise mes projets et intègre Claude Code.';
+    let description = 'Toolkit : application de bureau qui centralise mes projets et fonctionne avec Claude Code.';
     if (cible.type === 'projet') {
       const projet = await projets.chargerProjet(cible.id);
       nom = cible.id;

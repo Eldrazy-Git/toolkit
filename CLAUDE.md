@@ -2,7 +2,7 @@
 
 Toolkit est une application de bureau Windows (Electron) qui centralise les projets de
 l'utilisateur (outils HTML, scripts Python/Node, projets Java/Gradle, applications Android) et
-intègre Claude Code. Ce dossier `app/` contient **uniquement le code de l'application**.
+fonctionne avec Claude Code. Ce dossier `app/` contient **uniquement le code de l'application**.
 Ce fichier est la référence complète pour modifier l'application.
 
 ## Principes de conception
