@@ -136,6 +136,7 @@ app/
             ├── notifications.js notifier(message, type)
             ├── onglets.js       barre d'onglets + panneaux des outils (<webview>)
             ├── logiciels.js     barre de raccourcis vers des logiciels (au-dessus des onglets)
+            ├── discussion.js    bouton « Discuter » : parler avec Claude de Toolkit et des projets
             ├── apercu-appareil.js aperçu ordinateur / smartphone / tablette d'un outil
             ├── simulation-tactile.js bouton « Simuler le tactile » (outil + aperçu HTML du Code)
             ├── reglages.js      onglet « Réglages »
@@ -329,6 +330,15 @@ Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
   (`sauvegarde:faire`, propose d'activer Git si besoin), puis onglet Claude. Une session
   Claude déjà en cours sur le même dossier est réutilisée. « Reprendre la conversation »
   relance avec `claude --continue`.
+- « Discuter » (`composants/discussion.js`, à gauche de la barre des logiciels, palette, raccourci
+  au choix) : Claude à la racine de Toolkit (cible `racine` + mode `claude` = discussion, voir
+  `ipc/claude.js`), EN LECTURE SEULE (`--tools Read,Glob,Grep,WebSearch,WebFetch
+  --strict-mcp-config` : pas de commit de sauvegarde, la racine n'a pas de dépôt Git). Contexte :
+  `contexte-claude.preparerDiscussion()` réécrit à chaque lancement `donnees/discussion-claude.md`
+  (rôle, où lire, catalogue des projets), passé par `--append-system-prompt-file`. Un onglet par
+  sujet (`onglet.idSession`, noté par `actions.noterSessionTerminal`) ; menu du bouton = nouvelle
+  discussion + conversations récentes de la racine. Pour agir : Claude renvoie vers « Modifier avec
+  Claude » avec une demande prête à copier.
 - « Nouvel outil » : `modeles.js` copie un modèle (`app/templates/*/modele.json`),
   génère `projet.json` + `CLAUDE.md` (`claude-md.js`), `git init` + premier commit, puis
   Claude est lancé avec la description comme demande initiale.

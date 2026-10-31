@@ -6,6 +6,7 @@ import { icone } from './icones.js';
 import { ouvrirMenu } from './menu.js';
 import { demanderTexte, choisir } from './dialogue.js';
 import { notifier } from './notifications.js';
+import { ouvrirMenuDiscussion } from './discussion.js';
 
 const api = window.toolkit.logiciels;
 const barre = document.getElementById('logiciels');
@@ -111,6 +112,12 @@ function bouton(logiciel, index) {
 
 export function rendre() {
   barre.replaceChildren(
+    el('button', {
+      classe: 'logiciel logiciel-discussion',
+      title: 'Discuter avec Claude de Toolkit et de tes projets (il lit tout, mais ne modifie rien)',
+      onClick: (e) => ouvrirMenuDiscussion(e.currentTarget),
+    }, icone('claude'), el('span', { classe: 'logiciel-nom' }, 'Discuter')),
+    el('span', { classe: 'logiciel-separateur' }),
     ...liste.map(bouton),
     el('button', {
       classe: liste.length ? 'bouton-icone logiciel-ajouter' : 'logiciel logiciel-ajouter vide',

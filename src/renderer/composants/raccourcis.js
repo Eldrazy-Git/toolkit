@@ -16,6 +16,7 @@ export const COMMANDES = [
   { id: 'git', libelle: 'Ouvrir Git et GitHub', defaut: 'Ctrl+Shift+G', zone: 'partout' },
   { id: 'nouvelOutil', libelle: 'Nouvel outil (avec Claude)', defaut: 'Ctrl+Shift+N', zone: 'partout' },
   { id: 'terminal', libelle: 'Terminal PowerShell', defaut: '', zone: 'partout' },
+  { id: 'discussion', libelle: 'Discuter avec Claude', defaut: '', zone: 'partout' },
   { id: 'zoomPlus', libelle: 'Agrandir l\'interface', defaut: 'Ctrl+=', zone: 'partout' },
   { id: 'zoomMoins', libelle: 'Réduire l\'interface', defaut: 'Ctrl+-', zone: 'partout' },
   { id: 'zoomNormal', libelle: 'Taille normale de l\'interface', defaut: 'Ctrl+0', zone: 'partout' },

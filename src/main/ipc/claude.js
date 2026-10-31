@@ -25,7 +25,14 @@ function enregistrer() {
     }
     const dossier = await dossierCible(cible);
     // Claude peut lire les projets liés à celui-ci (voir contexte-claude.js).
-    const dossiersLies = mode === 'claude' && cible.type === 'projet' ? await contexteClaude.dossiersLies(cible.id) : [];
+    let dossiersLies = mode === 'claude' && cible.type === 'projet' ? await contexteClaude.dossiersLies(cible.id) : [];
+    // Claude à la racine de Toolkit = le bouton « Discuter » (lecture seule, tout le contexte).
+    let consignes;
+    if (mode === 'claude' && cible.type === 'racine') {
+      const discussion = await contexteClaude.preparerDiscussion();
+      consignes = discussion.fichier;
+      dossiersLies = discussion.dossiers;
+    }
     // « Reprendre la conversation » : la plus récente de ce dossier, désignée par son id
     // (le terminal sait alors laquelle il affiche) ; « --continue » si aucune n'est trouvée.
     if (mode === 'claude' && continuer && !reprendre) reprendre = (await sessionsClaude.lister(dossier))[0]?.id;
@@ -37,7 +44,7 @@ function enregistrer() {
       reprendre = undefined;
       continuer = false;
     }
-    const resultat = await terminal.creer(id, { mode, dossier, demande, continuer, reprendre, nouvelleSession, modele, effort, colonnes, lignes, dossiersLies }, contenu);
+    const resultat = await terminal.creer(id, { mode, dossier, demande, continuer, reprendre, nouvelleSession, modele, effort, colonnes, lignes, dossiersLies, consignes }, contenu);
     return { ...resultat, chemin: chemins.versRelatif(dossier) || '.' };
   }, { avecEmetteur: true });
   gerer('terminal:sessions', async (cible) => sessionsClaude.lister(await dossierCible(cible)));
