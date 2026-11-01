@@ -386,7 +386,9 @@ Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
   Claude » avec une demande prête à copier.
 - « Nouvel outil » : `modeles.js` copie un modèle (`app/templates/*/modele.json`),
   génère `projet.json` + `CLAUDE.md` (`claude-md.js`), `git init` + premier commit, puis
-  Claude est lancé avec la description comme demande initiale.
+  Claude est lancé avec la description comme demande initiale. Modèle `libre` (mod, application,
+  jeu…) : aucun fichier de départ ; son champ `consigne` demande à Claude de choisir la technologie
+  et de compléter `CLAUDE.md`, `.gitignore` et `projet.json`.
 - Chaque terminal compte dans `activite.js` : tant qu'il tourne, fermer la fenêtre la cache
   au lieu de la détruire. Tous les terminaux sont arrêtés quand Toolkit quitte.
 

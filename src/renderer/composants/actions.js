@@ -1425,10 +1425,10 @@ export async function nouvelOutil() {
       { id: 'categorie', libelle: 'Catégorie', type: 'texte', suggestions: listeCategories().map(([c]) => c), exemple: 'Par exemple : Utilitaires' },
       {
         id: 'description',
-        libelle: 'Ce que l\'outil doit faire',
+        libelle: 'Ce que le projet doit faire',
         type: 'zone',
         obligatoire: true,
-        exemple: 'Décris l\'outil avec tes mots : ce qu\'il reçoit, ce qu\'il produit, à quoi il ressemble…',
+        exemple: 'Décris-le avec tes mots : ce qu\'il fait, à quoi il ressemble, pour quel jeu ou quel appareil…',
         aide: 'Entrée pour aller à la ligne, Ctrl+Entrée pour valider.',
       },
     ],

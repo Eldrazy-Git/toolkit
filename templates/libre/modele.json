@@ -1,0 +1,11 @@
+{
+  "nom": "Autre : mod, application, jeu… (Claude choisit)",
+  "description": "Projet de n'importe quel genre : dossier vide, Claude choisit la technologie d'après la description.",
+  "ordre": 4,
+  "type": "autre",
+  "ouvrir_avec": "vscode",
+  "actions": [],
+  "consigne": "puis choisis la technologie la plus adaptée : ce dossier ne contient encore aucun code. Si une information indispensable manque (par exemple le jeu, sa version et le chargeur de mods pour un mod, ou la plateforme pour une application), pose la question à l'utilisateur avant de coder. Si un outil manque sur le PC (JDK, SDK Android…), explique comment l'installer et n'installe rien de global sans son accord. Une fois la technologie choisie : remplace les sections « Technologies » et « Lancer ou compiler » de CLAUDE.md, complète .gitignore, et renseigne dans projet.json `type`, `point_entree`, `ouvrir_avec` et les boutons utiles dans `actions` (compiler, lancer…).",
+  "technologies": "À déterminer : Claude la choisit au début du projet et remplace ce texte.",
+  "lancer": "À déterminer : Claude remplace ce texte quand la technologie est choisie."
+}

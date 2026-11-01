@@ -83,8 +83,8 @@ async function copierModele(source, destination, variables) {
 async function creerDepuisModele({ nom, modeleId, categorie, description }) {
   nom = String(nom || '').trim();
   description = String(description || '').trim();
-  if (!nom) throw new Error('Donne un nom à l\'outil.');
-  if (!description) throw new Error('Décris ce que l\'outil doit faire : Claude s\'en servira pour le créer.');
+  if (!nom) throw new Error('Donne un nom au projet.');
+  if (!description) throw new Error('Décris ce que le projet doit faire : Claude s\'en servira pour le créer.');
   const modele = (await listerModeles()).find((m) => m.id === modeleId);
   if (!modele) throw new Error('Modèle introuvable.');
   const m = modele.modele;
@@ -125,17 +125,19 @@ async function creerDepuisModele({ nom, modeleId, categorie, description }) {
   let avertissement = null;
   try {
     await git.initialiser(dossier);
-    await git.commiterTout(dossier, `Création de l'outil « ${nom} » (modèle ${modele.nom})`);
+    await git.commiterTout(dossier, `Création du projet « ${nom} » (modèle ${modele.nom})`);
   } catch (erreur) {
-    avertissement = `L'outil est créé, mais sans historique Git : ${erreur.message}`;
+    avertissement = `Le projet est créé, mais sans historique Git : ${erreur.message}`;
   }
 
-  const demande = `Crée l'outil « ${nom} » décrit ci-dessous. Commence par lire CLAUDE.md et projet.json, `
-    + 'puis transforme les fichiers de départ du modèle pour réaliser l\'outil. Avant de coder, consulte le '
+  // Un modèle sans fichiers de départ (« libre ») donne sa propre consigne.
+  const consigne = m.consigne || 'puis transforme les fichiers de départ du modèle pour réaliser le projet.';
+  const demande = `Crée le projet « ${nom} » décrit ci-dessous. Commence par lire CLAUDE.md et projet.json, `
+    + `${consigne} Avant de coder, consulte le `
     + 'catalogue des kits (section « Kits et skills réutilisables » de ../CLAUDE.md), utilise ceux qui conviennent '
     + 'et ne recode jamais ce qu\'ils fournissent. Mets à jour projet.json '
     + '(description, actions…) si nécessaire, puis fais un commit local quand c\'est terminé.\n\n'
-    + `Ce que l'outil doit faire :\n${description}`;
+    + `Ce que le projet doit faire :\n${description}`;
 
   return { id, nom, demande, avertissement };
 }
