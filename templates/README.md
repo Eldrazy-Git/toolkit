@@ -5,7 +5,8 @@ bouton « Nouvel outil ». Toolkit copie le dossier du modèle dans
 `projets/<nom-du-nouvel-outil>/`, génère `projet.json` et `CLAUDE.md`, initialise Git,
 fait un premier commit, puis lance Claude Code avec la description de l'outil.
 
-- Modèles fournis avec l'application : ici, dans `app/templates/` (`html`, `python`, `node`).
+- Modèles fournis avec l'application : ici, dans `app/templates/` (`html`, `python`, `node`,
+  et `libre` : aucun fichier de départ, Claude choisit la technologie — mod, application, jeu…).
 - Modèles personnels : dans `Toolkit/templates/` (à côté de `app/`), même format.
   Ils s'ajoutent à ceux-ci et ne sont pas versionnés avec l'application.
 
@@ -19,6 +20,7 @@ fait un premier commit, puis lance Claude Code avec la description de l'outil.
 | `type`, `point_entree`, `ouvrir_avec`, `actions` | Recopiés dans le `projet.json` du nouveau projet (voir `docs/projet-json.md`). |
 | `technologies` | Texte placé dans la section « Technologies » du `CLAUDE.md` généré. |
 | `lancer` | Texte placé dans la section « Lancer ou compiler » du `CLAUDE.md` généré. |
+| `consigne` | Facultatif. Remplace « transforme les fichiers de départ du modèle » dans la demande initiale à Claude (phrase qui suit « Commence par lire CLAUDE.md et projet.json, »). |
 
 ## Variables
 
