@@ -36,6 +36,12 @@ const PART_MIN_REELLE = 0.3;
 const PREFIXE_CODE_PROCHE = 'kit-recopie:';
 const LIGNE_SANS_INTERET = /^(\/\/|\/\*|\*|#|<!--|import\s|package\s|from\s+\S+\s+import\s|using\s)/;
 
+// Fichiers d'informations d'un projet, à sa racine (bouton « Mettre à jour les fiches »).
+const FICHIER_INFOS = /^(CLAUDE\.md|projet\.json|README(\.(md|txt))?)$/i;
+const SUITE_FICHES = '\n\nNe modifie que CLAUDE.md, projet.json et le README : ni le code, ni les réglages, ni les sections entre <!-- toolkit:… --> et <!-- /toolkit:… -->. '
+  + 'Écris seulement ce que tu as vérifié dans le projet ; si tu ne sais pas, pose-moi la question au lieu de deviner. '
+  + 'Fais ensuite un commit local, sans push, puis dis-moi ce que tu as écrit et les questions restées ouvertes.';
+
 const fichierRapport = () => path.join(chemins.donnees, 'verification-kits.json');
 const uniques = (liste) => [...new Set(liste)];
 
@@ -132,6 +138,8 @@ function preparerRegle(brute, source) {
     types: Array.isArray(brute.types) ? brute.types : null,
     demande: typeof brute.demande === 'string' ? brute.demande.trim() : '',
     conditions: brute.si.map(preparerCondition),
+    // D'après les conditions et pas les fichiers trouvés : un CLAUDE.md absent n'en donne aucun.
+    infos: brute.si.every((c) => FICHIER_INFOS.test(c.fichiers)),
   };
 }
 
@@ -376,6 +384,7 @@ async function ajustementsDesRegles(fiche, dossier, fichiers, lire, bib) {
       detail: regle.detail,
       fichiers: trouves.slice(0, 6),
       demande: demandePar(regle.demande, regle.source, regle.titre, regle.detail, trouves.slice(0, 20)),
+      infos: regle.infos,
     });
   }
   return sortie;
@@ -490,6 +499,13 @@ async function ecrireFichierRapport(rapport) {
   await ecrireJson(fichierRapport(), rapport);
 }
 
+// Un ajustement qui ne concerne que les fichiers d'informations du projet. Sans « infos » (script
+// d'un skill, rapport plus ancien) : d'après les fichiers signalés.
+function concerneLesInfos(a) {
+  if (typeof a.infos === 'boolean') return a.infos;
+  return (a.fichiers || []).length > 0 && a.fichiers.every((f) => FICHIER_INFOS.test(f));
+}
+
 // Ce que l'interface affiche : les projets qui existent encore, et les exceptions de chaque projet.
 async function lire() {
   const rapport = await lireFichierRapport();
@@ -497,10 +513,30 @@ async function lire() {
   const noms = new Map(liste.map((p) => [p.id, p.fiche.nom]));
   const lignes = Object.entries(rapport.projets)
     .filter(([id]) => noms.has(id))
-    .map(([id, entree]) => ({ id, nom: noms.get(id), ...entree }))
+    .map(([id, entree]) => ({ id, nom: noms.get(id), ...entree, ajustements: entree.ajustements.map((a) => ({ ...a, infos: concerneLesInfos(a) })) }))
     .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
   const exceptions = liste.flatMap((p) => (p.fiche.exceptions_verification || []).map((e) => ({ projet: p.id, nomProjet: p.fiche.nom, ...e })));
   return { projets: lignes, exceptions };
+}
+
+// Projets du rapport dont les fichiers d'informations restent à mettre à jour, avec une seule demande
+// à Claude par projet. Ce qui a déjà été lancé n'est pas repris.
+async function fichesAMettreAJour() {
+  const { projets: lignes } = await lire();
+  const sortie = [];
+  for (const ligne of lignes) {
+    const points = ligne.ajustements.filter((a) => a.infos && !a.lance);
+    if (!points.length) continue;
+    const liste = points.map((a) => `- ${a.titre}. ${a.demande.replace(SUITE_DEMANDE, '')}`).join('\n');
+    sortie.push({
+      id: ligne.id,
+      nom: ligne.nom,
+      cles: points.map((a) => a.cle),
+      titres: points.map((a) => a.titre),
+      demande: `Mets à jour les fichiers d'informations de ce projet. Points relevés par « Vérifier les projets » :\n${liste}${SUITE_FICHES}`,
+    });
+  }
+  return sortie;
 }
 
 // Vérifie un projet et remplace ses résultats dans le rapport : ce qui avait été ignoré revient.
@@ -585,6 +621,7 @@ module.exports = {
   verifierProjet,
   oublierBibliotheque,
   lire,
+  fichesAMettreAJour,
   ignorer,
   marquerLance,
   ajouterException,

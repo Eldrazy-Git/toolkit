@@ -107,6 +107,38 @@ async function ajouterException(ligne, a) {
   if (fait) notifier('Exception ajoutée : pense à faire un commit de ce projet (onglet « Git et GitHub »).', 'succes');
 }
 
+// Un Claude par projet coché, chacun avec sa sauvegarde Git. Un projet où Claude travaille déjà est
+// laissé de côté : sa demande ne pourrait que remplacer le presse-papiers.
+async function mettreAJourFiches() {
+  const fiches = await essayer(() => api.fiches());
+  if (!fiches?.length) {
+    await chargerRapport();
+    return;
+  }
+  const choix = await cocher({
+    titre: 'Mettre à jour les fiches',
+    message: 'Pour chaque projet coché : sauvegarde Git, puis un onglet Claude qui met à jour son CLAUDE.md, son projet.json ou son README, sans toucher au code, et fait un commit local. Chaque onglet utilise ton quota Claude : décoche ce qui peut attendre.',
+    elements: fiches.map((f) => ({ valeur: f.id, libelle: `${f.nom} : ${f.titres.join(' ; ')}`, coche: true })),
+    toutCocher: true,
+    bouton: 'Lancer Claude',
+  });
+  if (!choix?.choisis.length) return;
+  const { projets } = etat.obtenir();
+  const occupes = [];
+  for (const f of fiches.filter((x) => choix.choisis.includes(x.id))) {
+    const projet = projets.find((p) => p.id === f.id);
+    if (!projet) continue;
+    if (actions.claudeOuvertSur(projet)) {
+      occupes.push(f.nom);
+      continue;
+    }
+    if (await actions.modifierAvecClaude(projet, f.demande) === false) continue;
+    for (const cle of f.cles) await essayer(() => api.marquerLance(f.id, cle));
+  }
+  await chargerRapport();
+  if (occupes.length) notifier(`Claude travaille déjà sur ${occupes.join(', ')} : ces projets n'ont pas été lancés. Relance le bouton quand il aura fini.`);
+}
+
 async function comparer(ligne, a) {
   const projet = etat.obtenir().projets.find((p) => p.id === ligne.id);
   if (!projet) {
@@ -240,11 +272,18 @@ export function sectionRapport() {
   const total = avecTravail.reduce((n, l) => n + l.ajustements.length, 0);
   if (deplies === null) deplies = new Set(avecTravail.length <= 3 ? avecTravail.map((l) => l.id) : []);
   const problemes = [...new Set(lignes.flatMap((l) => l.problemes || []))];
+  const nombreFiches = lignes.filter((l) => l.ajustements.some((a) => a.infos && !a.lance)).length;
   return [
     el('h2', { classe: 'titre-kits' }, `Rapport de vérification (${total} à faire)`),
     el('p', { classe: 'details-aide' }, total
       ? `${lignes.length} projet(s) vérifié(s), ${avecTravail.length} avec des ajustements. « Faire » ouvre Claude, après une sauvegarde Git : rien ne change sans ton accord.`
       : `${lignes.length} projet(s) vérifié(s) : rien à faire.`),
+    nombreFiches ? el('div', { classe: 'details-boutons' },
+      el('button', {
+        classe: 'bouton',
+        title: 'Traite d\'un coup les CLAUDE.md, projet.json et README signalés : tu choisis les projets avant que Claude se lance',
+        onClick: mettreAJourFiches,
+      }, icone('claude'), `Mettre à jour les fiches (${nombreFiches} projet${nombreFiches > 1 ? 's' : ''})`)) : null,
     problemes.length ? el('div', { classe: 'alerte attention' }, icone('attention'),
       el('div', {}, 'Certains contrôles n\'ont pas pu se faire :', el('ul', {}, problemes.map((p) => el('li', {}, p))))) : null,
     avecTravail.map(blocProjet),

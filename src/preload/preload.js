@@ -111,7 +111,8 @@ contextBridge.exposeInMainWorld('toolkit', {
   },
   // Vérification des projets par rapport aux kits et aux skills (onglet « Kits »).
   verification: {
-    lire: () => appeler('verification:lire'), // { projets: [{ id, nom, date, ajustements, problemes }], exceptions }
+    lire: () => appeler('verification:lire'), // { projets: [{ id, nom, date, ajustements, proches, problemes }], exceptions }
+    fiches: () => appeler('verification:fiches'), // [{ id, nom, cles, titres, demande }] : fichiers d'informations à mettre à jour
     commencer: () => appeler('verification:commencer'), // relit la bibliothèque
     verifierProjet: (id) => appeler('verification:verifier-projet', id),
     ignorer: (id, cle) => appeler('verification:ignorer', id, cle),
