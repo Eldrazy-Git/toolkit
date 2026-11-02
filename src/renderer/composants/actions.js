@@ -1371,6 +1371,11 @@ async function lancerClaude(cible, nomCible, demande, { continuer = false, compa
   return true;
 }
 
+export function claudeOuvertSur(projet) {
+  const cible = { type: 'projet', id: projet.id };
+  return etat.obtenir().onglets.some((o) => o.genre === 'terminal' && o.mode === 'claude' && o.enCours && memeCible(o.cible, cible));
+}
+
 // « Comparer avec Claude » du rapport de vérification : un avis, sans rien modifier.
 export function comparerAvecClaude(projet, demande) {
   return lancerClaude({ type: 'projet', id: projet.id }, projet.fiche.nom, demande, { comparaison: true });

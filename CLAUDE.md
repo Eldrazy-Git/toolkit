@@ -366,6 +366,7 @@ Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
   « Exception » = `exceptions_verification` de projet.json + section `toolkit:exceptions` du CLAUDE.md du projet, sans commit (l'utilisateur
   commite depuis l'onglet Git, comme après l'ajout d'un kit). Code proche d'un kit : liste `proches` du rapport (`kit-recopie:<kit>`, hors du total « à faire »,
   section repliée) ; « Comparer avec Claude » = `comparerAvecClaude()` (mode Plan via l'option `plan` du terminal, sans sauvegarde), « Ne plus signaler » = exception.
+  « Mettre à jour les fiches » = `fichesAMettreAJour()` (ajustements limités à CLAUDE.md, projet.json, README : champ `infos`, tiré des conditions de la règle, sans rien de propre à un skill), un `modifierAvecClaude()` par projet coché.
 - Dépôt GitHub de la bibliothèque : dépôt privé NORMAL `toolkit-kits` (pas la fonction « dépôt
   partagé »), ligne « Kits et skills » de l'onglet Git. `recupererDepot()` clone dans `donnees/`, refuse
   un dépôt sans `propositions/` dans son `.gitignore` et une bibliothèque non vide

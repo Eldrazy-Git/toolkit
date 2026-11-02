@@ -6,6 +6,7 @@ const verification = require('../verification');
 
 function enregistrer() {
   gerer('verification:lire', () => verification.lire());
+  gerer('verification:fiches', () => verification.fichesAMettreAJour());
   gerer('verification:commencer', () => verification.oublierBibliotheque());
   gerer('verification:verifier-projet', (id) => verification.verifierProjet(id));
   gerer('verification:ignorer', (id, cle) => verification.ignorer(id, cle));

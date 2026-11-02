@@ -117,6 +117,13 @@ Pour chaque ajustement :
 - **Exception** : ne plus la détecter dans ce projet. Notée dans `projet.json` (champ `exceptions_verification`, lu par
   la vérification) et dans le `CLAUDE.md` du projet (section `toolkit:exceptions`, lue par Claude). Le rapport la liste, et elle se retire de là.
 
+### Mettre à jour les fiches
+
+Ce bouton du rapport traite d'un coup les ajustements qui ne concernent que `CLAUDE.md`, `projet.json` ou le README à la racine d'un projet.
+Une règle de `verification.json` est concernée si toutes ses conditions `si` visent uniquement ces fichiers ; pour le script d'un skill, si tous les
+fichiers qu'il signale sont de ceux-là. Le choix des projets est demandé d'abord. Ensuite, pour chaque projet coché : sauvegarde Git, puis un onglet Claude
+avec tous ses points, sans toucher au code, et un commit local sans push. Un projet où Claude travaille déjà est laissé de côté.
+
 ### Code proche d'un kit (pour information)
 
 Ces lignes ne comptent pas dans le total « à faire ». Elles sont dans une section repliée du rapport : ce n'est pas un problème, et
