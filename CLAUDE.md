@@ -79,6 +79,7 @@ app/
 ├── installateur/Installateur.cs installateur graphique / lanceur Toolkit.exe / désinstallateur
 ├── scripts/                 prérequis, lanceur, icônes, construction de l'installateur, publication
 ├── templates/               modèles fournis pour « Nouvel outil »
+├── tests/                   tests automatiques sans interface (npm test)
 └── src/
     ├── main/                processus principal (Node) : disque, processus, Git…
     │   ├── main.js              démarrage, fenêtre, fermeture vers la zone de notification
@@ -99,6 +100,7 @@ app/
     │   ├── github.js            GitHub via « gh » (état de connexion, dépôt privé)
 │   ├── depot-partage.js     dépôt GitHub partagé : plusieurs projets, un dossier chacun
     │   ├── import.js            assistant d'import : analyse, détection, copie vérifiée
+    │   ├── import-exclusions.js quels dossiers écarter à l'import, code source qu'ils contiennent
     │   ├── recherche.js         index MiniSearch (projets + .md), liens [[…]], rétroliens
     │   ├── notes.js             notes .md : rendu markdown-it (HTML brut désactivé), lecture, écriture
     │   ├── modeles.js           modèles de « Nouvel outil » et création du projet
@@ -411,10 +413,21 @@ dans `docs/projet-json.md`. Points clés :
 ### Assistant d'import
 
 `src/main/import.js` (explications en tête du fichier) + `composants/import.js`.
-- `analyser()` ne modifie RIEN : type de projet (`detecter()`), dossiers régénérables
-  (exclus par défaut sauf s'ils sont suivis par Git), fichiers verrouillés (bloquant),
-  chemins absolus vers le projet, liens symboliques, fichiers > 100 Mo, secrets suivis par
-  Git, outils HTML des `assets` Android (proposés en `outils_lies`), boutons d'action.
+- `analyser()` ne modifie RIEN : type de projet (`detecter()`), dossiers à écarter,
+  fichiers verrouillés (bloquant), chemins absolus vers le projet, liens symboliques,
+  fichiers > 100 Mo, secrets suivis par Git, outils HTML des `assets` Android (proposés en
+  `outils_lies`), boutons d'action.
+- Dossiers à écarter (`src/main/import-exclusions.js`, testé par `npm test`) : un nom seul ne
+  suffit JAMAIS, un package Java peut s'appeler `target`. `build`, `dist`, `out`, `target` :
+  seulement à côté d'un fichier de compilation (racine ou sous-module) et jamais sous
+  `src/`, `source/`, `sources/`. `venv` / `.venv` : seulement avec un marqueur d'environnement
+  (`pyvenv.cfg`…). `node_modules` sous un dossier source : seulement à côté d'un `package.json`.
+  Écarté par défaut sauf si suivi par Git ou si `aVerifier` (fichiers source hors des emplacements
+  normaux d'un résultat de compilation, voir `classerFichier()` : alerte, dossier gardé par
+  défaut). Liste complète dans le rapport, cases à décocher, et rappel dans les étapes de fin.
+  Rien n'est conservé après l'import : aucune trace des exclusions passées.
+- Après le Git de l'import, `sourcesIgnoreesParGit()` signale les fichiers source copiés mais
+  ignorés par le `.gitignore` du projet (jamais modifié pour cela).
 - `executer()` : copie -> vérification (taille + SHA-1 jusqu'à 20 Mo) -> projet.json
   (jamais écrasé s'il existe) -> CLAUDE.md (section ajoutée s'il existe) -> .gitignore
   complété -> Git -> **Corbeille** (`shell.trashItem`, jamais de suppression définitive)
@@ -426,7 +439,8 @@ dans `docs/projet-json.md`. Points clés :
   signaler ceux qu'une page HTML utilise), puis `executer()` crée un NOUVEAU dossier de projet
   et y copie le fichier sous son nom (un dossier par projet). Raccourcis `.lnk`/`.url` refusés.
 - Clone : dans `donnees/import-temp/`, rangé dans `projets/` à la confirmation (réessais :
-  Windows bloque souvent un dossier juste cloné), supprimé si l'utilisateur annule.
+  Windows bloque souvent un dossier juste cloné), supprimé si l'utilisateur annule. Rangé en
+  entier : aucun dossier n'y est écarté ni proposé.
 - Dossiers refusés : disque, dossier personnel, Bureau, Documents, Windows, Program Files,
   Toolkit lui-même ou un dossier qui le contient.
 
@@ -446,6 +460,9 @@ dans `docs/projet-json.md`. Points clés :
 - « Tout envoyer » : chaque dépôt vers SON remote, après confirmation listant les projets.
 - Dépôt GitHub : toujours PRIVÉ (`gh repo create --private`), refusé si des secrets sont
   suivis par Git ; l'adresse est notée dans `projet.json` (`git.remote`).
+- `.gitignore` créé par Toolkit (`GITIGNORE_DEFAUT`) : `build/`, `dist/`, `out/` valent à toute
+  profondeur, avec une exception pour tout ce qui est sous un `src/`. Un `.gitignore` existant
+  n'est jamais modifié pour cela.
 - Dépôt PARTAGÉ (`src/main/depot-partage.js`, explications en tête) : plusieurs petits projets
   dans UN dépôt GitHub, un dossier chacun (`projet.json > git.partage = { remote, dossier }`).
   Chaque projet garde SON dépôt local (historique, retour arrière) et n'a pas de remote. Cache
@@ -636,9 +653,10 @@ npm install        (une seule fois, ou après ajout d'une dépendance)
 npm start          lance Toolkit avec les sources
 npm run verifier   vérifie les prérequis
 npm run icones     régénère assets/icone.png et assets/icone.ico
+npm test           lance les tests de tests/ (code copié dans un dossier temporaire, vrais projets intacts)
 ```
 
-**Tests automatiques** : un petit script
+**Tests de l'interface** : un petit script
 Electron qui neutralise le verrou d'instance unique et redirige `userData` vers un dossier
 temporaire, fait `require('src/main/main.js')`, puis pilote l'interface avec
 `webContents.executeJavaScript()` (clics, lecture du DOM), `sendInputEvent()` (frappes) et

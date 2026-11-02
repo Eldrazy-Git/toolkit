@@ -7,6 +7,7 @@
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
+    "test": "node --test tests/*.test.js",
     "verifier": "node scripts/verifier-prerequis.js",
     "postinstall": "node node_modules/electron/install.js && node scripts/creer-lanceur.js",
     "icones": "node scripts/generer-icones.js",

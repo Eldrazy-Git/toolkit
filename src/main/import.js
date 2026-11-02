@@ -26,13 +26,7 @@ const github = require('./github');
 const depotPartage = require('./depot-partage');
 const journal = require('./journal');
 
-// Dossiers régénérables, toujours proposés à l'exclusion.
-const TOUJOURS_EXCLUS = new Set(['node_modules', '.gradle', '.idea', '__pycache__', '.venv', 'venv', '.cxx',
-  '.next', '.parcel-cache', '.pytest_cache', '.mypy_cache', '.externalNativeBuild', '.kotlin']);
-// Dossiers de résultats de compilation : exclus seulement si le projet a un outil de compilation.
-const EXCLUS_SI_COMPILATION = new Set(['build', 'dist', 'out', 'target']);
-const FICHIERS_COMPILATION = ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts',
-  'package.json', 'pom.xml', 'pyproject.toml', 'setup.py'];
+const { raisonExclusion, creerBilanSources, estSousSource, EXTENSIONS_SOURCE } = require('./import-exclusions');
 
 const EXTENSIONS_TEXTE = /\.(html?|css|m?js|cjs|ts|tsx|jsx|json|py|md|txt|bat|cmd|ps1|xml|ya?ml|toml|ini|cfg|gradle|kts|java|kt|properties|sh|vue|svelte)$/i;
 const TAILLE_MAX_ANALYSE_TEXTE = 1024 * 1024;
@@ -117,7 +111,8 @@ function verifierSource(source) {
 // --- Parcours du dossier -----------------------------------------------------------------
 
 // Taille et nombre de fichiers d'un dossier (plafonné pour rester rapide).
-async function mesurer(dossier, plafond = 200000) {
+// surFichier(rel) : appelé pour chaque fichier ; incomplet : le plafond a été atteint.
+async function mesurer(dossier, surFichier = () => {}, plafond = 200000) {
   let taille = 0;
   let fichiers = 0;
   const pile = [dossier];
@@ -134,6 +129,7 @@ async function mesurer(dossier, plafond = 200000) {
       if (e.isDirectory()) pile.push(p);
       else if (e.isFile()) {
         fichiers++;
+        surFichier(relatif(dossier, p));
         try {
           taille += (await fs.stat(p)).size;
         } catch {
@@ -142,11 +138,12 @@ async function mesurer(dossier, plafond = 200000) {
       }
     }
   }
-  return { taille, fichiers };
+  return { taille, fichiers, incomplet: pile.length > 0 };
 }
 
-// Liste le contenu du projet. exclure(rel, nom) : true pour ne pas descendre dans un dossier.
-// Renvoie { dossiers, fichiers: [{ rel, taille }], liens: [{ rel, cible }], exclus: [rel], git }
+// Liste le contenu du projet. exclure(rel, nom, voisins) : une valeur non vide (la raison) pour
+// ne pas descendre dans un dossier ; voisins = noms des fichiers placés à côté de lui.
+// Renvoie { dossiers, fichiers: [{ rel, taille }], liens: [{ rel, cible }], exclus: [{ rel, nom, voisins, ...raison }], git }
 async function lister(racine, exclure) {
   const resultat = { dossiers: [], fichiers: [], liens: [], exclus: [], aGit: false };
   const pile = [''];
@@ -158,6 +155,7 @@ async function lister(racine, exclure) {
     } catch (erreur) {
       throw new Error(`Impossible de lire le dossier « ${rel || '.'} » : ${erreur.message}`);
     }
+    const voisins = entrees.filter((e) => e.isFile()).map((e) => e.name);
     for (const e of entrees) {
       const r = rel ? `${rel}/${e.name}` : e.name;
       const absolu = path.join(racine, r);
@@ -171,8 +169,9 @@ async function lister(racine, exclure) {
         resultat.liens.push({ rel: r, cible });
       } else if (e.isDirectory()) {
         if (r === '.git') resultat.aGit = true;
-        if (exclure(r, e.name)) {
-          resultat.exclus.push(r);
+        const raison = await exclure(r, e.name, voisins);
+        if (raison) {
+          resultat.exclus.push({ rel: r, nom: e.name, voisins, ...raison });
         } else {
           resultat.dossiers.push(r);
           pile.push(r);
@@ -506,10 +505,7 @@ async function analyserDossier(source, { mode = 'dossier', urlOrigine = null } =
     liste = await listerFichierSeul(source);
   } else {
     surProgression('Lecture du dossier…');
-    const entreesRacine = await fs.readdir(source);
-    const aCompilation = FICHIERS_COMPILATION.some((f) => entreesRacine.some((e) => e.toLowerCase() === f));
-    const exclure = (rel, nom) => TOUJOURS_EXCLUS.has(nom) || (aCompilation && EXCLUS_SI_COMPILATION.has(nom));
-    liste = await lister(source, exclure);
+    liste = await lister(source, (rel, nom, voisins) => raisonExclusion(path.join(source, rel), rel, nom, voisins));
   }
 
   surProgression('Détection du type de projet…');
@@ -519,16 +515,44 @@ async function analyserDossier(source, { mode = 'dossier', urlOrigine = null } =
   surProgression('Mesure des dossiers à exclure…');
   const gitUtilisable = liste.aGit && await git.gitDisponible();
   const exclus = [];
-  for (const rel of liste.exclus) {
-    const { taille, fichiers } = await mesurer(path.join(source, rel));
+  let tailleClone = 0;
+  let fichiersClone = 0;
+  for (const dossier of liste.exclus) {
+    const { rel, raison, motif } = dossier;
+    const bilan = creerBilanSources(dossier);
+    const { taille, fichiers, incomplet } = await mesurer(path.join(source, rel), bilan.ajouter);
+    // Un clone est rangé en entier : rien n'y est écarté, ces dossiers comptent dans le total.
+    if (mode === 'clone') {
+      tailleClone += taille;
+      fichiersClone += fichiers;
+      continue;
+    }
     // Un dossier enregistré dans Git n'est pas exclu par défaut : sinon Git le verrait
     // comme supprimé après l'import.
     const suiviParGit = gitUtilisable && (await git.git(source, ['ls-files', '--', rel])).sortie.trim() !== '';
-    exclus.push({ chemin: rel, taille, tailleLisible: tailleLisible(taille), fichiers, suiviParGit });
+    const sources = bilan.resultat();
+    // Du code là où il ne devrait pas y en avoir : on garde le dossier, sauf choix contraire.
+    const aVerifier = raison === 'compilation' && (sources.inattendus > 0 || incomplet);
+    exclus.push({
+      chemin: rel, raison, motif, taille, tailleLisible: tailleLisible(taille), fichiers, suiviParGit, sources, aVerifier,
+      exclureParDefaut: !suiviParGit && !aVerifier,
+    });
   }
 
   const risques = [];
   const fichiersHorsGit = liste.fichiers.filter((f) => !f.rel.startsWith('.git/'));
+
+  const dossiersAVerifier = exclus.filter((e) => e.aVerifier);
+  if (dossiersAVerifier.length) {
+    risques.push({
+      niveau: 'attention',
+      titre: `${dossiersAVerifier.length} dossier(s) de compilation semblent contenir du code source`,
+      detail: 'Toolkit les garde par défaut. Ne les écarte (section « Dossiers écartés ») que si tu es sûr que la compilation les recrée.',
+      elements: dossiersAVerifier.map((e) => (e.sources.inattendus
+        ? `${e.chemin} : ${e.sources.inattendus} fichier(s), ex. ${e.sources.exemples[0]}`
+        : `${e.chemin} : dossier trop gros pour être entièrement vérifié`)),
+    });
+  }
 
   if (mode !== 'clone') {
     surProgression('Recherche des fichiers ouverts par un autre programme…');
@@ -631,10 +655,10 @@ async function analyserDossier(source, { mode = 'dossier', urlOrigine = null } =
       elements: [],
     });
   }
-  const tailleTotale = liste.fichiers.reduce((t, f) => t + f.taille, 0);
+  const tailleTotale = liste.fichiers.reduce((t, f) => t + f.taille, tailleClone);
   const nomDossier = fichierSeul ? path.parse(source).name : path.basename(source);
   const id = crypto.randomUUID();
-  analyses.set(id, { source, mode, urlOrigine, exclusProposes: exclus.map((e) => e.chemin), ficheExistante });
+  analyses.set(id, { source, mode, urlOrigine, exclusProposes: exclus, ficheExistante });
 
   return {
     id,
@@ -655,7 +679,7 @@ async function analyserDossier(source, { mode = 'dossier', urlOrigine = null } =
       outilsHtml: detection.outilsHtml,
     },
     stats: {
-      fichiers: liste.fichiers.length,
+      fichiers: liste.fichiers.length + fichiersClone,
       taille: tailleLisible(tailleTotale),
       exclus,
     },
@@ -787,6 +811,14 @@ async function verifierCopie(source, destination, liste, surProgression) {
   }
 }
 
+// Fichiers source copiés sous un dossier source mais ignorés par le .gitignore du projet : présents
+// sur le disque, ils manqueraient à Git et à GitHub sans que rien ne le montre.
+async function sourcesIgnoreesParGit(dossier) {
+  const r = await git.git(dossier, ['-c', 'core.quotepath=off', 'ls-files', '--others', '--ignored', '--exclude-standard', '-z']);
+  if (r.code !== 0) return [];
+  return r.sortie.split('\0').filter((f) => f && EXTENSIONS_SOURCE.test(f) && estSousSource(f));
+}
+
 // Déplace le clone temporaire dans projets/. Juste après un clonage, Windows (antivirus,
 // indexation) bloque souvent le dossier quelques secondes : on réessaie, puis en dernier
 // recours on copie (avec vérification) et on supprime le clone temporaire.
@@ -850,16 +882,23 @@ async function executer(idAnalyse, choix, surProgression) {
       throw erreur;
     }
   } else {
-    const exclus = (choix.exclus || []).filter((e) => analyse.exclusProposes.includes(e));
+    const choisis = new Set(choix.exclus || []);
+    const ecartes = analyse.exclusProposes.filter((e) => choisis.has(e.chemin));
+    const exclus = ecartes.map((e) => e.chemin);
     let liste;
     try {
       liste = await copierProjet(analyse.source, destination, exclus, surProgression);
-      noter(`${liste.fichiers.length} fichier(s) copié(s)${exclus.length ? ` (${exclus.length} dossier(s) régénérable(s) exclu(s))` : ''}.`);
+      noter(`${liste.fichiers.length} fichier(s) copié(s).`);
+      if (exclus.length) noter(`Dossier(s) écarté(s) : ${exclus.join(', ')}.`);
       await verifierCopie(analyse.source, destination, liste, surProgression);
       noter('Copie vérifiée : identique à l\'original.');
     } catch (erreur) {
       await fs.rm(destination, { recursive: true, force: true }).catch(() => {});
       throw erreur;
+    }
+    const risques = ecartes.filter((e) => e.aVerifier).map((e) => e.chemin);
+    if (risques.length) {
+      avertissements.push(`Tu as écarté ces dossiers alors qu'ils semblaient contenir du code source : ${risques.join(', ')}. Si le projet ne compile plus, récupère-les dans l'original${choix.garderOriginal ? '' : ' (à la Corbeille)'}.`);
     }
   }
   analyses.delete(idAnalyse);
@@ -925,6 +964,10 @@ async function executer(idAnalyse, choix, surProgression) {
           const { commite } = await git.commiterFichiers(destination, fichiersToolkit, 'Ajout de la fiche Toolkit (projet.json, CLAUDE.md)');
           if (commite) noter('Fichiers de Toolkit enregistrés dans Git (commit local).');
         }
+      }
+      const ignorees = await sourcesIgnoreesParGit(destination);
+      if (ignorees.length) {
+        avertissements.push(`Git ignore ${ignorees.length} fichier(s) source (ex. ${ignorees[0]}) à cause du .gitignore du projet. Ils sont bien copiés, mais ils ne seront ni dans l'historique ni sur GitHub, et « Repartir de zéro » les proposerait à la Corbeille. Demande à Claude de corriger le .gitignore.`);
       }
     } catch (erreur) {
       avertissements.push(`Git : ${erreur.message}`);

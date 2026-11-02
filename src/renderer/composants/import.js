@@ -78,7 +78,7 @@ async function lancerAnalyse(fonction) {
         lancer: p.lancer,
         actions: p.actions.map((a) => ({ ...a, garder: true })),
         outilsLies: p.outilsHtml.map((o) => ({ ...o, garder: true })),
-        exclus: rapport.stats.exclus.filter((e) => !e.suiviParGit).map((e) => e.chemin),
+        exclus: rapport.stats.exclus.filter((e) => e.exclureParDefaut).map((e) => e.chemin),
         garderOriginal: false,
         initialiserGit: !rapport.git.estDepot,
         commiterFiche: true,
@@ -268,6 +268,34 @@ function rendreRisques(risques) {
         : null)));
 }
 
+// Une ligne de « Dossiers écartés » : case, chemin complet, raison, et code source éventuel.
+function rendreDossierEcarte(e, choix) {
+  const c = el('input', {
+    type: 'checkbox',
+    onChange: (ev) => {
+      choix.exclus = ev.target.checked ? [...choix.exclus, e.chemin] : choix.exclus.filter((x) => x !== e.chemin);
+    },
+  });
+  c.checked = choix.exclus.includes(e.chemin);
+  const { total, inattendus, extensions, exemples } = e.sources;
+  const types = extensions.join(', ');
+  return el('div', {},
+    el('label', { classe: 'champ-formulaire champ-case' }, c,
+      el('span', { classe: 'champ-libelle' }, el('code', {}, e.chemin)),
+      el('span', { classe: 'champ-aide en-ligne' }, `${e.motif} — ${e.tailleLisible}, ${e.fichiers} fichier(s)`
+        + (e.suiviParGit ? ' — enregistré dans Git : gardé par défaut' : '')),
+      total && !e.aVerifier
+        ? el('span', { classe: 'champ-aide' }, `Contient ${total} fichier(s) source (${types}) : normal ici (bibliothèques ou code généré).`)
+        : null),
+    e.aVerifier
+      ? el('div', { classe: 'alerte risque-attention' }, icone('attention'),
+        el('div', {},
+          el('strong', {}, inattendus ? `Ce dossier contient ${inattendus} fichier(s) source (${types})` : 'Ce dossier n\'a pas pu être entièrement vérifié'),
+          el('p', {}, 'Il pourrait s\'agir de ton code : il est gardé par défaut. Coche la case seulement si tu es sûr que la compilation le recrée.'),
+          exemples.length ? el('ul', {}, exemples.map((f) => el('li', {}, el('code', {}, f)))) : null))
+      : null);
+}
+
 function rendreRapport() {
   const { rapport, choix } = assistant;
   const gh = rapport.github;
@@ -301,21 +329,9 @@ function rendreRapport() {
       rapport.ficheExistante ? el('p', { classe: 'details-aide' }, 'Ce projet a déjà une fiche projet.json : elle sera conservée (ces champs ne seront pas utilisés).') : null),
 
     rapport.stats.exclus.length
-      ? section('Dossiers régénérables',
-        el('p', { classe: 'details-aide' }, 'Ces dossiers sont recréés automatiquement (compilation, dépendances, configuration de l\'éditeur). Cochés = non copiés : ils partiront à la Corbeille avec l\'original.'),
-        el('div', { classe: 'page-formulaire' }, rapport.stats.exclus.map((e) => {
-          const c = el('input', {
-            type: 'checkbox',
-            onChange: (ev) => {
-              choix.exclus = ev.target.checked ? [...choix.exclus, e.chemin] : choix.exclus.filter((x) => x !== e.chemin);
-            },
-          });
-          c.checked = choix.exclus.includes(e.chemin);
-          return el('label', { classe: 'champ-formulaire champ-case' }, c,
-            el('span', { classe: 'champ-libelle' }, el('code', {}, e.chemin)),
-            el('span', { classe: 'champ-aide en-ligne' }, `${e.tailleLisible}, ${e.fichiers} fichier(s)`
-              + (e.suiviParGit ? ' — enregistré dans Git : copié par défaut' : '')));
-        })))
+      ? section(`Dossiers écartés (${rapport.stats.exclus.length})`,
+        el('p', { classe: 'details-aide' }, 'Case cochée = dossier écarté : il n\'est pas copié et part à la Corbeille avec l\'original. Décoche un dossier pour le garder.'),
+        el('div', { classe: 'page-formulaire' }, rapport.stats.exclus.map((e) => rendreDossierEcarte(e, choix))))
       : null,
 
     choix.outilsLies.length
