@@ -170,7 +170,7 @@ function sectionKits() {
     `- Avant de coder, consulte le catalogue \`${dossierKits}/CATALOGUE.md\` (absent ou vide : aucun kit pour l'instant).`,
     `- Si un kit convient, utilise-le : \`node ${script} ajouter <kit> --projet <dossier du projet>\``,
     '  (`--essai` montre ce qui serait fait sans rien écrire). S\'il doit être adapté, termine en suivant son guide.',
-    '- Ne recode jamais ce qu\'un kit fournit.',
+    '- Si un kit convient, utilise-le plutôt que de recoder. S\'il convient mal, explique pourquoi et demande à l\'utilisateur quoi faire.',
     '- Ne modifie pas la bibliothèque depuis un projet, sauf si l\'utilisateur le demande.',
     `- Tu as écrit quelque chose de réutilisable TEL QUEL, sans rien de propre au projet ? Dépose-le dans`,
     `  \`${dossierKits}/propositions/<nom>/\` (format et conditions dans \`${doc}\`) et dis-le à l'utilisateur.`,

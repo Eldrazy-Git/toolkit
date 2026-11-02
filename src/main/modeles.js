@@ -134,8 +134,8 @@ async function creerDepuisModele({ nom, modeleId, categorie, description }) {
   const consigne = m.consigne || 'puis transforme les fichiers de départ du modèle pour réaliser le projet.';
   const demande = `Crée le projet « ${nom} » décrit ci-dessous. Commence par lire CLAUDE.md et projet.json, `
     + `${consigne} Avant de coder, consulte le `
-    + 'catalogue des kits (section « Kits et skills réutilisables » de ../CLAUDE.md), utilise ceux qui conviennent '
-    + 'et ne recode jamais ce qu\'ils fournissent. Mets à jour projet.json '
+    + 'catalogue des kits (section « Kits et skills réutilisables » de ../CLAUDE.md). Si un kit convient, utilise-le '
+    + 'plutôt que de recoder. S\'il convient mal, explique pourquoi et demande-moi quoi faire. Mets à jour projet.json '
     + '(description, actions…) si nécessaire, puis fais un commit local quand c\'est terminé.\n\n'
     + `Ce que le projet doit faire :\n${description}`;
 

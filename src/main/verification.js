@@ -23,11 +23,17 @@ const FIN_SECTION = '<!-- /toolkit:exceptions -->';
 const SUITE_DEMANDE = '\n\nExplique-moi d\'abord simplement ce que tu comptes faire, et attends mon accord avant de modifier quoi que ce soit. '
   + 'Fais ensuite un commit local, sans push.';
 
-// Détection du code recopié d'un kit : seules les lignes qui disent quelque chose comptent.
+// Détection du code proche d'un kit : seules les lignes qui disent quelque chose comptent.
 const EXTENSIONS_CODE = new Set(['.js', '.mjs', '.cjs', '.ts', '.css', '.html', '.py', '.java', '.kt', '.kts', '.xml']);
 const LONGUEUR_MIN_LIGNE = 24;
 const LIGNES_MIN_COMMUNES = 8;
-const PART_MIN_COMMUNE = 0.35;
+// Un fichier du kit compte si ce nombre de ses lignes est dans UN MÊME fichier du projet.
+const PART_MIN_PAR_FICHIER = 0.45;
+// Le kit est signalé si les fichiers qui comptent représentent cette part de ses lignes.
+const PART_MIN_DU_KIT = 0.35;
+// Et si cette part de ses lignes est réellement retrouvée : un seul fichier proche ne suffit pas.
+const PART_MIN_REELLE = 0.3;
+const PREFIXE_CODE_PROCHE = 'kit-recopie:';
 const LIGNE_SANS_INTERET = /^(\/\/|\/\*|\*|#|<!--|import\s|package\s|from\s+\S+\s+import\s|using\s)/;
 
 const fichierRapport = () => path.join(chemins.donnees, 'verification-kits.json');
@@ -160,7 +166,7 @@ async function lireReglesDe(dossier, source, resultat) {
 }
 
 // Un kit qui écrit à la racine du projet est un point de départ (nouveau projet), pas un composant
-// qu'on remplace dans un projet existant : il n'entre pas dans la détection du code recopié.
+// qu'on remplace dans un projet existant : il n'entre pas dans la détection du code proche.
 function kitComposant(kit) {
   return kit.genre === 'code' && (kit.fichiers || []).every((g) => {
     const destinations = typeof g.vers === 'string' ? [g.vers] : Object.values(g.vers || {});
@@ -168,8 +174,10 @@ function kitComposant(kit) {
   });
 }
 
+// Les lignes du kit, et celles de chacun de ses fichiers (la détection compare fichier par fichier).
 async function lignesDuKit(k) {
   const lignes = new Set();
+  const fichiers = [];
   const parcourir = async (dossier) => {
     for (const e of await fs.readdir(dossier, { withFileTypes: true }).catch(() => [])) {
       const chemin = path.join(dossier, e.name);
@@ -178,12 +186,16 @@ async function lignesDuKit(k) {
         const infos = await fs.stat(chemin).catch(() => null);
         if (!infos || infos.size > TAILLE_MAX_LECTURE) continue;
         const tampon = await fs.readFile(chemin).catch(() => null);
-        if (tampon && !tampon.includes(0)) for (const l of lignesSignificatives(tampon.toString('utf8'))) lignes.add(l);
+        if (!tampon || tampon.includes(0)) continue;
+        const duFichier = lignesSignificatives(tampon.toString('utf8'));
+        if (!duFichier.size) continue;
+        fichiers.push({ relatif: path.relative(k.dossier, chemin).split(path.sep).join('/'), lignes: duFichier });
+        for (const l of duFichier) lignes.add(l);
       }
     }
   };
   for (const groupe of k.kit.fichiers || []) await parcourir(path.join(k.dossier, ...String(groupe.source).split('/')));
-  return lignes;
+  return { lignes, fichiers };
 }
 
 let cache = null;
@@ -199,8 +211,8 @@ async function bibliotheque() {
   for (const k of resultat.kits) {
     await lireReglesDe(k.dossier, { genre: 'kit', id: k.id, nom: `Kit « ${k.kit.nom} »` }, resultat);
     if (kitComposant(k.kit)) {
-      const lignes = await lignesDuKit(k);
-      if (lignes.size >= LIGNES_MIN_COMMUNES) resultat.empreintes.push({ k, lignes });
+      const { lignes, fichiers } = await lignesDuKit(k);
+      if (lignes.size >= LIGNES_MIN_COMMUNES) resultat.empreintes.push({ k, lignes, fichiers });
     }
   }
   cache = resultat;
@@ -245,45 +257,66 @@ function ajustementsDesKits(fiche, bib) {
   return sortie;
 }
 
-// Le projet contient-il du code très proche d'un kit qu'il ne déclare pas ?
-async function ajustementsCodeRecopie(fiche, fichiers, lire, bib) {
+// Une demande de comparaison : Claude donne son avis, et rien ne change sans l'accord de l'utilisateur.
+function demandeComparaison(source, fichiers) {
+  return `Ce projet contient du code proche du kit ${source.nom.replace(/^Kit /, '')} (\`kits/${source.id}/\`)${fichiers.length ? `, surtout dans ${fichiers.join(', ')}` : ''}. `
+    + 'Ce n\'est pas un problème : si le projet marche, on peut ne rien changer. Compare les deux sans rien modifier, '
+    + 'puis dis-moi simplement ce que le kit apporterait, ce que le projet risquerait de perdre, et si un changement en vaudrait la peine. '
+    + 'Si je te demande ensuite de changer quelque chose : fais d\'abord un commit de sauvegarde, suis le skill `migrer-vers-kit` s\'il existe, '
+    + 'puis fais un commit local, sans push.';
+}
+
+// Compare un kit aux fichiers du projet, fichier par fichier : des lignes éparpillées dans tout le
+// projet ne prouvent rien. Renvoie ce qu'il faut signaler, ou null. Plusieurs fichiers du kit peuvent
+// correspondre au même fichier du projet (page HTML qui regroupe le JS et le CSS d'un kit).
+function evaluerProximite(empreinte, fichiersProjet) {
+  const retenus = [];
+  const lignesRetenues = new Set();
+  const communes = new Set();
+  for (const fichierKit of empreinte.fichiers) {
+    let meilleur = null;
+    for (const f of fichiersProjet) {
+      let nombre = 0;
+      for (const l of fichierKit.lignes) if (f.lignes.has(l)) nombre += 1;
+      if (nombre && (!meilleur || nombre > meilleur.nombre)) meilleur = { relatif: f.relatif, lignes: f.lignes, nombre };
+    }
+    if (!meilleur || meilleur.nombre / fichierKit.lignes.size < PART_MIN_PAR_FICHIER) continue;
+    retenus.push({ kit: fichierKit.relatif, projet: meilleur.relatif, communes: meilleur.nombre, total: fichierKit.lignes.size });
+    for (const l of fichierKit.lignes) {
+      lignesRetenues.add(l);
+      if (meilleur.lignes.has(l)) communes.add(l);
+    }
+  }
+  const part = lignesRetenues.size / empreinte.lignes.size;
+  if (communes.size < LIGNES_MIN_COMMUNES || part < PART_MIN_DU_KIT || communes.size / empreinte.lignes.size < PART_MIN_REELLE) return null;
+  return { retenus, part, communes: communes.size };
+}
+
+// Le projet contient-il du code très proche d'un kit qu'il ne déclare pas ? (pour information)
+async function ajustementsCodeProche(fiche, fichiers, lire, bib) {
   const installes = new Set((fiche.kits || []).map((e) => e.id));
   const candidates = bib.empreintes.filter((e) => !installes.has(e.k.id) && kits.convientAuType(e.k.kit, fiche.type));
   if (!candidates.length) return [];
-  const communes = new Map(candidates.map((e) => [e.k.id, { lignes: new Set(), parFichier: new Map() }]));
+  const fichiersProjet = [];
   for (const relatif of fichiers) {
     if (!EXTENSIONS_CODE.has(path.extname(relatif).toLowerCase())) continue;
     const texte = await lire(relatif);
-    if (!texte) continue;
-    const lignes = lignesSignificatives(texte);
-    for (const e of candidates) {
-      const c = communes.get(e.k.id);
-      let nombre = 0;
-      for (const l of lignes) {
-        if (e.lignes.has(l)) {
-          c.lignes.add(l);
-          nombre += 1;
-        }
-      }
-      if (nombre) c.parFichier.set(relatif, nombre);
-    }
+    if (texte) fichiersProjet.push({ relatif, lignes: lignesSignificatives(texte) });
   }
   const sortie = [];
   for (const e of candidates) {
-    const c = communes.get(e.k.id);
-    const part = c.lignes.size / e.lignes.size;
-    if (c.lignes.size < LIGNES_MIN_COMMUNES || part < PART_MIN_COMMUNE) continue;
-    const principaux = [...c.parFichier.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([f]) => f);
-    const pourcent = Math.round(part * 100);
+    const proximite = evaluerProximite(e, fichiersProjet);
+    if (!proximite) continue;
+    const principaux = uniques(proximite.retenus.map((r) => r.projet)).slice(0, 6);
+    const source = { genre: 'kit', id: e.k.id, nom: `Kit « ${e.k.kit.nom} »` };
     sortie.push({
-      cle: `kit-recopie:${e.k.id}`,
-      source: { genre: 'kit', id: e.k.id, nom: `Kit « ${e.k.kit.nom} »` },
+      cle: `${PREFIXE_CODE_PROCHE}${e.k.id}`,
+      source,
       gravite: 'conseil',
       titre: `Du code ressemble au kit « ${e.k.kit.nom} »`,
-      detail: `${pourcent} % des lignes du kit se retrouvent dans ce projet. Le kit n'y est pourtant pas déclaré.`,
+      detail: `${proximite.communes} lignes communes sur les ${e.lignes.size} du kit. Le kit n'est pas déclaré dans ce projet.`,
       fichiers: principaux,
-      demande: `Le code de ce projet ressemble au kit « ${e.k.kit.nom} » (\`kits/${e.k.id}/\`) : ${pourcent} % de ses lignes s'y retrouvent, surtout dans ${principaux.join(', ')}. `
-        + 'Suis le skill `migrer-vers-kit` s\'il existe. Compare d\'abord les deux, dis-moi ce que le kit apporterait et ce que le projet risquerait de perdre, puis dis-moi si la migration en vaut la peine.',
+      demande: demandeComparaison(source, principaux),
     });
   }
   return sortie;
@@ -398,7 +431,8 @@ async function ajustementsDesScripts(fiche, dossier, bib, problemes) {
 
 // --- Analyse (aucune écriture) ----------------------------------------------------------------
 
-// Renvoie { ajustements, problemes, exceptions (nombre écarté) }. Les exceptions du projet sont retirées.
+// Renvoie { ajustements (à faire), proches (code proche d'un kit, pour information), problemes,
+// exceptions (nombre écarté) }. Les exceptions du projet sont retirées des deux listes.
 async function analyserProjet(id) {
   const projet = await projets.chargerProjet(id);
   if (!projet) throw new Error(`Le projet « ${id} » est introuvable.`);
@@ -409,26 +443,42 @@ async function analyserProjet(id) {
   const fichiers = await fichiersDuProjet(dossier);
   const lire = lecteurDeTexte(dossier);
   const problemes = [...bib.problemes];
-  const tous = [
+  const aFaire = [
     ...ajustementsDesKits(fiche, bib),
-    ...await ajustementsCodeRecopie(fiche, fichiers, lire, bib),
     ...await ajustementsDesRegles(fiche, dossier, fichiers, lire, bib),
     ...await ajustementsDesScripts(fiche, dossier, bib, problemes),
   ];
+  const codeProche = await ajustementsCodeProche(fiche, fichiers, lire, bib);
   const ecartees = new Set((fiche.exceptions_verification || []).map((e) => e.cle));
-  const ajustements = tous
+  const ajustements = aFaire
     .filter((a) => !ecartees.has(a.cle))
     .map((a) => ({ ...a, demande: `${a.demande}${SUITE_DEMANDE}` }))
     .sort((a, b) => (a.gravite === b.gravite ? a.titre.localeCompare(b.titre, 'fr') : a.gravite === 'important' ? -1 : 1));
-  return { ajustements, problemes, exceptions: tous.length - ajustements.length };
+  const proches = codeProche
+    .filter((a) => !ecartees.has(a.cle))
+    .sort((a, b) => a.titre.localeCompare(b.titre, 'fr'));
+  return { ajustements, proches, problemes, exceptions: aFaire.length + codeProche.length - ajustements.length - proches.length };
 }
 
 // --- Rapport (donnees/verification-kits.json, jamais versionné) ---------------------------------
 
+// Un rapport écrit avant l'arrivée de « proches » : ses lignes de code proche ne sont plus « à faire ».
+function normaliserEntree(entree) {
+  const ajustements = entree.ajustements || [];
+  const anciennes = ajustements.filter((a) => a.cle.startsWith(PREFIXE_CODE_PROCHE));
+  entree.ajustements = ajustements.filter((a) => !a.cle.startsWith(PREFIXE_CODE_PROCHE));
+  entree.proches = [
+    ...(entree.proches || []),
+    ...anciennes.map((a) => ({ ...a, demande: demandeComparaison(a.source, a.fichiers || []) })),
+  ];
+}
+
 async function lireFichierRapport() {
   try {
     const brut = await lireJson(fichierRapport());
-    return brut && typeof brut.projets === 'object' && brut.projets ? brut : { projets: {} };
+    if (!brut || typeof brut.projets !== 'object' || !brut.projets) return { projets: {} };
+    Object.values(brut.projets).forEach(normaliserEntree);
+    return brut;
   } catch (erreur) {
     if (erreur.code !== 'ENOENT') journal.erreur('Rapport de vérification illisible :', erreur);
     return { projets: {} };
@@ -475,6 +525,7 @@ async function modifierEntree(id, modification) {
 function ignorer(id, cle) {
   return modifierEntree(id, (entree) => {
     entree.ajustements = entree.ajustements.filter((a) => a.cle !== cle);
+    entree.proches = entree.proches.filter((a) => a.cle !== cle);
   });
 }
 
@@ -512,7 +563,8 @@ async function ajouterException(id, cle, raison) {
   const projet = await projets.chargerProjet(id);
   if (!projet || projet.erreur) throw new Error('Ce projet n\'est pas disponible.');
   const rapport = await lireFichierRapport();
-  const ajustement = rapport.projets[id]?.ajustements?.find((a) => a.cle === cle);
+  const entree = rapport.projets[id];
+  const ajustement = [...(entree?.ajustements || []), ...(entree?.proches || [])].find((a) => a.cle === cle);
   if (!ajustement) throw new Error('Cet ajustement n\'est plus dans le rapport : relance la vérification.');
   const exceptions = (projet.fiche.exceptions_verification || []).filter((e) => e.cle !== cle);
   exceptions.push({ cle, titre: uneLigne(ajustement.titre), raison: uneLigne(raison), date: new Date().toISOString().slice(0, 10) });

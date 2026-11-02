@@ -361,10 +361,11 @@ Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
   JAMAIS de demande à Claude ni de clé API. `analyserProjet()` n'écrit rien ; l'interface appelle `verifierProjet()` projet par projet
   (progression, bouton Arrêter). Rapport : `donnees/verification-kits.json` (remplacé projet par projet). Ce qu'il faut contrôler vient de la
   bibliothèque de l'utilisateur (`verification.json` d'un skill ou d'un kit) : rien de propre à un skill dans le code de Toolkit. Seule détection
-  codée ici : version des kits et code recopié d'un kit (lignes significatives communes). Les scripts d'un skill tournent avec `process.execPath`
+  codée ici : version des kits et code proche d'un kit (`evaluerProximite()`, fichier par fichier, seuils dans `docs/kits.md`). Les scripts d'un skill tournent avec `process.execPath`
   + `ELECTRON_RUN_AS_NODE`. « Faire » = `modifierAvecClaude()` (sauvegarde Git, puis Claude) ; « Ignorer » = retiré du rapport seulement ;
   « Exception » = `exceptions_verification` de projet.json + section `toolkit:exceptions` du CLAUDE.md du projet, sans commit (l'utilisateur
-  commite depuis l'onglet Git, comme après l'ajout d'un kit).
+  commite depuis l'onglet Git, comme après l'ajout d'un kit). Code proche d'un kit : liste `proches` du rapport (`kit-recopie:<kit>`, hors du total « à faire »,
+  section repliée) ; « Comparer avec Claude » = `comparerAvecClaude()` (mode Plan via l'option `plan` du terminal, sans sauvegarde), « Ne plus signaler » = exception.
 - Dépôt GitHub de la bibliothèque : dépôt privé NORMAL `toolkit-kits` (pas la fonction « dépôt
   partagé »), ligne « Kits et skills » de l'onglet Git. `recupererDepot()` clone dans `donnees/`, refuse
   un dépôt sans `propositions/` dans son `.gitignore` et une bibliothèque non vide

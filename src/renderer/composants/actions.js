@@ -1247,7 +1247,7 @@ export async function lancerAction(projet, index) {
 // nomCible : nom lisible du dossier (pour le titre de l'onglet).
 // continuer : Claude reprend la dernière conversation (claude --continue).
 // reprendre : id d'une conversation précise. nom : titre de l'onglet, s'il n'est pas le titre habituel.
-export function ouvrirTerminal({ mode, cible, nomCible, demande, continuer = false, reprendre, nom }) {
+export function ouvrirTerminal({ mode, cible, nomCible, demande, continuer = false, reprendre, nom, plan = false }) {
   const onglet = {
     id: `terminal-${crypto.randomUUID()}`,
     genre: 'terminal',
@@ -1257,6 +1257,7 @@ export function ouvrirTerminal({ mode, cible, nomCible, demande, continuer = fal
     demande,
     continuer,
     reprendre,
+    plan,
     nom: nom || `${mode === 'claude' ? 'Claude' : 'PowerShell'} · ${nomCible}`,
     enCours: true,
   };
@@ -1353,7 +1354,8 @@ async function sauvegarderAvantClaude(cible, nomCible) {
 // initiale. Si une session Claude tourne déjà sur ce dossier, on y retourne ; la demande
 // est alors copiée dans le presse-papiers (on ne peut pas l'écrire à la place de l'utilisateur).
 // Renvoie false si l'utilisateur renonce à l'étape de sauvegarde.
-async function lancerClaude(cible, nomCible, demande, { continuer = false } = {}) {
+// comparaison : Claude en mode Plan et sans commit de sauvegarde (il ne doit rien changer sans accord).
+async function lancerClaude(cible, nomCible, demande, { continuer = false, comparaison = false } = {}) {
   const existant = etat.obtenir().onglets.find((o) => o.genre === 'terminal' && o.mode === 'claude' && o.enCours && memeCible(o.cible, cible));
   if (existant) {
     etat.modifier({ ongletActif: existant.id });
@@ -1363,10 +1365,15 @@ async function lancerClaude(cible, nomCible, demande, { continuer = false } = {}
     }
     return true;
   }
-  if (!(await sauvegarderAvantClaude(cible, nomCible))) return false;
-  ouvrirTerminal({ mode: 'claude', cible, nomCible, demande, continuer });
+  if (!comparaison && !(await sauvegarderAvantClaude(cible, nomCible))) return false;
+  ouvrirTerminal({ mode: 'claude', cible, nomCible, demande, continuer, plan: comparaison });
   recents.noter({ type: 'claude', cible, nom: nomCible });
   return true;
+}
+
+// « Comparer avec Claude » du rapport de vérification : un avis, sans rien modifier.
+export function comparerAvecClaude(projet, demande) {
+  return lancerClaude({ type: 'projet', id: projet.id }, projet.fiche.nom, demande, { comparaison: true });
 }
 
 // Depuis « Récents » : rouvre Claude sur ce dossier en reprenant la dernière conversation.

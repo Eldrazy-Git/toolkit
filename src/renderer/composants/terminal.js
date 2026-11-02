@@ -227,6 +227,7 @@ export function creerPanneauTerminal(onglet, parent) {
         demande: premier && !continuer ? onglet.demande : undefined,
         continuer,
         reprendre,
+        plan: onglet.plan,
         modele: choix.modele,
         effort: choix.effort,
         colonnes: term.cols,
