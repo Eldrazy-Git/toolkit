@@ -119,7 +119,8 @@ function viderTampon(id) {
 // dossiersLies : dossiers en plus que Claude peut lire et modifier (« --add-dir », projets liés).
 // consignes : fichier de consignes en plus (bouton « Discuter ») ; Claude est alors en lecture seule.
 // mode 'commande' : un programme précis (ex. connexion à un compte), voir comptes.js.
-async function creer(id, { mode, dossier, demande, continuer, reprendre, nouvelleSession, modele, effort, colonnes, lignes, dossiersLies = [], consignes, commande = null }, contenu) {
+// plan : Claude en mode Plan quelle que soit l'autonomie des Réglages (« Comparer avec Claude »).
+async function creer(id, { mode, dossier, demande, continuer, reprendre, nouvelleSession, plan = false, modele, effort, colonnes, lignes, dossiersLies = [], consignes, commande = null }, contenu) {
   if (terminaux.has(id)) throw new Error('Ce terminal existe déjà.');
 
   let executable;
@@ -138,6 +139,7 @@ async function creer(id, { mode, dossier, demande, continuer, reprendre, nouvell
     // Discussion : seulement des outils de lecture (les connecteurs MCP pourraient écrire),
     // l'autonomie des Réglages n'a donc pas de sens ici.
     if (consignes) options.push('--tools', OUTILS_LECTURE, '--strict-mcp-config', '--append-system-prompt-file', consignes);
+    else if (plan) options.push('--permission-mode', 'plan');
     else if (['manual', 'acceptEdits', 'auto', 'plan'].includes(pref.autonomie)) options.push('--permission-mode', pref.autonomie);
     if (ID_SESSION.test(reprendre || '')) {
       idSession = reprendre;

@@ -18,7 +18,7 @@ const journal = require('../journal');
 
 function enregistrer() {
   // --- Terminal ---
-  gerer('terminal:creer', async (contenu, id, { mode, cible, demande, continuer, reprendre, modele, effort, colonnes, lignes, connexion }) => {
+  gerer('terminal:creer', async (contenu, id, { mode, cible, demande, continuer, reprendre, plan, modele, effort, colonnes, lignes, connexion }) => {
     // Connexion à un compte (Claude, GitHub) : programme officiel, dans le dossier personnel.
     if (mode === 'connexion') {
       const commande = await require('../comptes').commandeConnexion(connexion);
@@ -57,7 +57,7 @@ function enregistrer() {
       reprendre = undefined;
       continuer = false;
     }
-    const resultat = await terminal.creer(id, { mode, dossier, demande, continuer, reprendre, nouvelleSession, modele, effort, colonnes, lignes, dossiersLies, consignes }, contenu);
+    const resultat = await terminal.creer(id, { mode, dossier, demande, continuer, reprendre, nouvelleSession, plan, modele, effort, colonnes, lignes, dossiersLies, consignes }, contenu);
     return { ...resultat, chemin: chemins.versRelatif(dossier) || '.' };
   }, { avecEmetteur: true });
   gerer('terminal:sessions', async (cible) => sessionsClaude.lister(await dossierCible(cible)));

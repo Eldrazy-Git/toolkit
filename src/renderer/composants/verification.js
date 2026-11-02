@@ -107,6 +107,28 @@ async function ajouterException(ligne, a) {
   if (fait) notifier('Exception ajoutée : pense à faire un commit de ce projet (onglet « Git et GitHub »).', 'succes');
 }
 
+async function comparer(ligne, a) {
+  const projet = etat.obtenir().projets.find((p) => p.id === ligne.id);
+  if (!projet) {
+    notifier('Ce projet n\'existe plus.', 'erreur');
+    return;
+  }
+  await actions.comparerAvecClaude(projet, a.demande);
+}
+
+async function neplusSignaler(ligne, a) {
+  const raison = await demanderTexte({
+    titre: 'Ne plus signaler ce code',
+    message: `« ${a.titre} »\n\nCette décision est notée dans le projet.json et le CLAUDE.md de « ${ligne.nom} ». Le code du projet ne change pas. Pourquoi ? (facultatif, mais utile plus tard)`,
+    exemple: 'Par exemple : ce code a été adapté exprès',
+    bouton: 'Ne plus signaler',
+  });
+  if (raison === null) return;
+  const fait = await essayer(() => api.ajouterException(ligne.id, a.cle, raison));
+  await chargerRapport();
+  if (fait) notifier('Ce code ne sera plus signalé : pense à faire un commit de ce projet (onglet « Git et GitHub »).', 'succes');
+}
+
 async function retirerException(e) {
   const fait = await essayer(() => api.retirerException(e.projet, e.cle));
   await chargerRapport();
@@ -156,6 +178,23 @@ function blocProjet(ligne) {
     el('span', { classe: 'details-aide' }, `vérifié ${ilYA(new Date(ligne.date))}`)),
   el('div', { classe: 'liste-git' }, ligne.ajustements.map((a) => ligneAjustement(ligne, a))));
   return bloc;
+}
+
+function blocCodeProche(lignes) {
+  const elements = lignes.flatMap((ligne) => (ligne.proches || []).map((a) => ({ ligne, a })));
+  if (!elements.length) return null;
+  return el('details', { classe: 'bloc-verification' },
+    el('summary', {}, el('strong', {}, 'Code proche d\'un kit (pour information)'), el('span', { classe: 'etiquette' }, String(elements.length))),
+    el('p', { classe: 'details-aide' }, 'Ce n\'est pas un problème. Si le projet marche, tu peux ne rien changer.'),
+    el('div', { classe: 'liste-git' }, elements.map(({ ligne, a }) => el('div', { classe: 'ligne-git ligne-kit ligne-ajustement' },
+      el('div', { classe: 'ligne-git-infos' },
+        el('div', { classe: 'ligne-git-nom' }, el('strong', {}, ligne.nom)),
+        el('p', { classe: 'kit-description' }, a.titre),
+        a.detail ? el('p', { classe: 'details-aide' }, a.detail) : null,
+        a.fichiers.length ? el('p', { classe: 'details-aide' }, a.fichiers.join(', ')) : null),
+      el('div', { classe: 'ligne-git-boutons' },
+        el('button', { classe: 'bouton petit', title: 'Claude compare le projet et le kit, puis donne son avis. Il ne modifie rien sans ton accord.', onClick: () => comparer(ligne, a) }, icone('claude'), 'Comparer avec Claude'),
+        el('button', { classe: 'bouton petit', title: 'Noté dans le projet.json et le CLAUDE.md du projet. Se retire depuis la section « Exceptions ».', onClick: () => neplusSignaler(ligne, a) }, icone('note'), 'Ne plus signaler'))))));
 }
 
 function blocExceptions(exceptions) {
@@ -209,6 +248,7 @@ export function sectionRapport() {
     problemes.length ? el('div', { classe: 'alerte attention' }, icone('attention'),
       el('div', {}, 'Certains contrôles n\'ont pas pu se faire :', el('ul', {}, problemes.map((p) => el('li', {}, p))))) : null,
     avecTravail.map(blocProjet),
+    blocCodeProche(lignes),
     blocExceptions(exceptions),
   ];
 }

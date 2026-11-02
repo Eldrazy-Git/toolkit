@@ -10,7 +10,8 @@ appartiennent à chaque utilisateur et vivent dans `Toolkit/kits/`, hors du dép
 2. **Utilise les kits existants** quand ils conviennent, avec la commande ci-dessous. Ne copie pas
    leurs fichiers à la main : la commande vérifie, remplace les variables et note le kit dans
    `projet.json`.
-3. **Ne recode jamais ce qu'un kit fournit.** S'il manque quelque chose, dis-le à l'utilisateur.
+3. **Si un kit convient, utilise-le plutôt que de recoder.** S'il convient mal, explique pourquoi et
+   demande à l'utilisateur quoi faire.
 4. **Kit à adapter** : si la commande annonce une adaptation, termine le travail en suivant le guide
    du kit (`kits/<kit>/guide.md`).
 5. **Ne modifie pas `kits/` depuis un projet**, sauf si l'utilisateur le demande. Claude a techniquement
@@ -106,9 +107,8 @@ section « Kits et skills réutilisables » de `projets/CLAUDE.md`, écrite par 
 Toolkit cherche, dans chaque projet choisi :
 
 - un kit du projet qui a une version plus récente dans la bibliothèque, ou qui n'y est plus ;
-- du code très proche d'un kit que le projet ne déclare pas (au moins 35 % de ses lignes significatives). Un kit
-  qui écrit à la racine du projet est un point de départ pour un nouveau projet : il n'entre pas dans ce contrôle ;
-- ce que les skills et les kits demandent de vérifier, avec leur fichier `verification.json`.
+- ce que les skills et les kits demandent de vérifier, avec leur fichier `verification.json` ;
+- du code proche d'un kit que le projet ne déclare pas : ce n'est pas un ajustement à faire, voir ci-dessous.
 
 Pour chaque ajustement :
 
@@ -116,6 +116,24 @@ Pour chaque ajustement :
 - **Ignorer** : retire la ligne du rapport. La prochaine vérification la retrouve.
 - **Exception** : ne plus la détecter dans ce projet. Notée dans `projet.json` (champ `exceptions_verification`, lu par
   la vérification) et dans le `CLAUDE.md` du projet (section `toolkit:exceptions`, lue par Claude). Le rapport la liste, et elle se retire de là.
+
+### Code proche d'un kit (pour information)
+
+Ces lignes ne comptent pas dans le total « à faire ». Elles sont dans une section repliée du rapport : ce n'est pas un problème, et
+si le projet marche, on peut ne rien changer.
+
+La comparaison porte sur les lignes significatives, fichier par fichier (des lignes éparpillées dans tout le projet ne comptent pas) :
+
+- un fichier du kit compte si au moins **45 %** de ses lignes se retrouvent dans un même fichier du projet ;
+- le kit est signalé si ces fichiers représentent au moins **35 %** de ses lignes, si au moins **30 %** de ses lignes sont réellement
+  retrouvées dans ces fichiers, avec au moins **8 lignes** communes.
+
+Plusieurs fichiers du kit peuvent correspondre au même fichier du projet (une page HTML qui regroupe le JS et le CSS d'un kit).
+Un kit qui écrit à la racine du projet est un point de départ pour un nouveau projet : il n'entre pas dans ce contrôle.
+
+- **Comparer avec Claude** : Claude s'ouvre en mode Plan, sans commit de sauvegarde. Il donne son avis et ne modifie rien sans accord. Si Claude
+  est déjà ouvert sur ce projet, la demande est seulement copiée, et le mode Plan ne peut pas être imposé.
+- **Ne plus signaler** : pose une exception, comme ci-dessus. Les exceptions déjà posées restent respectées.
 
 ### Format de `verification.json`
 
