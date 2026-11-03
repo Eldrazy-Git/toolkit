@@ -35,7 +35,7 @@ const COULEURS_EXTENSIONS = {
 };
 
 export function cleDe(cible) {
-  return cible.type === 'projet' ? `p-${cible.id}` : cible.type === 'kits' ? 'kits' : 'toolkit';
+  return cible.type === 'projet' ? `p-${cible.id}` : cible.type === 'skills' ? 'skills' : 'toolkit';
 }
 
 const parent = (chemin) => (chemin.includes('/') ? chemin.slice(0, chemin.lastIndexOf('/')) : '');

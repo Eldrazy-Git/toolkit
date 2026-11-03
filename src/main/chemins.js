@@ -38,7 +38,8 @@ module.exports = {
   journal: path.join(donnees, 'journal.log'),
   templatesApp: path.join(app, 'templates'),
   templatesPerso: path.join(racine, 'templates'),
-  kits: path.join(racine, 'kits'),
+  skills: path.join(racine, 'skills'),
+  ancienDossierKits: path.join(racine, 'kits'), // avant la version 1.18 : renommé en skills/ au démarrage
   lanceur: path.join(racine, 'Lancer Toolkit.vbs'),
   icone: path.join(app, 'assets', 'icone.ico'),
   interface: path.join(app, 'src', 'renderer', 'index.html'),

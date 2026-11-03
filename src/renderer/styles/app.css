@@ -1035,10 +1035,9 @@ button.lien-sous-groupe:hover { text-decoration: underline; }
 .entete-git h1 { margin: 0; }
 .compte-github { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .legende-git { margin: 10px 0 16px; }
-.barre-kits { align-items: center; margin-bottom: 8px; }
-.filtre-kits { width: auto; min-width: 200px; }
-.titre-kits { font-size: 15px; margin: 18px 0 8px; }
-.kit-description { margin: 0; }
+.barre-skills { align-items: center; margin-bottom: 8px; }
+.titre-skills { font-size: 15px; margin: 18px 0 8px; }
+.skill-description { margin: 0; }
 .proposition-motif { margin: 0; white-space: pre-wrap; }
 .proposition-alerte { margin: 0; }
 .proposition-alerte ul { margin: 4px 0 0; padding-left: 18px; }
@@ -1050,10 +1049,6 @@ button.lien-sous-groupe:hover { text-decoration: underline; }
 .bloc-verification > summary::-webkit-details-marker { display: none; }
 .progression-verification { align-items: center; }
 .boutons-cases { margin: 4px 0; }
-.kit-utilisateurs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; }
-.kit-retard { border-color: var(--attention, #d7a02b); }
-.liste-kits-projet { display: flex; flex-direction: column; gap: 6px; }
-.ligne-kit-projet { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .liste-git { display: flex; flex-direction: column; gap: 8px; }
 .ligne-git {
   display: flex;

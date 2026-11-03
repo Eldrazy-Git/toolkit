@@ -1,4 +1,4 @@
-// Onglet « Kits et skills » : bouton « Vérifier les projets » et rapport des ajustements à faire.
+// Onglet « Skills » : bouton « Vérifier les projets » et rapport des ajustements à faire.
 // La vérification se fait projet par projet (progression, arrêt possible). Rien n'est modifié sans clic.
 import { el, ilYA } from './dom.js';
 import { icone } from './icones.js';
@@ -42,7 +42,7 @@ export async function verifierProjets() {
   }
   const choix = await cocher({
     titre: 'Vérifier les projets',
-    message: 'Compare les projets cochés à tes kits et à tes skills, puis donne la liste des ajustements. Ne modifie rien, et n\'utilise pas Claude.',
+    message: 'Compare les projets cochés à tes skills, puis donne la liste des ajustements. Ne modifie rien, et n\'utilise pas Claude.',
     elements: projets
       .map((p) => ({ valeur: p.id, libelle: p.fiche.nom, coche: true }))
       .sort((a, b) => a.libelle.localeCompare(b.libelle, 'fr')),
@@ -139,28 +139,6 @@ async function mettreAJourFiches() {
   if (occupes.length) notifier(`Claude travaille déjà sur ${occupes.join(', ')} : ces projets n'ont pas été lancés. Relance le bouton quand il aura fini.`);
 }
 
-async function comparer(ligne, a) {
-  const projet = etat.obtenir().projets.find((p) => p.id === ligne.id);
-  if (!projet) {
-    notifier('Ce projet n\'existe plus.', 'erreur');
-    return;
-  }
-  await actions.comparerAvecClaude(projet, a.demande);
-}
-
-async function neplusSignaler(ligne, a) {
-  const raison = await demanderTexte({
-    titre: 'Ne plus signaler ce code',
-    message: `« ${a.titre} »\n\nCette décision est notée dans le projet.json et le CLAUDE.md de « ${ligne.nom} ». Le code du projet ne change pas. Pourquoi ? (facultatif, mais utile plus tard)`,
-    exemple: 'Par exemple : ce code a été adapté exprès',
-    bouton: 'Ne plus signaler',
-  });
-  if (raison === null) return;
-  const fait = await essayer(() => api.ajouterException(ligne.id, a.cle, raison));
-  await chargerRapport();
-  if (fait) notifier('Ce code ne sera plus signalé : pense à faire un commit de ce projet (onglet « Git et GitHub »).', 'succes');
-}
-
 async function retirerException(e) {
   const fait = await essayer(() => api.retirerException(e.projet, e.cle));
   await chargerRapport();
@@ -179,13 +157,13 @@ function ligneAjustement(ligne, a) {
       }))),
     }, icone('points'))
     : null;
-  return el('div', { classe: 'ligne-git ligne-kit ligne-ajustement' },
+  return el('div', { classe: 'ligne-git ligne-skill ligne-ajustement' },
     el('div', { classe: 'ligne-git-infos' },
       el('div', { classe: 'ligne-git-nom' },
         el('strong', {}, a.titre),
         a.gravite === 'important' ? el('span', { classe: 'pastille-git orange' }, 'Important') : null,
         a.lance ? el('span', { classe: 'pastille-git', title: 'Une prochaine vérification dira si c\'est réglé.' }, 'Claude lancé') : null),
-      a.detail ? el('p', { classe: 'kit-description' }, a.detail) : null,
+      a.detail ? el('p', { classe: 'skill-description' }, a.detail) : null,
       el('p', { classe: 'details-aide' }, a.source.nom, a.fichiers.length ? ` · ${a.fichiers[0]}${a.fichiers.length > 1 ? ` et ${a.fichiers.length - 1} autre(s)` : ''}` : '')),
     el('div', { classe: 'ligne-git-boutons' },
       el('button', { classe: 'bouton petit principal', title: 'Sauvegarde le projet avec Git, puis ouvre Claude avec cette demande. Il t\'explique ce qu\'il compte faire avant de modifier.', onClick: () => faire(ligne, a) }, icone('claude'), 'Faire'),
@@ -212,28 +190,11 @@ function blocProjet(ligne) {
   return bloc;
 }
 
-function blocCodeProche(lignes) {
-  const elements = lignes.flatMap((ligne) => (ligne.proches || []).map((a) => ({ ligne, a })));
-  if (!elements.length) return null;
-  return el('details', { classe: 'bloc-verification' },
-    el('summary', {}, el('strong', {}, 'Code proche d\'un kit (pour information)'), el('span', { classe: 'etiquette' }, String(elements.length))),
-    el('p', { classe: 'details-aide' }, 'Ce n\'est pas un problème. Si le projet marche, tu peux ne rien changer.'),
-    el('div', { classe: 'liste-git' }, elements.map(({ ligne, a }) => el('div', { classe: 'ligne-git ligne-kit ligne-ajustement' },
-      el('div', { classe: 'ligne-git-infos' },
-        el('div', { classe: 'ligne-git-nom' }, el('strong', {}, ligne.nom)),
-        el('p', { classe: 'kit-description' }, a.titre),
-        a.detail ? el('p', { classe: 'details-aide' }, a.detail) : null,
-        a.fichiers.length ? el('p', { classe: 'details-aide' }, a.fichiers.join(', ')) : null),
-      el('div', { classe: 'ligne-git-boutons' },
-        el('button', { classe: 'bouton petit', title: 'Claude compare le projet et le kit, puis donne son avis. Il ne modifie rien sans ton accord.', onClick: () => comparer(ligne, a) }, icone('claude'), 'Comparer avec Claude'),
-        el('button', { classe: 'bouton petit', title: 'Noté dans le projet.json et le CLAUDE.md du projet. Se retire depuis la section « Exceptions ».', onClick: () => neplusSignaler(ligne, a) }, icone('note'), 'Ne plus signaler'))))));
-}
-
 function blocExceptions(exceptions) {
   if (!exceptions.length) return null;
   return el('details', { classe: 'bloc-verification' },
     el('summary', {}, el('strong', {}, 'Exceptions'), el('span', { classe: 'etiquette' }, String(exceptions.length))),
-    el('div', { classe: 'liste-git' }, exceptions.map((e) => el('div', { classe: 'ligne-git ligne-kit' },
+    el('div', { classe: 'liste-git' }, exceptions.map((e) => el('div', { classe: 'ligne-git ligne-skill' },
       el('div', { classe: 'ligne-git-infos' },
         el('div', { classe: 'ligne-git-nom' }, el('strong', {}, e.titre)),
         el('p', { classe: 'details-aide' }, e.nomProjet, ` · ${e.date}`, e.raison ? ` · ${e.raison}` : '')),
@@ -246,7 +207,7 @@ export function boutonVerifier() {
   return el('button', {
     classe: 'bouton',
     disabled: Boolean(verificationEnCours),
-    title: 'Comparer tes projets à tes kits et à tes skills, puis lister ce qu\'il reste à faire',
+    title: 'Comparer tes projets à tes skills, puis lister ce qu\'il reste à faire',
     onClick: verifierProjets,
   }, icone('coche'), 'Vérifier les projets');
 }
@@ -259,7 +220,7 @@ export function sectionRapport() {
   }
   if (verificationEnCours) {
     return [
-      el('h2', { classe: 'titre-kits' }, 'Vérification en cours'),
+      el('h2', { classe: 'titre-skills' }, 'Vérification en cours'),
       el('div', { classe: 'details-boutons progression-verification' },
         el('span', { classe: 'details-aide' }, `${verificationEnCours.fait + 1} sur ${verificationEnCours.total} : ${verificationEnCours.nom}…`),
         el('button', { classe: 'bouton petit', onClick: () => { arretDemande = true; } }, 'Arrêter')),
@@ -274,7 +235,7 @@ export function sectionRapport() {
   const problemes = [...new Set(lignes.flatMap((l) => l.problemes || []))];
   const nombreFiches = lignes.filter((l) => l.ajustements.some((a) => a.infos && !a.lance)).length;
   return [
-    el('h2', { classe: 'titre-kits' }, `Rapport de vérification (${total} à faire)`),
+    el('h2', { classe: 'titre-skills' }, `Rapport de vérification (${total} à faire)`),
     el('p', { classe: 'details-aide' }, total
       ? `${lignes.length} projet(s) vérifié(s), ${avecTravail.length} avec des ajustements. « Faire » ouvre Claude, après une sauvegarde Git : rien ne change sans ton accord.`
       : `${lignes.length} projet(s) vérifié(s) : rien à faire.`),
@@ -287,7 +248,6 @@ export function sectionRapport() {
     problemes.length ? el('div', { classe: 'alerte attention' }, icone('attention'),
       el('div', {}, 'Certains contrôles n\'ont pas pu se faire :', el('ul', {}, problemes.map((p) => el('li', {}, p))))) : null,
     avecTravail.map(blocProjet),
-    blocCodeProche(lignes),
     blocExceptions(exceptions),
   ];
 }

@@ -8,7 +8,7 @@ import * as onglets from './composants/onglets.js';
 import * as reglages from './composants/reglages.js';
 import * as assistantImport from './composants/import.js';
 import * as panneauGit from './composants/git.js';
-import * as panneauKits from './composants/kits.js';
+import * as panneauSkills from './composants/skills.js';
 import * as groupes from './composants/groupes.js';
 import * as recents from './composants/recents.js';
 import { notifier } from './composants/notifications.js';
@@ -32,7 +32,7 @@ etat.abonner(() => {
   reglages.rendre();
   assistantImport.rendre();
   panneauGit.rendre();
-  panneauKits.rendre();
+  panneauSkills.rendre();
   session.suivre();
 });
 
@@ -75,12 +75,12 @@ window.addEventListener('focus', () => {
 
 // Propositions de Claude : relues quand il a fini ou qu'on revient dans Toolkit (jamais de lecture
 // périodique). Le délai évite de relire à chaque retour rapide dans la fenêtre.
-const relireKits = () => {
-  if (Date.now() - etat.obtenir().kitsDate > 5000) panneauKits.chargerKits();
+const relireSkills = () => {
+  if (Date.now() - etat.obtenir().skillsDate > 5000) panneauSkills.chargerSkills();
 };
-window.toolkit.terminal.surClaudeAttend(relireKits);
-window.toolkit.terminal.surFin(relireKits);
-window.addEventListener('focus', relireKits);
+window.toolkit.terminal.surClaudeAttend(relireSkills);
+window.toolkit.terminal.surFin(relireSkills);
+window.addEventListener('focus', relireSkills);
 
 // Raccourci pressé à l'intérieur d'un outil (les touches n'arrivent pas jusqu'ici).
 window.toolkit.outils.surRaccourci((id) => commandes.executer(id));
@@ -127,7 +127,7 @@ async function demarrer() {
   (await import('./composants/mises-a-jour.js')).proposerFinDeFusion();
   // Point de mise à jour : un peu après le démarrage, pour ne pas le ralentir.
   setTimeout(actions.chargerEtatToolkit, 3000);
-  setTimeout(panneauKits.chargerKits, 3000);
+  setTimeout(panneauSkills.chargerSkills, 3000);
 }
 
 demarrer();

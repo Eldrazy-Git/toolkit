@@ -3,6 +3,7 @@
 
 const { app, BrowserWindow, Menu, nativeTheme, screen, dialog, ipcMain } = require('electron');
 const fs = require('node:fs/promises');
+const path = require('node:path');
 const chemins = require('./chemins');
 const journal = require('./journal');
 const reglages = require('./reglages');
@@ -187,6 +188,9 @@ async function demarrer() {
   await reglages.charger();
   chemins.definirDossierProjets(reglages.obtenir().dossierProjets);
   await fs.mkdir(chemins.projets(), { recursive: true });
+  // Avant la version 1.18, la bibliothèque s'appelait « kits » : renommée en « skills ».
+  await require('./skills').migrerAncienDossier().catch((erreur) => journal.erreur('Bibliothèque de skills :', erreur));
+  await fs.rm(path.join(chemins.donnees, 'verification-kits.json'), { force: true }).catch(() => {});
 
   // Recrée le lanceur s'il manque (par exemple après un déplacement ou un clonage).
   lanceur.mettreAJour().catch((erreur) => journal.erreur('Lanceur :', erreur));
@@ -213,7 +217,7 @@ async function demarrer() {
   require('./ipc/recherche').enregistrer();
   require('./ipc/code').enregistrer();
   require('./ipc/logiciels').enregistrer();
-  require('./ipc/kits').enregistrer();
+  require('./ipc/skills').enregistrer();
   require('./ipc/verification').enregistrer();
   ipcMain.on('application:non-enregistre', (_e, valeur) => { travailNonEnregistre = Boolean(valeur); });
 

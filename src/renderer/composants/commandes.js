@@ -72,7 +72,7 @@ export function listePalette() {
     { titre: 'Importer un projet', groupe: 'Toolkit', icone: 'importer', action: actions.ouvrirImport },
     { titre: 'Rechercher dans les projets et les notes', groupe: 'Toolkit', icone: 'recherche', raccourci: r('recherche'), action: ouvrirRecherche },
     { titre: 'Git et GitHub', groupe: 'Toolkit', icone: 'git', raccourci: r('git'), action: actions.ouvrirGit },
-    { titre: 'Kits et skills', detail: 'ta bibliothèque réutilisable', groupe: 'Toolkit', icone: 'kit', action: actions.ouvrirKits },
+    { titre: 'Skills', detail: 'ta bibliothèque de savoir-faire pour Claude', groupe: 'Toolkit', icone: 'skill', action: actions.ouvrirSkills },
     { titre: 'Terminal PowerShell', groupe: 'Toolkit', icone: 'terminal', raccourci: r('terminal'), action: () => actions.ouvrirPowerShell({ type: 'racine' }, 'Toolkit') },
     { titre: 'Réglages', groupe: 'Toolkit', icone: 'reglages', raccourci: r('reglages'), action: () => actions.ouvrirReglages() },
     { titre: 'Préférences pour Claude', groupe: 'Réglages', icone: 'claude', action: () => actions.ouvrirReglages('claude') },

@@ -4,7 +4,7 @@
 // (« repository ») : étiquette vX.Y.Z, notes de version.
 //
 // Promesses faites à l'utilisateur :
-// - ses projets (projets/), ses kits (kits/) et ses réglages (donnees/) ne sont jamais touchés ;
+// - ses projets (projets/), ses skills (skills/) et ses réglages (donnees/) ne sont jamais touchés ;
 // - ce qu'il a modifié ou ajouté dans Toolkit (souvent avec Claude) est GARDÉ :
 //   fusion à trois versions, fichier par fichier, entre la version officielle installée
 //   (« base »), sa version actuelle (« la sienne ») et la nouvelle version officielle :

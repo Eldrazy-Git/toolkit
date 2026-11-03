@@ -115,9 +115,9 @@ export async function fermerOnglet(id) {
     etat.modifier({ gitOuvert: false, ongletActif: ongletActif === 'git' ? 'bibliotheque' : ongletActif });
     return;
   }
-  if (id === 'kits') {
+  if (id === 'skills') {
     const { ongletActif } = etat.obtenir();
-    etat.modifier({ kitsOuvert: false, ongletActif: ongletActif === 'kits' ? 'bibliotheque' : ongletActif });
+    etat.modifier({ skillsOuvert: false, ongletActif: ongletActif === 'skills' ? 'bibliotheque' : ongletActif });
     return;
   }
   if (id === 'reglages') {
@@ -176,8 +176,8 @@ export function fermerOngletActif() {
 
 // Tous les onglets, dans l'ordre de la barre.
 function idsOnglets() {
-  const { onglets, reglagesOuverts, importOuvert, gitOuvert, kitsOuvert } = etat.obtenir();
-  return ['bibliotheque', ...(reglagesOuverts ? ['reglages'] : []), ...(gitOuvert ? ['git'] : []), ...(kitsOuvert ? ['kits'] : []),
+  const { onglets, reglagesOuverts, importOuvert, gitOuvert, skillsOuvert } = etat.obtenir();
+  return ['bibliotheque', ...(reglagesOuverts ? ['reglages'] : []), ...(gitOuvert ? ['git'] : []), ...(skillsOuvert ? ['skills'] : []),
     ...(importOuvert ? ['import'] : []), ...onglets.map((o) => o.id)];
 }
 
@@ -385,7 +385,7 @@ function elementsRetirerDuGroupe(projet) {
 // chemin relatif à ouvrir tout de suite (facultatif).
 // fichiers : plusieurs fichiers à ouvrir (fichier = celui à afficher), ex. à la restauration.
 export function ouvrirCode(cible, nom, fichier = null, fichiers = null) {
-  const cle = cible.type === 'projet' ? `p-${cible.id}` : cible.type === 'kits' ? 'kits' : 'toolkit';
+  const cle = cible.type === 'projet' ? `p-${cible.id}` : cible.type === 'skills' ? 'skills' : 'toolkit';
   const id = `code:${cle}`;
   const { onglets } = etat.obtenir();
   const demande = fichiers?.length ? { chemins: fichiers, actif: fichier, n: Date.now() } : fichier ? { chemin: fichier, n: Date.now() } : null;
@@ -1069,8 +1069,8 @@ export async function changerEditeurParDefaut(projet, editeur) {
   remplacerProjet(await essayer(() => api.projets.modifier(projet.id, { ouvrir_avec: editeur || null })));
 }
 
-export function ouvrirKits() {
-  etat.modifier({ kitsOuvert: true, ongletActif: 'kits' });
+export function ouvrirSkills() {
+  etat.modifier({ skillsOuvert: true, ongletActif: 'skills' });
 }
 
 export function ouvrirGit() {
@@ -1354,8 +1354,7 @@ async function sauvegarderAvantClaude(cible, nomCible) {
 // initiale. Si une session Claude tourne déjà sur ce dossier, on y retourne ; la demande
 // est alors copiée dans le presse-papiers (on ne peut pas l'écrire à la place de l'utilisateur).
 // Renvoie false si l'utilisateur renonce à l'étape de sauvegarde.
-// comparaison : Claude en mode Plan et sans commit de sauvegarde (il ne doit rien changer sans accord).
-async function lancerClaude(cible, nomCible, demande, { continuer = false, comparaison = false } = {}) {
+async function lancerClaude(cible, nomCible, demande, { continuer = false } = {}) {
   const existant = etat.obtenir().onglets.find((o) => o.genre === 'terminal' && o.mode === 'claude' && o.enCours && memeCible(o.cible, cible));
   if (existant) {
     etat.modifier({ ongletActif: existant.id });
@@ -1365,8 +1364,8 @@ async function lancerClaude(cible, nomCible, demande, { continuer = false, compa
     }
     return true;
   }
-  if (!comparaison && !(await sauvegarderAvantClaude(cible, nomCible))) return false;
-  ouvrirTerminal({ mode: 'claude', cible, nomCible, demande, continuer, plan: comparaison });
+  if (!(await sauvegarderAvantClaude(cible, nomCible))) return false;
+  ouvrirTerminal({ mode: 'claude', cible, nomCible, demande, continuer });
   recents.noter({ type: 'claude', cible, nom: nomCible });
   return true;
 }
@@ -1374,11 +1373,6 @@ async function lancerClaude(cible, nomCible, demande, { continuer = false, compa
 export function claudeOuvertSur(projet) {
   const cible = { type: 'projet', id: projet.id };
   return etat.obtenir().onglets.some((o) => o.genre === 'terminal' && o.mode === 'claude' && o.enCours && memeCible(o.cible, cible));
-}
-
-// « Comparer avec Claude » du rapport de vérification : un avis, sans rien modifier.
-export function comparerAvecClaude(projet, demande) {
-  return lancerClaude({ type: 'projet', id: projet.id }, projet.fiche.nom, demande, { comparaison: true });
 }
 
 // Depuis « Récents » : rouvre Claude sur ce dossier en reprenant la dernière conversation.
@@ -1409,12 +1403,12 @@ export function modifierToolkitAvecClaude(demande) {
   return lancerClaude({ type: 'toolkit' }, 'Toolkit', typeof demande === 'string' ? demande : undefined);
 }
 
-// Claude dans la bibliothèque de kits (créée si besoin), après une sauvegarde Git.
-export async function ameliorerKitsAvecClaude(demande) {
-  const donnees = await essayer(() => api.kits.preparer());
+// Claude dans la bibliothèque de skills (créée si besoin), après une sauvegarde Git.
+export async function ameliorerSkillsAvecClaude(demande) {
+  const donnees = await essayer(() => api.skills.preparer());
   if (!donnees) return;
-  etat.modifier({ kits: donnees, kitsDate: Date.now() });
-  await lancerClaude({ type: 'kits' }, 'Kits et skills', typeof demande === 'string' ? demande : undefined);
+  etat.modifier({ skills: donnees, skillsDate: Date.now() });
+  await lancerClaude({ type: 'skills' }, 'Skills', typeof demande === 'string' ? demande : undefined);
 }
 
 export async function nouvelOutil() {

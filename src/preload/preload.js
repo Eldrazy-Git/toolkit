@@ -97,21 +97,18 @@ contextBridge.exposeInMainWorld('toolkit', {
     // valeurs : { nom, modeleId, categorie, description } -> { id, nom, demande, avertissement }
     creerProjet: (valeurs) => appeler('modeles:creer-projet', valeurs),
   },
-  // Bibliothèque de kits et de skills (onglet « Kits »).
-  kits: {
-    lister: () => appeler('kits:lister'), // { existe, kits: [{ id, nom, description, version, genre, types, langages, adaptation, erreur }], skills: [{ id, nom, description }] }
-    preparer: () => appeler('kits:preparer'), // crée la bibliothèque si besoin ; même résultat que lister
-    creer: (valeurs) => appeler('kits:creer', valeurs), // { nom, description, genre, types, langages } -> { id, nom }
-    creerSkill: (valeurs) => appeler('kits:creer-skill', valeurs), // { nom, description } -> { id }
-    analyserProjet: (id) => appeler('kits:analyser-projet', id), // { id, nom, type, fichiers: [chemins relatifs], tronque }
-    creerDepuisProjet: (valeurs) => appeler('kits:creer-depuis-projet', valeurs), // { projet, chemins, nom, description, types } -> { id, nom, fichiers, paquet, projet }
-    recupererDepot: (url) => appeler('kits:recuperer-depot', url), // clone dans Toolkit/kits/ ; même résultat que lister
-    accepterProposition: (id) => appeler('kits:accepter-proposition', id), // { id, genre, nom }
-    refuserProposition: (id) => appeler('kits:refuser-proposition', id), // Corbeille
+  // Bibliothèque de skills (onglet « Skills »).
+  skills: {
+    lister: () => appeler('skills:lister'), // { existe, skills: [{ id, nom, description }], propositions, anciensKits: [noms], ancienDossier }
+    preparer: () => appeler('skills:preparer'), // crée la bibliothèque si besoin ; même résultat que lister
+    creer: (valeurs) => appeler('skills:creer', valeurs), // { nom, description } -> { id }
+    recupererDepot: (url) => appeler('skills:recuperer-depot', url), // clone dans Toolkit/skills/ ; même résultat que lister
+    accepterProposition: (id) => appeler('skills:accepter-proposition', id), // { id, nom }
+    refuserProposition: (id) => appeler('skills:refuser-proposition', id), // Corbeille
   },
-  // Vérification des projets par rapport aux kits et aux skills (onglet « Kits »).
+  // Vérification des projets par rapport aux skills (onglet « Skills »).
   verification: {
-    lire: () => appeler('verification:lire'), // { projets: [{ id, nom, date, ajustements, proches, problemes }], exceptions }
+    lire: () => appeler('verification:lire'), // { projets: [{ id, nom, date, ajustements, problemes }], exceptions }
     fiches: () => appeler('verification:fiches'), // [{ id, nom, cles, titres, demande }] : fichiers d'informations à mettre à jour
     commencer: () => appeler('verification:commencer'), // relit la bibliothèque
     verifierProjet: (id) => appeler('verification:verifier-projet', id),
@@ -150,7 +147,7 @@ contextBridge.exposeInMainWorld('toolkit', {
   github: {
     etat: () => appeler('github:etat'), // { installe, connecte, compte }
   },
-  // Panneau Git. cible : { type: 'projet', id } | { type: 'toolkit' } | { type: 'kits' }
+  // Panneau Git. cible : { type: 'projet', id } | { type: 'toolkit' } | { type: 'skills' }
   git: {
     etats: () => appeler('git:etats'), // état de Toolkit et de chaque projet
     etat: (cible) => appeler('git:etat', cible),

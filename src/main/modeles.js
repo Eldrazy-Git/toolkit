@@ -133,9 +133,8 @@ async function creerDepuisModele({ nom, modeleId, categorie, description }) {
   // Un modèle sans fichiers de départ (« libre ») donne sa propre consigne.
   const consigne = m.consigne || 'puis transforme les fichiers de départ du modèle pour réaliser le projet.';
   const demande = `Crée le projet « ${nom} » décrit ci-dessous. Commence par lire CLAUDE.md et projet.json, `
-    + `${consigne} Avant de coder, consulte le `
-    + 'catalogue des kits (section « Kits et skills réutilisables » de ../CLAUDE.md). Si un kit convient, utilise-le '
-    + 'plutôt que de recoder. S\'il convient mal, explique pourquoi et demande-moi quoi faire. Mets à jour projet.json '
+    + `${consigne} Sers-toi de mes skills quand ils conviennent (section « Skills de l'utilisateur » de ../CLAUDE.md), `
+    + 'et appuie-toi sur les bibliothèques et la documentation officielles plutôt que sur du code recopié. Mets à jour projet.json '
     + '(description, actions…) si nécessaire, puis fais un commit local quand c\'est terminé.\n\n'
     + `Ce que le projet doit faire :\n${description}`;
 

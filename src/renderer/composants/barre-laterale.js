@@ -392,12 +392,12 @@ export function rendre() {
     ),
     el('div', { classe: 'barre-pied' },
       elementNav({
-        libelle: 'Kits et skills',
-        visuel: icone('kit'),
+        libelle: 'Skills',
+        visuel: icone('skill'),
         // Propositions de Claude en attente d'une décision.
-        compteur: etat.obtenir().kits?.propositions?.length || undefined,
-        actif: ongletActif === 'kits',
-        auClic: actions.ouvrirKits,
+        compteur: etat.obtenir().skills?.propositions?.length || undefined,
+        actif: ongletActif === 'skills',
+        auClic: actions.ouvrirSkills,
       }),
       elementNav({
         libelle: 'Git et GitHub',

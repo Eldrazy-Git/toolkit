@@ -18,8 +18,8 @@ import * as assistantImport from './import.js';
 import { ID_IMPORT } from './import.js';
 import * as panneauGit from './git.js';
 import { ID_GIT } from './git.js';
-import * as panneauKits from './kits.js';
-import { ID_KITS } from './kits.js';
+import * as panneauSkills from './skills.js';
+import { ID_SKILLS } from './skills.js';
 import { creerPanneauTerminal } from './terminal.js';
 import { creerPanneauConsole } from './console.js';
 import { creerPanneauNote } from './note.js';
@@ -139,7 +139,7 @@ function creerPanneau(o) {
 // --- Rendu -----------------------------------------------------------------------------
 
 export function rendre() {
-  const { onglets, ongletActif, reglagesOuverts, importOuvert, gitOuvert, kitsOuvert } = etat.obtenir();
+  const { onglets, ongletActif, reglagesOuverts, importOuvert, gitOuvert, skillsOuvert } = etat.obtenir();
 
   barre.replaceChildren(
     onglet({ id: ID_BIBLIOTHEQUE, titre: 'Bibliothèque', visuel: icone('grille'), actif: ongletActif === ID_BIBLIOTHEQUE, fermable: false }),
@@ -149,8 +149,8 @@ export function rendre() {
     gitOuvert
       ? onglet({ id: ID_GIT, titre: 'Git et GitHub', visuel: icone('git'), actif: ongletActif === ID_GIT, fermable: true })
       : '',
-    kitsOuvert
-      ? onglet({ id: ID_KITS, titre: 'Kits et skills', visuel: icone('kit'), actif: ongletActif === ID_KITS, fermable: true })
+    skillsOuvert
+      ? onglet({ id: ID_SKILLS, titre: 'Skills', visuel: icone('skill'), actif: ongletActif === ID_SKILLS, fermable: true })
       : '',
     importOuvert
       ? onglet({ id: ID_IMPORT, titre: 'Importer un projet', visuel: icone('importer'), actif: ongletActif === ID_IMPORT, fermable: true })
@@ -175,7 +175,7 @@ export function rendre() {
   reglages.element().classList.toggle('inactif', ongletActif !== ID_REGLAGES);
   assistantImport.element().classList.toggle('inactif', ongletActif !== ID_IMPORT);
   panneauGit.element().classList.toggle('inactif', ongletActif !== ID_GIT);
-  panneauKits.element().classList.toggle('inactif', ongletActif !== ID_KITS);
+  panneauSkills.element().classList.toggle('inactif', ongletActif !== ID_SKILLS);
   for (const [id, panneau] of panneaux) panneau.element.classList.toggle('inactif', id !== ongletActif);
 
   // En arrivant sur un terminal, le clavier lui est donné directement.

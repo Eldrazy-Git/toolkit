@@ -16,11 +16,13 @@ const chemins = require('./chemins');
 const projets = require('./projets');
 const reglages = require('./reglages');
 const journal = require('./journal');
-const kits = require('./kits');
 const { ecrireSection } = require('./fichiers');
 
-const DEBUT_KITS = '<!-- toolkit:kits (section tenue à jour par Toolkit : ne pas la modifier à la main) -->';
-const FIN_KITS = '<!-- /toolkit:kits -->';
+const DEBUT_SKILLS = '<!-- toolkit:skills (section tenue à jour par Toolkit : ne pas la modifier à la main) -->';
+const FIN_SKILLS = '<!-- /toolkit:skills -->';
+// Section des kits (avant la version 1.18) : retirée de projets/CLAUDE.md.
+const DEBUT_ANCIENS_KITS = '<!-- toolkit:kits (';
+const FIN_ANCIENS_KITS = '<!-- /toolkit:kits -->';
 const DEBUT_LIES = '<!-- toolkit:projets-lies (section tenue à jour par Toolkit : ne pas la modifier à la main) -->';
 const FIN_LIES = '<!-- /toolkit:projets-lies -->';
 const DEBUT_CONSIGNES = '<!-- toolkit:consignes (section tenue à jour par Toolkit depuis Réglages > Claude : ne pas la modifier ici) -->';
@@ -152,31 +154,29 @@ function sectionCatalogue(liste, aretes) {
   return lignes.join('\n');
 }
 
-// Règles de base des kits (voir docs/kits.md). Toujours présente, même sans aucun kit.
-function sectionKits() {
+// Règles de base des skills (voir docs/skills.md). Toujours présente, même sans aucun skill.
+function sectionSkills() {
   const depuisProjet = (absolu, repli) => {
     const relatif = path.relative(path.join(chemins.projets(), 'projet'), absolu);
     return path.isAbsolute(relatif) ? repli : relatif.split(path.sep).join('/');
   };
-  const dossierKits = depuisProjet(chemins.kits, '<racine de Toolkit>/kits');
-  const script = depuisProjet(path.join(chemins.app, 'scripts', 'kit.js'), '<racine de Toolkit>/app/scripts/kit.js');
-  const doc = depuisProjet(path.join(chemins.app, 'docs', 'kits.md'), '<racine de Toolkit>/app/docs/kits.md');
+  const dossier = depuisProjet(chemins.skills, '<racine de Toolkit>/skills');
+  const doc = depuisProjet(path.join(chemins.app, 'docs', 'skills.md'), '<racine de Toolkit>/app/docs/skills.md');
   return [
-    DEBUT_KITS,
-    '# Kits et skills réutilisables',
+    DEBUT_SKILLS,
+    '# Skills de l\'utilisateur',
     '',
-    `L'utilisateur a sa propre bibliothèque : \`${dossierKits}/\` depuis un projet. Règles complètes : \`${doc}\`.`,
+    `L'utilisateur a sa propre bibliothèque de skills : \`${dossier}/\` depuis un projet. Règles complètes : \`${doc}\`.`,
     '',
-    `- Avant de coder, consulte le catalogue \`${dossierKits}/CATALOGUE.md\` (absent ou vide : aucun kit pour l'instant).`,
-    `- Si un kit convient, utilise-le : \`node ${script} ajouter <kit> --projet <dossier du projet>\``,
-    '  (`--essai` montre ce qui serait fait sans rien écrire). S\'il doit être adapté, termine en suivant son guide.',
-    '- Si un kit convient, utilise-le plutôt que de recoder. S\'il convient mal, explique pourquoi et demande à l\'utilisateur quoi faire.',
+    '- Claude Code charge ces skills tout seul : sers-t\'en quand ils conviennent pour concevoir le projet.',
+    '- Un skill donne une façon de faire, pas du code à recopier : écris du code propre à ce projet, en',
+    '  t\'appuyant sur les bibliothèques et la documentation officielles plutôt que sur du code figé.',
     '- Ne modifie pas la bibliothèque depuis un projet, sauf si l\'utilisateur le demande.',
-    `- Tu as écrit quelque chose de réutilisable TEL QUEL, sans rien de propre au projet ? Dépose-le dans`,
-    `  \`${dossierKits}/propositions/<nom>/\` (format et conditions dans \`${doc}\`) et dis-le à l'utilisateur.`,
-    '  C\'est le seul endroit où tu peux écrire sans qu\'il le demande. Une proposition ne sert à rien tant qu\'il',
-    '  ne l\'a pas acceptée : n\'utilise jamais ce dossier, ni pour ce projet ni pour un autre.',
-    FIN_KITS,
+    '- Tu as découvert une façon de faire réutilisable dans d\'autres projets (étapes, règles, pièges), sans',
+    `  rien de propre à celui-ci ? Dépose un skill dans \`${dossier}/propositions/<nom>/\` (format et conditions`,
+    `  dans \`${doc}\`) et dis-le à l'utilisateur. C'est le seul endroit où tu peux écrire sans qu'il le demande.`,
+    '  Une proposition ne sert à rien tant qu\'il ne l\'a pas acceptée : n\'utilise jamais ce dossier.',
+    FIN_SKILLS,
   ].join('\n');
 }
 
@@ -206,9 +206,8 @@ async function toutMettreAJour() {
   if (await ecrireSection(fichierConsignes, DEBUT_CONSIGNES, FIN_CONSIGNES, sectionConsignes)) modifies.push(fichierConsignes);
   const catalogue = path.join(chemins.projets(), 'CLAUDE.md');
   if (await ecrireSection(catalogue, DEBUT_CATALOGUE, FIN_CATALOGUE, sectionCatalogue(liste, aretes))) modifies.push(catalogue);
-  if (await ecrireSection(catalogue, DEBUT_KITS, FIN_KITS, sectionKits())) modifies.push(catalogue);
-  // Catalogue des kits : seulement si la bibliothèque existe (créée à la première utilisation).
-  await kits.ecrireCatalogue().catch((erreur) => journal.erreur('Catalogue des kits :', erreur));
+  if (await ecrireSection(catalogue, DEBUT_ANCIENS_KITS, FIN_ANCIENS_KITS, null)) modifies.push(catalogue);
+  if (await ecrireSection(catalogue, DEBUT_SKILLS, FIN_SKILLS, sectionSkills())) modifies.push(catalogue);
   for (const p of liste) {
     const fichier = path.join(chemins.projets(), p.id, 'CLAUDE.md');
     try {
@@ -218,8 +217,9 @@ async function toutMettreAJour() {
       journal.erreur(`CLAUDE.md de « ${p.id} » :`, erreur);
     }
   }
-  if (modifies.length) journal.info(`Contexte Claude mis à jour : ${modifies.map((f) => chemins.versRelatif(f)).join(', ')}`);
-  return modifies.map((f) => chemins.versRelatif(f));
+  const relatifs = [...new Set(modifies.map((f) => chemins.versRelatif(f)))];
+  if (relatifs.length) journal.info(`Contexte Claude mis à jour : ${relatifs.join(', ')}`);
+  return relatifs;
 }
 
 // Mise à jour groupée (plusieurs changements rapprochés = une seule écriture).
@@ -255,8 +255,8 @@ async function preparerDiscussion() {
     '  `app/CLAUDE.md` avant de répondre à une question sur Toolkit.',
     `- Chaque projet est dans \`${dossierProjets}/<dossier>/\` (\`projet.json\`, souvent un \`CLAUDE.md\`) :`,
     '  lis-les avant de parler d\'un projet en détail, sans inventer ce que tu n\'as pas vérifié.',
-    '- `kits/` est la bibliothèque personnelle de kits et de skills (`kits/CATALOGUE.md`, règles dans',
-    '  `app/docs/kits.md`). Elle peut ne pas exister encore.',
+    '- `skills/` est la bibliothèque personnelle de skills (`skills/.claude/skills/`, règles dans',
+    '  `app/docs/skills.md`). Elle peut ne pas exister encore.',
     '- N\'explore pas `donnees/` (données internes de Toolkit) ni les `node_modules`.',
     '- Cette conversation est en lecture seule : tu ne peux ni modifier de fichier ni lancer de',
     '  commande. Quand une décision mène à du travail, dis où le faire et donne une demande prête à',
