@@ -264,7 +264,7 @@ export async function creerGithub(cible) {
     return;
   }
   const e = etatDe(cible);
-  const nom = cible.type === 'projet' ? cible.id : cible.type === 'kits' ? 'toolkit-kits' : 'toolkit';
+  const nom = cible.type === 'projet' ? cible.id : cible.type === 'skills' ? 'toolkit-skills' : 'toolkit';
   const ok = await confirmer({
     titre: 'Créer un dépôt GitHub privé',
     message: `Un dépôt PRIVÉ nommé « ${nom} » va être créé sur le compte GitHub « ${github.compte} », et l'historique de « ${e?.nom} » y sera envoyé.\n\nSeul toi pourras le voir.`,
@@ -275,24 +275,24 @@ export async function creerGithub(cible) {
   if (resultat) notifier(`Dépôt privé créé : ${resultat.url}`, 'succes');
 }
 
-// --- Bibliothèque de kits ------------------------------------------------------------------------
+// --- Bibliothèque de skills ----------------------------------------------------------------------
 
-// Après une création ou une récupération : les onglets Kits et Git et GitHub se mettent à jour.
-function noterKits(donnees) {
-  etat.modifier({ kits: donnees, kitsDate: Date.now() });
-  return rafraichir({ type: 'kits' });
+// Après une création ou une récupération : les onglets Skills et Git et GitHub se mettent à jour.
+function noterSkills(donnees) {
+  etat.modifier({ skills: donnees, skillsDate: Date.now() });
+  return rafraichir({ type: 'skills' });
 }
 
 export async function creerBibliotheque() {
   try {
-    await noterKits(await window.toolkit.kits.preparer());
-    notifier('Bibliothèque de kits créée (dossier « kits » de Toolkit, avec son historique Git).', 'succes');
+    await noterSkills(await window.toolkit.skills.preparer());
+    notifier('Bibliothèque de skills créée (dossier « skills » de Toolkit, avec son historique Git).', 'succes');
   } catch (erreur) {
     notifier(erreur.message, 'erreur');
   }
 }
 
-// Sur un autre PC : récupère le dépôt GitHub privé de la bibliothèque dans Toolkit/kits/.
+// Sur un autre PC : récupère le dépôt GitHub privé de la bibliothèque dans Toolkit/skills/.
 export async function recupererBibliotheque() {
   const { github } = etat.obtenir();
   if (!github?.installe || !github.connecte) {
@@ -300,23 +300,23 @@ export async function recupererBibliotheque() {
     return;
   }
   const valeurs = await formulaire({
-    titre: 'Récupérer mes kits depuis GitHub',
-    message: 'Le dépôt est copié dans le dossier « kits » de Toolkit, sur ce PC. Si la bibliothèque de ce PC contient déjà des kits ou des skills, Toolkit refuse de la remplacer ; si elle est vide, elle part à la Corbeille.',
+    titre: 'Récupérer mes skills depuis GitHub',
+    message: 'Le dépôt est copié dans le dossier « skills » de Toolkit, sur ce PC. Si la bibliothèque de ce PC contient déjà des skills, Toolkit refuse de la remplacer ; si elle est vide, elle part à la Corbeille.',
     champs: [{
       id: 'url',
       libelle: 'Adresse du dépôt GitHub',
       obligatoire: true,
-      valeur: `https://github.com/${github.compte}/toolkit-kits`,
-      exemple: 'https://github.com/moi/toolkit-kits',
+      valeur: `https://github.com/${github.compte}/toolkit-skills`,
+      exemple: 'https://github.com/moi/toolkit-skills',
     }],
     bouton: 'Récupérer',
   });
   if (!valeurs) return;
-  const cible = { type: 'kits' };
-  const donnees = await operation(cible, 'Récupération…', () => window.toolkit.kits.recupererDepot(valeurs.url), 'La récupération de tes kits a échoué');
+  const cible = { type: 'skills' };
+  const donnees = await operation(cible, 'Récupération…', () => window.toolkit.skills.recupererDepot(valeurs.url), 'La récupération de tes skills a échoué');
   if (donnees) {
-    await noterKits(donnees);
-    notifier(`Bibliothèque récupérée : ${donnees.kits.length} kit(s), ${donnees.skills.length} skill(s).`, 'succes');
+    await noterSkills(donnees);
+    notifier(`Bibliothèque récupérée : ${donnees.skills.length} skill(s).`, 'succes');
   }
 }
 

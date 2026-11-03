@@ -1,4 +1,4 @@
-// Canaux IPC « verification:* » : vérification des projets par rapport aux kits et aux skills.
+// Canaux IPC « verification:* » : vérification des projets par rapport aux skills.
 'use strict';
 
 const { gerer } = require('./gerer');

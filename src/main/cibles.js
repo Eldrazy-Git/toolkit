@@ -1,6 +1,6 @@
 // Une « cible » désigne un dossier sans que l'interface transmette jamais de chemin :
 // { type: 'projet', id } | { type: 'toolkit' } (dossier app/) | { type: 'racine' } (Toolkit/)
-// | { type: 'kits' } (bibliothèque de kits et de skills, Toolkit/kits/).
+// | { type: 'skills' } (bibliothèque de skills, Toolkit/skills/).
 'use strict';
 
 const path = require('node:path');
@@ -17,9 +17,9 @@ async function dossierCible(cible) {
     dossier = chemins.app;
   } else if (cible?.type === 'racine') {
     dossier = chemins.racine;
-  } else if (cible?.type === 'kits') {
-    dossier = chemins.kits;
-    if (!(await existe(dossier))) throw new Error('La bibliothèque de kits n\'existe pas encore : crée-la depuis l\'onglet « Kits ».');
+  } else if (cible?.type === 'skills') {
+    dossier = chemins.skills;
+    if (!(await existe(dossier))) throw new Error('La bibliothèque de skills n\'existe pas encore : crée-la depuis l\'onglet « Skills ».');
   } else {
     throw new Error('Dossier cible inconnu.');
   }

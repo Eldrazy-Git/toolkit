@@ -47,6 +47,8 @@ export async function restaurer(sauvee) {
     if (!preferences.lire('interface').restaurerOnglets || !Array.isArray(sauvee?.onglets)) return;
     const projets = new Set(etat.obtenir().projets.map((p) => p.id));
     for (const o of sauvee.onglets) {
+      // Avant la version 1.18, la bibliothèque s'appelait « kits ».
+      if (o.genre === 'code' && o.cible?.type === 'kits') o.cible = { type: 'skills' };
       if (o.genre === 'outil' && projets.has(o.projetId)) await actions.ouvrirOutil(o.projetId, o.outilLie);
       else if (o.genre === 'code' && o.cible && (o.cible.type !== 'projet' || projets.has(o.cible.id))) {
         actions.ouvrirCode(o.cible, o.nomCible || o.cible.id || 'Toolkit', o.fichierActif, Array.isArray(o.fichiers) ? o.fichiers : []);

@@ -35,7 +35,7 @@ Toolkit/                  ← racine (déplaçable n'importe où)
 ├── app/                  ← CE dossier : code de l'appli, seul repo Git de l'appli
 ├── projets/              ← projets de l'utilisateur (un repo Git par projet, hors repo appli)
 ├── templates/            ← (facultatif) modèles personnels de l'utilisateur
-├── kits/                 ← kits et skills de l'utilisateur (son propre dépôt Git, créé à la première utilisation)
+├── skills/               ← skills de l'utilisateur (son propre dépôt Git, créé à la première utilisation)
 ├── donnees/              ← réglages + données des outils (jamais versionné)
 ├── Toolkit.exe           ← lanceur créé par l'installateur (cible des raccourcis)
 └── Lancer Toolkit.vbs    ← généré automatiquement (lanceur.js), lance l'appli sans console
@@ -73,7 +73,7 @@ app/
 ├── assets/                  icône de Toolkit (générée par scripts/generer-icones.js)
 ├── docs/
 │   ├── projet-json.md           format complet de la fiche projet.json
-│   ├── kits.md                  kits et skills : règles pour Claude, format de kit.json, commande
+│   ├── skills.md                skills : règles pour Claude, propositions, verification.json
 │   ├── PROTOCOLE-MISE-A-JOUR.md procédure pour publier une nouvelle version (local, non versionné)
 │   └── notes-de-version/        nouveautés de chaque version (<version>.md, montrées aux utilisateurs)
 ├── installateur/Installateur.cs installateur graphique / lanceur Toolkit.exe / désinstallateur
@@ -104,8 +104,8 @@ app/
     │   ├── recherche.js         index MiniSearch (projets + .md), liens [[…]], rétroliens
     │   ├── notes.js             notes .md : rendu markdown-it (HTML brut désactivé), lecture, écriture
     │   ├── modeles.js           modèles de « Nouvel outil » et création du projet
-    │   ├── kits.js              bibliothèque de kits : catalogue, ajout à un projet, création, récupération
-    │   ├── verification.js      « Vérifier les projets » : compare les projets à la bibliothèque, rapport, exceptions
+    │   ├── skills.js            bibliothèque de skills : liste, création, propositions, récupération
+    │   ├── verification.js      « Vérifier les projets » : contrôles des skills, rapport, exceptions
     │   ├── claude-md.js         génération du CLAUDE.md d'un projet
     │   ├── comptes.js           comptes Claude / GitHub : état, changement, déconnexion
     │   ├── proprietaires-raccourcis.js quel programme (AMD, PowerToys) a réservé un raccourci
@@ -148,8 +148,8 @@ app/
             ├── terminal.js      panneau de terminal (xterm.js), copier/coller, relance
             ├── console.js       panneau d'exécution d'une action (sortie en direct)
             ├── import.js        onglet « Importer un projet » (assistant en étapes)
-            ├── kits.js          onglet « Kits et skills » + section « Kits » des détails d'un projet
-            ├── verification.js  bouton « Vérifier les projets » et rapport de l'onglet « Kits et skills »
+            ├── skills.js        onglet « Skills »
+            ├── verification.js  bouton « Vérifier les projets » et rapport de l'onglet « Skills »
             ├── git.js           onglet « Git et GitHub » + pastilles/boutons réutilisés dans les détails
             ├── actions-git.js   actions Git (commit, push, pull, tout envoyer, dépôt GitHub privé)
             ├── details-git.js   fenêtres de détail : fichiers modifiés + différences, commits
@@ -332,49 +332,49 @@ Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
   `projets/`. Liens dans `projet.json > liens`. Au lancement de Claude sur un projet :
   `--add-dir` avec les dossiers des projets reliés (placé APRÈS la demande initiale, car
   l'option prend tous les arguments qui la suivent).
-- Kits et skills (`src/main/kits.js`, `scripts/kit.js`, format et règles dans `docs/kits.md`) :
-  bibliothèque de l'utilisateur dans `Toolkit/kits/`, hors du dépôt de l'application ; AUCUN kit livré
-  avec Toolkit. Créée par `kits.preparerPourClaude()` au premier lancement de Claude sur un projet
-  (dépôt Git local, `propositions/` et `CATALOGUE.md` ignorés), puis passée en `--add-dir` (projets
-  seulement : ni « Modifier Toolkit », ni « Discuter »). Claude Code charge ses skills, mais pas de
-  `CLAUDE.md` depuis un `--add-dir` : les règles sont donc dans la section `toolkit:kits` de
-  `projets/CLAUDE.md` (toujours écrite, même sans kit). `--add-dir` donne aussi le droit d'écrire :
-  seule une règle écrite empêche Claude de modifier `kits/` depuis un projet (toute modification non
-  validée reste visible dans l'onglet « Git et GitHub »).
-  Ajout à un projet : `planifierAjout()` vérifie tout sans rien écrire, `executerAjout()` copie (tout ou
-  rien), ajoute une section `toolkit:kit=<id>=` au CLAUDE.md du projet et note `kits` dans projet.json.
-- Onglet « Kits et skills » (`composants/kits.js`, `ipc/kits.js`, état `kits`, `kitsFiltre`) : cible
-  `{ type: 'kits' }` de `cibles.js` (terminal, sauvegarde Git, onglet Code, panneau Git : rien de
-  particulier à faire). `kits/CLAUDE.md`, généré et ignoré par Git, reprend `docs/kits.md` pour les
-  sessions lancées DANS la bibliothèque. Créer depuis un projet (`analyserProjet`, `creerDepuisProjet`) :
-  seuls les chemins renvoyés par l'analyse sont acceptés ; Java / Android : le package devient
-  `{{package}}` ; le kit reste à relire (`adaptation: true`), Claude est proposé ensuite. Le signal de
-  mise à jour des détails compare `fiche.kits` à la bibliothèque : jamais de mise à jour automatique.
-- Propositions (`kits/propositions/<nom>/`, ignoré par Git, règles dans `docs/kits.md`) : Claude y dépose
-  ce qui est réutilisable tel quel, quel que soit le type du projet. Jamais utilisées avant acceptation :
-  `NOMS_RESERVES` les exclut du catalogue et de `ajouter`, et un skill y est un `SKILL.md` à plat (pas
-  de `.claude`, que Claude Code pourrait charger). `inspecterProposition()` : `problemes` (bloquants :
-  format, secret, lien symbolique, nom déjà pris, kit nécessaire absent), `avertissements` (noms de
+- Skills (`src/main/skills.js`, `scripts/skills.js`, règles dans `docs/skills.md`) : bibliothèque de
+  l'utilisateur dans `Toolkit/skills/`, hors du dépôt de l'application ; AUCUN skill livré avec Toolkit.
+  Un skill = une façon de faire (étapes, règles, pièges), JAMAIS du code à copier dans les projets : les
+  « kits » (code copié et suivi par version dans les projets) ont été abandonnés en 1.18, car ce code
+  vieillissait avec les bibliothèques qu'il reprenait. Créée par `skills.preparerPourClaude()` au premier
+  lancement de Claude sur un projet (dépôt Git local, `propositions/` et `CLAUDE.md` ignorés), puis passée en
+  `--add-dir` (projets seulement : ni « Modifier Toolkit », ni « Discuter »). Claude Code charge ses skills,
+  mais pas de `CLAUDE.md` depuis un `--add-dir` : les règles sont donc dans la section `toolkit:skills` de
+  `projets/CLAUDE.md` (toujours écrite, même sans skill ; l'ancienne section `toolkit:kits` y est retirée).
+  `--add-dir` donne aussi le droit d'écrire : seule une règle écrite empêche Claude de modifier `skills/`
+  depuis un projet (toute modification non validée reste visible dans l'onglet « Git et GitHub »).
+- Ancien dossier `kits/` (avant 1.18) : `skills.migrerAncienDossier()` le renomme en `skills/` au démarrage et
+  avant toute création (jamais de bibliothèque vide créée à côté ; les deux existent = rien fusionné, signalé).
+  Dossiers d'anciens kits (`kit.json`) restants : signalés dans l'onglet, « Transformer avec Claude ». Projet qui
+  déclare encore des kits (`kits` de projet.json, sections `toolkit:kit=…=`) : ajustement `toolkit:anciens-kits`
+  de « Vérifier les projets » (Claude retire les déclarations, le code reste). Session : cible `kits` -> `skills`.
+- Onglet « Skills » (`composants/skills.js`, `ipc/skills.js`, état `skills`, `skillsDate`) : cible
+  `{ type: 'skills' }` de `cibles.js` (terminal, sauvegarde Git, onglet Code, panneau Git : rien de
+  particulier à faire). `skills/CLAUDE.md`, généré et ignoré par Git, reprend `docs/skills.md` pour les
+  sessions lancées DANS la bibliothèque.
+- Propositions (`skills/propositions/<nom>/`, ignoré par Git, règles dans `docs/skills.md`) : Claude y dépose
+  un skill réutilisable, quel que soit le type du projet. Jamais utilisées avant acceptation : un skill y est un
+  `SKILL.md` à plat (pas de `.claude`, que Claude Code pourrait charger). `inspecterProposition()` :
+  `problemes` (bloquants : format, secret, lien symbolique, nom déjà pris, ancien kit), `avertissements` (noms de
   projets, chemins de ce PC : une aide, pas une garantie ; `proposition.md` n'est pas contrôlé).
   `accepterProposition()` revérifie, déplace, commite ; `refuserProposition()` = Corbeille + ligne dans
   `REFUS.md`. Compteur dans la barre latérale, relu au retour dans Toolkit et quand Claude finit (pas de
-  lecture périodique). `kit.js propositions` : le même contrôle pour Claude.
-- « Vérifier les projets » (`verification.js`, `ipc/verification.js`, `composants/verification.js`, format dans `docs/kits.md`) : déterministe,
+  lecture périodique). `skills.js propositions` : le même contrôle pour Claude.
+- « Vérifier les projets » (`verification.js`, `ipc/verification.js`, `composants/verification.js`, format dans `docs/skills.md`) : déterministe,
   JAMAIS de demande à Claude ni de clé API. `analyserProjet()` n'écrit rien ; l'interface appelle `verifierProjet()` projet par projet
-  (progression, bouton Arrêter). Rapport : `donnees/verification-kits.json` (remplacé projet par projet). Ce qu'il faut contrôler vient de la
-  bibliothèque de l'utilisateur (`verification.json` d'un skill ou d'un kit) : rien de propre à un skill dans le code de Toolkit. Seule détection
-  codée ici : version des kits et code proche d'un kit (`evaluerProximite()`, fichier par fichier, seuils dans `docs/kits.md`). Les scripts d'un skill tournent avec `process.execPath`
+  (progression, bouton Arrêter). Rapport : `donnees/verification-projets.json` (remplacé projet par projet). Ce qu'il faut contrôler vient de la
+  bibliothèque de l'utilisateur (`verification.json` d'un skill) : rien de propre à un skill dans le code de Toolkit. Seule détection
+  codée ici : les anciennes déclarations de kits. Les scripts d'un skill tournent avec `process.execPath`
   + `ELECTRON_RUN_AS_NODE`. « Faire » = `modifierAvecClaude()` (sauvegarde Git, puis Claude) ; « Ignorer » = retiré du rapport seulement ;
   « Exception » = `exceptions_verification` de projet.json + section `toolkit:exceptions` du CLAUDE.md du projet, sans commit (l'utilisateur
-  commite depuis l'onglet Git, comme après l'ajout d'un kit). Code proche d'un kit : liste `proches` du rapport (`kit-recopie:<kit>`, hors du total « à faire »,
-  section repliée) ; « Comparer avec Claude » = `comparerAvecClaude()` (mode Plan via l'option `plan` du terminal, sans sauvegarde), « Ne plus signaler » = exception.
+  commite depuis l'onglet Git).
   « Mettre à jour les fiches » = `fichesAMettreAJour()` (ajustements limités à CLAUDE.md, projet.json, README : champ `infos`, tiré des conditions de la règle, sans rien de propre à un skill), un `modifierAvecClaude()` par projet coché.
-- Dépôt GitHub de la bibliothèque : dépôt privé NORMAL `toolkit-kits` (pas la fonction « dépôt
-  partagé »), ligne « Kits et skills » de l'onglet Git. `recupererDepot()` clone dans `donnees/`, refuse
+- Dépôt GitHub de la bibliothèque : dépôt privé NORMAL `toolkit-skills` (pas la fonction « dépôt
+  partagé »), ligne « Skills » de l'onglet Git. `recupererDepot()` clone dans `donnees/`, refuse
   un dépôt sans `propositions/` dans son `.gitignore` et une bibliothèque non vide
-  (`bibliothequeVide()`), met une bibliothèque vide à la Corbeille, puis range le clone dans `kits/`.
-  Tests : copier `src/`, `scripts/` et `package.json` dans un dossier temporaire `<t>/app/` : la racine
-  étant calculée depuis le code, `<t>/kits` et `<t>/projets` remplacent les vrais dossiers.
+  (`bibliothequeVide()`), met une bibliothèque vide à la Corbeille, puis range le clone dans `skills/`.
+  Tests : copier `src/`, `scripts/`, `docs/` et `package.json` dans un dossier temporaire `<t>/app/` : la racine
+  étant calculée depuis le code, `<t>/skills` et `<t>/projets` remplacent les vrais dossiers.
 - « Modifier avec Claude » / « Modifier Toolkit avec Claude » : commit de sauvegarde
   (`sauvegarde:faire`, propose d'activer Git si besoin), puis onglet Claude. Une session
   Claude déjà en cours sur le même dossier est réutilisée. « Reprendre la conversation »
@@ -626,7 +626,7 @@ entrée dans `actions` de son `projet.json`.
   manquent, Claude Code décoché par défaut), installation
   (journal), fin. Inscrit Toolkit dans « Applications installées » (HKCU), copie de lui-même
   en « Désinstaller Toolkit.exe » (`/desinstaller` : app + lanceur + raccourcis à la
-  Corbeille, projets, kits et donnees GARDÉS sauf case cochée). Le même exe a 3 rôles selon son
+  Corbeille, projets, skills et donnees GARDÉS sauf case cochée). Le même exe a 3 rôles selon son
   NOM de fichier : installateur, `Toolkit.exe` (lanceur à la racine : lance
   `app\node_modules\electron\dist\electron.exe app`, cible des raccourcis) et
   `Désinstaller Toolkit.exe` (désinstallation, même sans argument). `/auto <dossier> <journal>` :
@@ -693,7 +693,7 @@ local `git init --bare`).
 - Application : commit de sauvegarde (dépôt créé si besoin, identité « Toolkit » par défaut),
   écriture, commit « Mise à jour de Toolkit … ». Puis redémarrage, ou `npm install` Toolkit
   fermé si les dépendances changent (script de mises-a-jour.js). `donnees/`, `projets/` et
-  `kits/` ne sont jamais touchés.
+  `skills/` ne sont jamais touchés.
 - Point à côté du nom dans la barre latérale (`barre-laterale.js > pointMiseAJour`, état
   `majToolkit`) : vert = à jour, orange = nouvelle version, gris = inconnu. `toolkit-maj:etat`
   = `mise-a-jour-toolkit.etat()` (une requête, résultat gardé 6 h ; demandé 3 s après le

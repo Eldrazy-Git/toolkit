@@ -13,7 +13,7 @@ const modeles = require('../modeles');
 const { dossierCible } = require('../cibles');
 const contexteClaude = require('../contexte-claude');
 const sessionsClaude = require('../sessions-claude');
-const kits = require('../kits');
+const skills = require('../skills');
 const journal = require('../journal');
 
 function enregistrer() {
@@ -25,18 +25,18 @@ function enregistrer() {
       const resultat = await terminal.creer(id, { mode: 'commande', commande, dossier: require('node:os').homedir(), colonnes, lignes }, contenu);
       return { ...resultat, chemin: connexion === 'claude' ? 'claude auth login' : 'gh auth login' };
     }
-    // « Améliorer avec Claude » : consignes et catalogue de la bibliothèque à jour.
-    if (mode === 'claude' && cible?.type === 'kits') await kits.preparerPourClaude();
+    // « Améliorer avec Claude » : consignes de la bibliothèque à jour.
+    if (mode === 'claude' && cible?.type === 'skills') await skills.preparerPourClaude();
     const dossier = await dossierCible(cible);
     // Claude peut lire les projets liés à celui-ci (voir contexte-claude.js).
     let dossiersLies = mode === 'claude' && cible.type === 'projet' ? await contexteClaude.dossiersLies(cible.id) : [];
-    // Et la bibliothèque de kits (créée à la première utilisation ; ses skills sont chargés par
+    // Et la bibliothèque de skills (créée à la première utilisation ; ses skills sont chargés par
     // Claude Code). Un échec ici ne doit jamais empêcher de lancer Claude.
     if (mode === 'claude' && cible.type === 'projet') {
       try {
-        dossiersLies.push(await kits.preparerPourClaude());
+        dossiersLies.push(await skills.preparerPourClaude());
       } catch (erreur) {
-        journal.erreur('Bibliothèque de kits :', erreur);
+        journal.erreur('Bibliothèque de skills :', erreur);
       }
     }
     // Claude à la racine de Toolkit = le bouton « Discuter » (lecture seule, tout le contexte).

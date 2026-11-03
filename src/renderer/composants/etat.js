@@ -26,10 +26,9 @@ const etat = {
   demarrageWindows: null, // Toolkit démarre-t-il avec Windows ? (lu à l'ouverture des Réglages)
   importOuvert: false, // onglet « Importer un projet » affiché
   gitOuvert: false, // onglet « Git et GitHub » affiché
-  kitsOuvert: false, // onglet « Kits » affiché
-  kits: null, // { existe, kits, skills } (voir composants/kits.js), chargé à la demande
-  kitsDate: 0, // quand kits a été lu (pour le relire de temps en temps)
-  kitsFiltre: '', // filtre par type de projet de l'onglet « Kits »
+  skillsOuvert: false, // onglet « Skills » affiché
+  skills: null, // { existe, skills, propositions, anciensKits } (voir composants/skills.js), chargé à la demande
+  skillsDate: 0, // quand skills a été lu (pour le relire de temps en temps)
   verification: null, // { projets, exceptions } : rapport de vérification (voir composants/verification.js)
   verificationEnCours: null, // { fait, total, nom } pendant une vérification
   git: {}, // état Git par cible (clé : 'toolkit:' ou 'projet:<id>'), voir actions-git.js

@@ -1,4 +1,4 @@
-// Vérification des projets par rapport à la bibliothèque de kits et de skills (voir docs/kits.md).
+// Vérification des projets par rapport à la bibliothèque de skills (voir docs/skills.md).
 // Déterministe et sans Claude : aucun quota consommé. L'analyse ne modifie jamais un projet ; seules
 // ajouterException() et retirerException() écrivent, à la demande de l'utilisateur.
 'use strict';
@@ -8,7 +8,7 @@ const path = require('node:path');
 const { execFile } = require('node:child_process');
 const chemins = require('./chemins');
 const projets = require('./projets');
-const kits = require('./kits');
+const skills = require('./skills');
 const git = require('./git');
 const journal = require('./journal');
 const { lireJson, ecrireJson, ecrireSection } = require('./fichiers');
@@ -23,18 +23,8 @@ const FIN_SECTION = '<!-- /toolkit:exceptions -->';
 const SUITE_DEMANDE = '\n\nExplique-moi d\'abord simplement ce que tu comptes faire, et attends mon accord avant de modifier quoi que ce soit. '
   + 'Fais ensuite un commit local, sans push.';
 
-// Détection du code proche d'un kit : seules les lignes qui disent quelque chose comptent.
-const EXTENSIONS_CODE = new Set(['.js', '.mjs', '.cjs', '.ts', '.css', '.html', '.py', '.java', '.kt', '.kts', '.xml']);
-const LONGUEUR_MIN_LIGNE = 24;
-const LIGNES_MIN_COMMUNES = 8;
-// Un fichier du kit compte si ce nombre de ses lignes est dans UN MÊME fichier du projet.
-const PART_MIN_PAR_FICHIER = 0.45;
-// Le kit est signalé si les fichiers qui comptent représentent cette part de ses lignes.
-const PART_MIN_DU_KIT = 0.35;
-// Et si cette part de ses lignes est réellement retrouvée : un seul fichier proche ne suffit pas.
-const PART_MIN_REELLE = 0.3;
-const PREFIXE_CODE_PROCHE = 'kit-recopie:';
-const LIGNE_SANS_INTERET = /^(\/\/|\/\*|\*|#|<!--|import\s|package\s|from\s+\S+\s+import\s|using\s)/;
+// Parcours d'un projet sans Git : dossiers générés ignorés.
+const DOSSIERS_IGNORES = new Set(['node_modules', 'build', 'bin', 'out', 'dist', 'run', 'target', '__pycache__', 'venv']);
 
 // Fichiers d'informations d'un projet, à sa racine (bouton « Mettre à jour les fiches »).
 const FICHIER_INFOS = /^(CLAUDE\.md|projet\.json|README(\.(md|txt))?)$/i;
@@ -42,7 +32,7 @@ const SUITE_FICHES = '\n\nNe modifie que CLAUDE.md, projet.json et le README : n
   + 'Écris seulement ce que tu as vérifié dans le projet ; si tu ne sais pas, pose-moi la question au lieu de deviner. '
   + 'Fais ensuite un commit local, sans push, puis dis-moi ce que tu as écrit et les questions restées ouvertes.';
 
-const fichierRapport = () => path.join(chemins.donnees, 'verification-kits.json');
+const fichierRapport = () => path.join(chemins.donnees, 'verification-projets.json');
 const uniques = (liste) => [...new Set(liste)];
 
 // --- Fichiers d'un projet -----------------------------------------------------------------------
@@ -54,10 +44,17 @@ async function fichiersDuProjet(dossier) {
     if (r.code === 0) return uniques(r.sortie.split('\0').filter(Boolean));
   }
   const liste = [];
-  await kits.parcourirProjet(dossier, (chemin) => {
-    liste.push(path.relative(dossier, chemin).split(path.sep).join('/'));
-    return liste.length >= FICHIERS_MAX_PROJET;
-  });
+  const file = [dossier];
+  while (file.length && liste.length < FICHIERS_MAX_PROJET) {
+    const courant = file.shift();
+    for (const e of await fs.readdir(courant, { withFileTypes: true }).catch(() => [])) {
+      if (e.isDirectory()) {
+        if (!e.name.startsWith('.') && !DOSSIERS_IGNORES.has(e.name)) file.push(path.join(courant, e.name));
+      } else if (e.isFile()) {
+        liste.push(path.relative(dossier, path.join(courant, e.name)).split(path.sep).join('/'));
+      }
+    }
+  }
   return liste;
 }
 
@@ -78,15 +75,6 @@ function lecteurDeTexte(dossier) {
     memoire.set(relatif, texte);
     return texte;
   };
-}
-
-function lignesSignificatives(texte) {
-  const lignes = new Set();
-  for (const brute of texte.split(/\r?\n/)) {
-    const ligne = brute.trim().replace(/\s+/g, ' ');
-    if (ligne.length >= LONGUEUR_MIN_LIGNE && !LIGNE_SANS_INTERET.test(ligne) && !ligne.includes('{{')) lignes.add(ligne);
-  }
-  return lignes;
 }
 
 // --- Bibliothèque : ce qu'il faut vérifier --------------------------------------------------------
@@ -143,7 +131,7 @@ function preparerRegle(brute, source) {
   };
 }
 
-// Règles et scripts d'un skill ou d'un kit. Une erreur n'empêche jamais le reste de la vérification.
+// Règles et scripts d'un skill. Une erreur n'empêche jamais le reste de la vérification.
 async function lireReglesDe(dossier, source, resultat) {
   let brut;
   try {
@@ -173,55 +161,14 @@ async function lireReglesDe(dossier, source, resultat) {
   }
 }
 
-// Un kit qui écrit à la racine du projet est un point de départ (nouveau projet), pas un composant
-// qu'on remplace dans un projet existant : il n'entre pas dans la détection du code proche.
-function kitComposant(kit) {
-  return kit.genre === 'code' && (kit.fichiers || []).every((g) => {
-    const destinations = typeof g.vers === 'string' ? [g.vers] : Object.values(g.vers || {});
-    return destinations.every((d) => d !== '.' && d !== './');
-  });
-}
-
-// Les lignes du kit, et celles de chacun de ses fichiers (la détection compare fichier par fichier).
-async function lignesDuKit(k) {
-  const lignes = new Set();
-  const fichiers = [];
-  const parcourir = async (dossier) => {
-    for (const e of await fs.readdir(dossier, { withFileTypes: true }).catch(() => [])) {
-      const chemin = path.join(dossier, e.name);
-      if (e.isDirectory()) await parcourir(chemin);
-      else if (e.isFile() && EXTENSIONS_CODE.has(path.extname(e.name).toLowerCase())) {
-        const infos = await fs.stat(chemin).catch(() => null);
-        if (!infos || infos.size > TAILLE_MAX_LECTURE) continue;
-        const tampon = await fs.readFile(chemin).catch(() => null);
-        if (!tampon || tampon.includes(0)) continue;
-        const duFichier = lignesSignificatives(tampon.toString('utf8'));
-        if (!duFichier.size) continue;
-        fichiers.push({ relatif: path.relative(k.dossier, chemin).split(path.sep).join('/'), lignes: duFichier });
-        for (const l of duFichier) lignes.add(l);
-      }
-    }
-  };
-  for (const groupe of k.kit.fichiers || []) await parcourir(path.join(k.dossier, ...String(groupe.source).split('/')));
-  return { lignes, fichiers };
-}
-
 let cache = null;
 
 async function bibliotheque() {
   if (cache && Date.now() - cache.date < DUREE_CACHE) return cache;
-  const resultat = { date: Date.now(), kits: [], skills: [], regles: [], scripts: [], problemes: [], empreintes: [] };
-  resultat.kits = (await kits.listerKits()).filter((k) => !k.erreur);
-  resultat.skills = await kits.listerSkills();
+  const resultat = { date: Date.now(), skills: [], regles: [], scripts: [], problemes: [] };
+  resultat.skills = await skills.listerSkills();
   for (const s of resultat.skills) {
-    await lireReglesDe(path.join(chemins.kits, '.claude', 'skills', s.id), { genre: 'skill', id: s.id, nom: `Skill « ${s.id} »` }, resultat);
-  }
-  for (const k of resultat.kits) {
-    await lireReglesDe(k.dossier, { genre: 'kit', id: k.id, nom: `Kit « ${k.kit.nom} »` }, resultat);
-    if (kitComposant(k.kit)) {
-      const { lignes, fichiers } = await lignesDuKit(k);
-      if (lignes.size >= LIGNES_MIN_COMMUNES) resultat.empreintes.push({ k, lignes, fichiers });
-    }
+    await lireReglesDe(path.join(chemins.skills, '.claude', 'skills', s.id), { genre: 'skill', id: s.id, nom: `Skill « ${s.id} »` }, resultat);
   }
   cache = resultat;
   return resultat;
@@ -232,103 +179,6 @@ function oublierBibliotheque() {
 }
 
 // --- Contrôles --------------------------------------------------------------------------------
-
-function ajustementsDesKits(fiche, bib) {
-  const sortie = [];
-  for (const entree of fiche.kits || []) {
-    const k = bib.kits.find((x) => x.id === entree.id);
-    if (!k) {
-      sortie.push({
-        cle: `kit-absent:${entree.id}`,
-        source: { genre: 'kit', id: entree.id, nom: `Kit « ${entree.id} »` },
-        gravite: 'conseil',
-        titre: `Le kit « ${entree.id} » n'est plus dans ta bibliothèque`,
-        detail: `Le projet le déclare en version ${entree.version}, mais ta bibliothèque ne l'a plus, ou il est à corriger.`,
-        fichiers: [],
-        demande: `Le kit « ${entree.id} » de ce projet n'est plus dans ma bibliothèque. Regarde ce que le projet en utilise, et dis-moi s'il faut retirer sa déclaration de projet.json et de CLAUDE.md, ou garder le code tel quel.`,
-      });
-    } else if (kits.comparerVersions(k.kit.version, entree.version) > 0) {
-      sortie.push({
-        cle: `kit-version:${entree.id}`,
-        source: { genre: 'kit', id: entree.id, nom: `Kit « ${k.kit.nom} »` },
-        gravite: 'important',
-        titre: `Le kit « ${k.kit.nom} » peut passer de la version ${entree.version} à la version ${k.kit.version}`,
-        detail: 'Rien n\'est mis à jour automatiquement.',
-        fichiers: [],
-        demande: `Mets à jour le kit « ${k.kit.nom} » de ce projet, de la version ${entree.version} à la version ${k.kit.version}. `
-          + `La bibliothèque est ouverte dans ta session : compare ce projet avec \`kits/${k.id}/\` (kit.json, fichiers, guide, règles), `
-          + 'reporte les changements en gardant ce qui a été adapté à ce projet, puis mets à jour la version dans projet.json (champ « kits ») '
-          + `et la section \`toolkit:kit=${k.id}=\` de CLAUDE.md. Ne modifie pas la bibliothèque.`,
-      });
-    }
-  }
-  return sortie;
-}
-
-// Une demande de comparaison : Claude donne son avis, et rien ne change sans l'accord de l'utilisateur.
-function demandeComparaison(source, fichiers) {
-  return `Ce projet contient du code proche du kit ${source.nom.replace(/^Kit /, '')} (\`kits/${source.id}/\`)${fichiers.length ? `, surtout dans ${fichiers.join(', ')}` : ''}. `
-    + 'Ce n\'est pas un problème : si le projet marche, on peut ne rien changer. Compare les deux sans rien modifier, '
-    + 'puis dis-moi simplement ce que le kit apporterait, ce que le projet risquerait de perdre, et si un changement en vaudrait la peine. '
-    + 'Si je te demande ensuite de changer quelque chose : fais d\'abord un commit de sauvegarde, suis le skill `migrer-vers-kit` s\'il existe, '
-    + 'puis fais un commit local, sans push.';
-}
-
-// Compare un kit aux fichiers du projet, fichier par fichier : des lignes éparpillées dans tout le
-// projet ne prouvent rien. Renvoie ce qu'il faut signaler, ou null. Plusieurs fichiers du kit peuvent
-// correspondre au même fichier du projet (page HTML qui regroupe le JS et le CSS d'un kit).
-function evaluerProximite(empreinte, fichiersProjet) {
-  const retenus = [];
-  const lignesRetenues = new Set();
-  const communes = new Set();
-  for (const fichierKit of empreinte.fichiers) {
-    let meilleur = null;
-    for (const f of fichiersProjet) {
-      let nombre = 0;
-      for (const l of fichierKit.lignes) if (f.lignes.has(l)) nombre += 1;
-      if (nombre && (!meilleur || nombre > meilleur.nombre)) meilleur = { relatif: f.relatif, lignes: f.lignes, nombre };
-    }
-    if (!meilleur || meilleur.nombre / fichierKit.lignes.size < PART_MIN_PAR_FICHIER) continue;
-    retenus.push({ kit: fichierKit.relatif, projet: meilleur.relatif, communes: meilleur.nombre, total: fichierKit.lignes.size });
-    for (const l of fichierKit.lignes) {
-      lignesRetenues.add(l);
-      if (meilleur.lignes.has(l)) communes.add(l);
-    }
-  }
-  const part = lignesRetenues.size / empreinte.lignes.size;
-  if (communes.size < LIGNES_MIN_COMMUNES || part < PART_MIN_DU_KIT || communes.size / empreinte.lignes.size < PART_MIN_REELLE) return null;
-  return { retenus, part, communes: communes.size };
-}
-
-// Le projet contient-il du code très proche d'un kit qu'il ne déclare pas ? (pour information)
-async function ajustementsCodeProche(fiche, fichiers, lire, bib) {
-  const installes = new Set((fiche.kits || []).map((e) => e.id));
-  const candidates = bib.empreintes.filter((e) => !installes.has(e.k.id) && kits.convientAuType(e.k.kit, fiche.type));
-  if (!candidates.length) return [];
-  const fichiersProjet = [];
-  for (const relatif of fichiers) {
-    if (!EXTENSIONS_CODE.has(path.extname(relatif).toLowerCase())) continue;
-    const texte = await lire(relatif);
-    if (texte) fichiersProjet.push({ relatif, lignes: lignesSignificatives(texte) });
-  }
-  const sortie = [];
-  for (const e of candidates) {
-    const proximite = evaluerProximite(e, fichiersProjet);
-    if (!proximite) continue;
-    const principaux = uniques(proximite.retenus.map((r) => r.projet)).slice(0, 6);
-    const source = { genre: 'kit', id: e.k.id, nom: `Kit « ${e.k.kit.nom} »` };
-    sortie.push({
-      cle: `${PREFIXE_CODE_PROCHE}${e.k.id}`,
-      source,
-      gravite: 'conseil',
-      titre: `Du code ressemble au kit « ${e.k.kit.nom} »`,
-      detail: `${proximite.communes} lignes communes sur les ${e.lignes.size} du kit. Le kit n'est pas déclaré dans ce projet.`,
-      fichiers: principaux,
-      demande: demandeComparaison(source, principaux),
-    });
-  }
-  return sortie;
-}
 
 async function evaluerRegle(regle, dossier, fichiers, lire) {
   const trouves = [];
@@ -366,8 +216,35 @@ async function evaluerRegle(regle, dossier, fichiers, lire) {
 function demandePar(modele, source, titre, detail, fichiers) {
   const liste = fichiers.join(', ');
   if (modele) return modele.replaceAll('{{fichiers}}', liste).replaceAll('{{titre}}', titre).replaceAll('{{detail}}', detail);
-  const qui = source.genre === 'skill' ? `Suis le skill \`${source.id}\`. ` : `Le guide du kit est dans \`kits/${source.id}/guide.md\`. `;
-  return `${qui}À traiter dans ce projet : ${titre}.${detail ? ` ${detail}` : ''}${liste ? ` Fichiers concernés : ${liste}.` : ''}`;
+  return `Suis le skill \`${source.id}\`. À traiter dans ce projet : ${titre}.${detail ? ` ${detail}` : ''}${liste ? ` Fichiers concernés : ${liste}.` : ''}`;
+}
+
+// Avant la version 1.18, Toolkit ajoutait des « kits » aux projets (champ « kits » de projet.json,
+// sections <!-- toolkit:kit=…= --> du CLAUDE.md). Ces déclarations ne servent plus : le code reste.
+async function ajustementAnciensKits(lire) {
+  let declares = [];
+  try {
+    const brut = JSON.parse((await lire('projet.json')) || '{}');
+    if (Array.isArray(brut.kits)) declares = brut.kits.map((k) => k?.id).filter((id) => typeof id === 'string');
+  } catch {
+    // fiche illisible : signalée ailleurs
+  }
+  const sections = [...((await lire('CLAUDE.md')) || '').matchAll(/<!-- toolkit:kit=([a-z0-9-]+)=/g)].map((m) => m[1]);
+  const kits = uniques([...declares, ...sections]);
+  if (!kits.length) return [];
+  return [{
+    cle: 'toolkit:anciens-kits',
+    source: { genre: 'toolkit', id: 'anciens-kits', nom: 'Toolkit' },
+    gravite: 'conseil',
+    titre: 'Le projet déclare encore des kits, que Toolkit n\'utilise plus',
+    detail: `Kits déclarés : ${kits.join(', ')}. Leur code reste dans le projet ; seules les déclarations sont à retirer.`,
+    fichiers: ['projet.json', 'CLAUDE.md'],
+    // Sections toolkit:… à retirer : « Mettre à jour les fiches » les interdit, donc pas concerné.
+    infos: false,
+    demande: `Ce projet déclare encore des kits (${kits.join(', ')}), que Toolkit n'utilise plus. Retire le champ « kits » de projet.json `
+      + 'et, dans CLAUDE.md, les sections entre <!-- toolkit:kit=…= --> et <!-- /toolkit:kit=…= -->. Ne change pas le code du projet. '
+      + 'Si ces sections contenaient des règles encore utiles au projet, réécris-les simplement dans CLAUDE.md, sans renvoyer vers le dossier « kits ».',
+  }];
 }
 
 async function ajustementsDesRegles(fiche, dossier, fichiers, lire, bib) {
@@ -440,8 +317,8 @@ async function ajustementsDesScripts(fiche, dossier, bib, problemes) {
 
 // --- Analyse (aucune écriture) ----------------------------------------------------------------
 
-// Renvoie { ajustements (à faire), proches (code proche d'un kit, pour information), problemes,
-// exceptions (nombre écarté) }. Les exceptions du projet sont retirées des deux listes.
+// Renvoie { ajustements (à faire), problemes, exceptions (nombre écarté) }. Les exceptions du
+// projet sont retirées de la liste.
 async function analyserProjet(id) {
   const projet = await projets.chargerProjet(id);
   if (!projet) throw new Error(`Le projet « ${id} » est introuvable.`);
@@ -453,40 +330,25 @@ async function analyserProjet(id) {
   const lire = lecteurDeTexte(dossier);
   const problemes = [...bib.problemes];
   const aFaire = [
-    ...ajustementsDesKits(fiche, bib),
+    ...await ajustementAnciensKits(lire),
     ...await ajustementsDesRegles(fiche, dossier, fichiers, lire, bib),
     ...await ajustementsDesScripts(fiche, dossier, bib, problemes),
   ];
-  const codeProche = await ajustementsCodeProche(fiche, fichiers, lire, bib);
   const ecartees = new Set((fiche.exceptions_verification || []).map((e) => e.cle));
   const ajustements = aFaire
     .filter((a) => !ecartees.has(a.cle))
     .map((a) => ({ ...a, demande: `${a.demande}${SUITE_DEMANDE}` }))
     .sort((a, b) => (a.gravite === b.gravite ? a.titre.localeCompare(b.titre, 'fr') : a.gravite === 'important' ? -1 : 1));
-  const proches = codeProche
-    .filter((a) => !ecartees.has(a.cle))
-    .sort((a, b) => a.titre.localeCompare(b.titre, 'fr'));
-  return { ajustements, proches, problemes, exceptions: aFaire.length + codeProche.length - ajustements.length - proches.length };
+  return { ajustements, problemes, exceptions: aFaire.length - ajustements.length };
 }
 
-// --- Rapport (donnees/verification-kits.json, jamais versionné) ---------------------------------
-
-// Un rapport écrit avant l'arrivée de « proches » : ses lignes de code proche ne sont plus « à faire ».
-function normaliserEntree(entree) {
-  const ajustements = entree.ajustements || [];
-  const anciennes = ajustements.filter((a) => a.cle.startsWith(PREFIXE_CODE_PROCHE));
-  entree.ajustements = ajustements.filter((a) => !a.cle.startsWith(PREFIXE_CODE_PROCHE));
-  entree.proches = [
-    ...(entree.proches || []),
-    ...anciennes.map((a) => ({ ...a, demande: demandeComparaison(a.source, a.fichiers || []) })),
-  ];
-}
+// --- Rapport (donnees/verification-projets.json, jamais versionné) -------------------------------
 
 async function lireFichierRapport() {
   try {
     const brut = await lireJson(fichierRapport());
     if (!brut || typeof brut.projets !== 'object' || !brut.projets) return { projets: {} };
-    Object.values(brut.projets).forEach(normaliserEntree);
+    for (const entree of Object.values(brut.projets)) entree.ajustements = entree.ajustements || [];
     return brut;
   } catch (erreur) {
     if (erreur.code !== 'ENOENT') journal.erreur('Rapport de vérification illisible :', erreur);
@@ -561,7 +423,6 @@ async function modifierEntree(id, modification) {
 function ignorer(id, cle) {
   return modifierEntree(id, (entree) => {
     entree.ajustements = entree.ajustements.filter((a) => a.cle !== cle);
-    entree.proches = entree.proches.filter((a) => a.cle !== cle);
   });
 }
 
@@ -600,7 +461,7 @@ async function ajouterException(id, cle, raison) {
   if (!projet || projet.erreur) throw new Error('Ce projet n\'est pas disponible.');
   const rapport = await lireFichierRapport();
   const entree = rapport.projets[id];
-  const ajustement = [...(entree?.ajustements || []), ...(entree?.proches || [])].find((a) => a.cle === cle);
+  const ajustement = (entree?.ajustements || []).find((a) => a.cle === cle);
   if (!ajustement) throw new Error('Cet ajustement n\'est plus dans le rapport : relance la vérification.');
   const exceptions = (projet.fiche.exceptions_verification || []).filter((e) => e.cle !== cle);
   exceptions.push({ cle, titre: uneLigne(ajustement.titre), raison: uneLigne(raison), date: new Date().toISOString().slice(0, 10) });
