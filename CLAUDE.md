@@ -323,6 +323,10 @@ Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
 - Claude est lancé **directement** via `claude.exe` (trouvé à partir de `claude.cmd` ou de
   `~/.local/bin`), jamais via `cmd.exe` : la demande initiale peut contenir guillemets et
   symboles. Aucune clé API : c'est la CLI de l'utilisateur, avec sa connexion.
+- Consignes shell (`terminal.js > CONSIGNES_SHELL`) : tout Claude lancé par Toolkit (sauf
+  « Discuter », sans shell) reçoit `--append-system-prompt-file donnees/consignes-shell-claude.md`
+  (apostrophes françaises dans les commandes Bash / PowerShell 5.1 : passer par un fichier,
+  `git commit -F`, heredoc `<<'EOF'`, outils Read/Edit/Write plutôt que le shell).
 - Contexte des autres projets (`src/main/contexte-claude.js`) : `projets/CLAUDE.md`
   (catalogue : tous les projets, liens, groupes ; Claude Code lit les CLAUDE.md des dossiers
   parents) et, dans le CLAUDE.md de chaque projet relié, une section « Projets liés » (liens

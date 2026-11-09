@@ -20,6 +20,41 @@ const OUTILS_LECTURE = 'Read,Glob,Grep,WebSearch,WebFetch';
 
 const DELAI_ENVOI = 8;
 
+// Consignes ajoutées à chaque Claude lancé par Toolkit (sauf « Discuter », sans shell) : sous
+// Windows, ses commandes échouaient sur les apostrophes des textes en français (message de
+// commit…), puis il tâtonnait. Passées par fichier : la ligne de commande abîmerait les guillemets.
+const CONSIGNES_SHELL = `# Commandes shell sous Windows (consignes de Toolkit)
+
+Tu tournes sous Windows. Les textes en français contiennent des apostrophes (l'aperçu, d'abord) :
+c'est la cause habituelle des commandes qui échouent. Pour ne pas tâtonner :
+
+- Fichiers : utilise tes outils Read, Edit, Write, Glob et Grep plutôt que le shell
+  (cat, sed, echo > fichier, Get-Content, Set-Content…).
+- Message de commit ou tout texte avec apostrophes ou guillemets : écris-le d'abord dans un
+  fichier temporaire avec l'outil Write, puis \`git commit -F <fichier>\` (de même \`gh … --body-file\`).
+  Jamais \`-m '…'\` avec une apostrophe dedans.
+- Bash (Git Bash) : texte sur plusieurs lignes ou avec apostrophes = heredoc à délimiteur entre
+  guillemets simples (\`<<'EOF'\`). Dans '…' une apostrophe s'écrit '\\''.
+- PowerShell 5.1 : chaîne littérale '…' où l'apostrophe se double (''), ou here-string @'…'@
+  (le '@ fermant en début de ligne). Ne passe pas de guillemets doubles dans les arguments d'un
+  programme externe (PowerShell 5.1 les retire) : passe par un fichier.
+- Si une commande échoue à cause des guillemets, passe directement par un fichier au lieu de
+  réessayer plusieurs variantes.
+`;
+
+// Écrit les consignes dans donnees/ (réécrites seulement si elles ont changé).
+async function fichierConsignesShell() {
+  const fichier = path.join(require('./chemins').donnees, 'consignes-shell-claude.md');
+  let actuel = null;
+  try {
+    actuel = await fs.readFile(fichier, 'utf8');
+  } catch {
+    // Pas encore créé.
+  }
+  if (actuel !== CONSIGNES_SHELL) await fs.writeFile(fichier, CONSIGNES_SHELL, 'utf8');
+  return fichier;
+}
+
 // --- Claude a fini / attend une réponse ---------------------------------------------------------
 // Pendant qu'il travaille, Claude Code redessine sans cesse son écran (animation, minuteur).
 // Quand la sortie a été continue au moins 3 s puis s'arrête 4 s, il a fini ou attend une
@@ -139,8 +174,16 @@ async function creer(id, { mode, dossier, demande, continuer, reprendre, nouvell
     // Discussion : seulement des outils de lecture (les connecteurs MCP pourraient écrire),
     // l'autonomie des Réglages n'a donc pas de sens ici.
     if (consignes) options.push('--tools', OUTILS_LECTURE, '--strict-mcp-config', '--append-system-prompt-file', consignes);
-    else if (plan) options.push('--permission-mode', 'plan');
-    else if (['manual', 'acceptEdits', 'auto', 'plan'].includes(pref.autonomie)) options.push('--permission-mode', pref.autonomie);
+    else {
+      if (plan) options.push('--permission-mode', 'plan');
+      else if (['manual', 'acceptEdits', 'auto', 'plan'].includes(pref.autonomie)) options.push('--permission-mode', pref.autonomie);
+      try {
+        options.push('--append-system-prompt-file', await fichierConsignesShell());
+      } catch (erreur) {
+        // Sans ces consignes, Claude fonctionne quand même.
+        journal.erreur('Consignes shell de Claude :', erreur);
+      }
+    }
     if (ID_SESSION.test(reprendre || '')) {
       idSession = reprendre;
       args = [...options, '--resume', reprendre];
