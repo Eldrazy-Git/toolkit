@@ -106,7 +106,10 @@ export function creerPanneauCode(o, zone) {
   });
   const resultats = el('div', { classe: 'code-resultats', hidden: true });
   const barreFichiers = el('div', { classe: 'code-fichiers' });
-  const zoneEditeur = el('div', { classe: 'code-editeur' });
+  // « monaco-component » : Monaco place son menu clic droit À CÔTÉ de l'éditeur, dans ce
+  // conteneur ; sans cette classe, les couleurs du thème (--vscode-menu-background…) n'y
+  // sont pas définies et le menu est transparent.
+  const zoneEditeur = el('div', { classe: 'code-editeur monaco-component' });
   const zoneMessage = el('div', { classe: 'code-message' });
   const statut = el('div', { classe: 'code-statut' });
   // Aperçu à droite de l'éditeur (HTML, Markdown, SVG, XML Android, CSV) : voir apercu-code.js.
