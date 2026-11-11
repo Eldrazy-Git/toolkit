@@ -186,6 +186,9 @@ contextBridge.exposeInMainWorld('toolkit', {
     creer: (cible, parent, nom, type) => appeler('code:creer', cible, parent, nom, type), // chemin créé
     renommer: (cible, relatif, nom) => appeler('code:renommer', cible, relatif, nom), // nouveau chemin
     corbeille: (cible, relatif) => appeler('code:corbeille', cible, relatif),
+    // Copie (ou déplace) source -> dossier parentDest de cibleDest ; renvoie le chemin collé.
+    coller: (cibleSource, relatifSource, cibleDest, parentDest, deplacer) => appeler('code:coller', cibleSource, relatifSource, cibleDest, parentDest, deplacer),
+    afficherExplorateur: (cible, relatif) => appeler('code:afficher-explorateur', cible, relatif), // relatif vide = le dossier
     apercuHtml: (cible, cle) => appeler('code:apercu-html', cible, cle), // { racine (URL), partition }
     rendreMarkdown: (cible, relatif, texte) => appeler('code:rendre-markdown', cible, relatif, texte), // HTML sûr
     // options : { texte, casse, motEntier, regex } -> { fichiers: [{ chemin, resultats }], total, tronque }

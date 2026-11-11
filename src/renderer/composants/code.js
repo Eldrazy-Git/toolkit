@@ -23,6 +23,8 @@ import { creerApercu, genreApercu } from './apercu-code.js';
 
 const api = window.toolkit.code;
 const panneaux = new Map(); // cle -> panneau ouvert (ouvreur de Monaco, surveillance)
+// Presse-papiers des fichiers, commun à tous les onglets « Code » (copie d'un projet à l'autre).
+let pressePapiers = null; // { cible, cle, chemin, nom, couper }
 const EXTENSIONS_JS = /\.(m?js|cjs|jsx|tsx?)$/i;
 const MAX_FICHIERS_JS = 400;
 const ENCODAGES = { utf8: 'UTF-8', utf8bom: 'UTF-8 avec BOM', 'windows-1252': 'Windows-1252' };
@@ -91,7 +93,9 @@ export function creerPanneauCode(o, zone) {
       ouvrirMenu({ x: e.clientX, y: e.clientY }, [
         { libelle: 'Nouveau fichier…', icone: 'plus', action: () => creerElement('', 'fichier') },
         { libelle: 'Nouveau dossier…', icone: 'nouveauDossier', action: () => creerElement('', 'dossier') },
+        { libelle: 'Coller', icone: 'coller', detail: 'Ctrl+V', desactive: !pressePapiers, action: () => collerDans('') },
         'separateur',
+        { libelle: 'Ouvrir dans l\'Explorateur', icone: 'ouvrirAvec', action: () => afficherDansExplorateur('') },
         { libelle: 'Actualiser', icone: 'redemarrer', action: actualiser },
       ]);
     },
@@ -382,7 +386,7 @@ export function creerPanneauCode(o, zone) {
     const ouvert = entree.dossier && deplies.has(entree.chemin);
     const documentOuvert = documents.get(entree.chemin);
     const ligne = el('div', {
-      classe: `noeud-code${entree.genere ? ' genere' : ''}${selection === entree.chemin ? ' choisi' : ''}${actif === entree.chemin ? ' actif' : ''}`,
+      classe: `noeud-code${entree.genere ? ' genere' : ''}${selection === entree.chemin ? ' choisi' : ''}${actif === entree.chemin ? ' actif' : ''}${pressePapiers?.couper && pressePapiers.cle === cle && pressePapiers.chemin === entree.chemin ? ' coupe' : ''}`,
       style: { '--profondeur': profondeur },
       title: entree.chemin,
       'data-chemin': entree.chemin,
@@ -440,18 +444,36 @@ export function creerPanneauCode(o, zone) {
     return [
       ...elements,
       'separateur',
+      { libelle: 'Couper', icone: 'couper', detail: 'Ctrl+X', action: () => mettreDansPressePapiers(entree, true) },
+      { libelle: 'Copier', icone: 'copier', detail: 'Ctrl+C', action: () => mettreDansPressePapiers(entree, false) },
+      // Sur un fichier : collé à côté de lui (dans son dossier).
+      { libelle: 'Coller', icone: 'coller', detail: 'Ctrl+V', desactive: !pressePapiers, action: () => collerDans(entree.dossier ? entree.chemin : parent(entree.chemin)) },
+      'separateur',
       entree.dossier ? null : { libelle: 'Historique de ce fichier…', icone: 'historique', action: () => afficherHistorique(cible, o.nomCible, { chemin: entree.chemin }) },
       { libelle: 'Renommer…', icone: 'crayon', detail: 'F2', action: () => renommerEntree(entree) },
       { libelle: 'Mettre à la Corbeille…', icone: 'effacer', detail: 'Suppr', action: () => mettreALaCorbeille(entree) },
       'separateur',
+      { libelle: 'Afficher dans l\'Explorateur', icone: 'ouvrirAvec', action: () => afficherDansExplorateur(entree.chemin) },
       { libelle: 'Copier le chemin relatif', icone: 'note', action: () => navigator.clipboard.writeText(entree.chemin).then(() => notifier('Chemin copié.')).catch(() => {}) },
     ].filter(Boolean);
   }
 
   function toucheArbre(e) {
     const entree = selection ? entreeDe(selection) : null;
+    const lettre = e.ctrlKey && !e.altKey && !e.shiftKey ? e.key.toLowerCase() : '';
+    if (lettre === 'v') {
+      // Coller fonctionne aussi sans sélection (racine du dossier).
+      e.preventDefault();
+      e.stopPropagation();
+      collerDans(dossierDeSelection());
+      return;
+    }
     if (!entree) return;
-    if (e.key === 'F2') {
+    if (lettre === 'c' || lettre === 'x') {
+      e.preventDefault();
+      e.stopPropagation();
+      mettreDansPressePapiers(entree, lettre === 'x');
+    } else if (e.key === 'F2') {
       e.preventDefault();
       renommerEntree(entree);
     } else if (e.key === 'Delete') {
@@ -517,25 +539,95 @@ export function creerPanneauCode(o, zone) {
       notifier(erreur.message, 'erreur');
       return;
     }
-    // Les fichiers ouverts suivent leur nouveau nom (rouverts depuis le disque).
-    const remplace = (c) => nouveau + c.slice(entree.chemin.length);
-    const etaitActif = actif && dansDossier(actif, entree.chemin) ? remplace(actif) : null;
-    touches.forEach(oublierDocument);
-    ouverts.forEach((c, i) => { if (dansDossier(c, entree.chemin)) ouverts[i] = remplace(c); });
+    await suivreDeplacement(entree.chemin, nouveau);
+  }
+
+  // Un élément a changé de nom ou de dossier : les fichiers ouverts le suivent (rouverts depuis
+  // le disque), comme les dossiers dépliés.
+  async function suivreDeplacement(ancien, nouveau) {
+    const remplace = (c) => nouveau + c.slice(ancien.length);
+    const etaitActif = actif && dansDossier(actif, ancien) ? remplace(actif) : null;
+    documentsDans(ancien).forEach(oublierDocument);
+    ouverts.forEach((c, i) => { if (dansDossier(c, ancien)) ouverts[i] = remplace(c); });
     for (const d of [...deplies]) {
-      if (dansDossier(d, entree.chemin)) {
+      if (dansDossier(d, ancien)) {
         deplies.delete(d);
         deplies.add(remplace(d));
       }
     }
-    for (const d of [...contenus.keys()]) if (dansDossier(d, entree.chemin)) contenus.delete(d);
+    for (const d of [...contenus.keys()]) if (dansDossier(d, ancien)) contenus.delete(d);
     listeTout = null;
     selection = nouveau;
-    await chargerDossier(parent(entree.chemin));
+    await chargerDossier(parent(ancien));
+    if (parent(nouveau) !== parent(ancien) && contenus.has(parent(nouveau))) await chargerDossier(parent(nouveau));
     for (const d of deplies) if (!contenus.has(d)) await chargerDossier(d);
     rendreArbre();
     if (etaitActif) await ouvrirFichier(etaitActif);
     else rendreFichiers();
+  }
+
+  // Un élément a disparu (Corbeille, déplacé vers un autre projet) : ses fichiers se ferment.
+  async function oublierElement(chemin) {
+    documentsDans(chemin).forEach((d) => {
+      const index = ouverts.indexOf(d.chemin);
+      if (index >= 0) ouverts.splice(index, 1);
+      oublierDocument(d);
+    });
+    if (actif && dansDossier(actif, chemin)) actif = null;
+    for (const d of [...contenus.keys()]) if (dansDossier(d, chemin)) contenus.delete(d);
+    listeTout = null;
+    if (selection && dansDossier(selection, chemin)) selection = null;
+    await chargerDossier(parent(chemin));
+    rendreArbre();
+    if (!actif && ouverts.length) await activer(ouverts[ouverts.length - 1]);
+    else afficher();
+  }
+
+  // --- Copier, couper, coller, Explorateur ------------------------------------------------------
+
+  function mettreDansPressePapiers(entree, couper) {
+    pressePapiers = { cible, cle, chemin: entree.chemin, nom: entree.nom, couper };
+    panneaux.forEach((p) => p.rendreArbre());
+    notifier(`« ${entree.nom} » ${couper ? 'coupé' : 'copié'}. Clic droit sur un dossier > Coller (Ctrl+V) pour le placer.`);
+  }
+
+  async function collerDans(dossier) {
+    const pp = pressePapiers;
+    if (!pp) {
+      notifier('Rien à coller : copie ou coupe d\'abord un fichier ou un dossier.', 'erreur');
+      return;
+    }
+    const source = panneaux.get(pp.cle);
+    if (pp.couper && source?.aDesModifications(pp.chemin)) {
+      notifier(`Enregistre d'abord les fichiers modifiés de « ${pp.nom} », puis déplace-le.`, 'erreur');
+      return;
+    }
+    let nouveau;
+    try {
+      nouveau = await api.coller(pp.cible, pp.chemin, cible, dossier, pp.couper);
+    } catch (erreur) {
+      notifier(erreur.message, 'erreur');
+      return;
+    }
+    if (pp.couper) {
+      pressePapiers = null;
+      if (pp.cle === cle) {
+        if (nouveau !== pp.chemin) await suivreDeplacement(pp.chemin, nouveau);
+      } else {
+        await source?.oublierElement(pp.chemin);
+      }
+      panneaux.forEach((p) => p.rendreArbre());
+    }
+    listeTout = null;
+    deplies.add(dossier);
+    await chargerDossier(dossier);
+    selection = nouveau;
+    rendreArbre();
+    notifier(`« ${nomDe(nouveau)} » ${pp.couper ? 'déplacé' : 'collé'} dans « ${dossier || o.nomCible} ».`, 'succes');
+  }
+
+  function afficherDansExplorateur(chemin) {
+    api.afficherExplorateur(cible, chemin).catch((erreur) => notifier(erreur.message, 'erreur'));
   }
 
   async function mettreALaCorbeille(entree) {
@@ -556,19 +648,8 @@ export function creerPanneauCode(o, zone) {
       notifier(erreur.message, 'erreur');
       return;
     }
-    touches.forEach((d) => {
-      const index = ouverts.indexOf(d.chemin);
-      if (index >= 0) ouverts.splice(index, 1);
-      oublierDocument(d);
-    });
-    if (actif && dansDossier(actif, entree.chemin)) actif = null;
-    for (const d of [...contenus.keys()]) if (dansDossier(d, entree.chemin)) contenus.delete(d);
-    listeTout = null;
-    selection = null;
-    await chargerDossier(parent(entree.chemin));
-    rendreArbre();
-    if (!actif && ouverts.length) await activer(ouverts[ouverts.length - 1]);
-    else afficher();
+    if (pressePapiers?.cle === cle && dansDossier(pressePapiers.chemin, entree.chemin)) pressePapiers = null;
+    await oublierElement(entree.chemin);
     notifier(`« ${entree.nom} » est dans la Corbeille.`, 'succes');
   }
 
@@ -1090,6 +1171,10 @@ export function creerPanneauCode(o, zone) {
     chargerDocument: (chemin) => (monaco ? chargerDocument(chemin) : null),
     ouvrirFichier: (chemin, sel) => ouvrirFichier(chemin, sel),
     changements: (chemins) => changements(chemins),
+    // Pour le presse-papiers des fichiers (copier / couper d'un onglet « Code » à l'autre).
+    rendreArbre: () => rendreArbre(),
+    aDesModifications: (chemin) => documentsDans(chemin).some(estModifie),
+    oublierElement: (chemin) => oublierElement(chemin),
     focus() {
       if (editeur && documents.get(actif)?.modele) editeur.focus();
       else arbre.focus();

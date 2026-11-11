@@ -49,6 +49,11 @@ function enregistrer() {
     return notes.rendre(String(texte ?? ''), chemins.versRelatif(path.resolve(dossier, String(relatif || 'x.md'))));
   });
   gerer('code:corbeille', async (cible, relatif) => explorateur.mettreALaCorbeille(await dossierCible(cible), relatif));
+  // Coller : la source peut être dans une autre cible (copie d'un projet à l'autre).
+  gerer('code:coller', async (cibleSource, relatifSource, cibleDest, parentDest, deplacer) => explorateur.coller(
+    await dossierCible(cibleSource), relatifSource, await dossierCible(cibleDest), parentDest, { deplacer: Boolean(deplacer) },
+  ));
+  gerer('code:afficher-explorateur', async (cible, relatif) => explorateur.afficherDansExplorateur(await dossierCible(cible), relatif));
 
   // Surveillance tant que l'onglet est ouvert : « code:changements » (cle, [chemins relatifs]).
   gerer('code:surveiller', async (contenu, cle, cible) => {

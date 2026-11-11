@@ -116,7 +116,7 @@ app/
     │   ├── sessions-claude.js   conversations Claude Code d'un dossier (~/.claude/projects, lecture seule)
     │   ├── editeurs.js          détection des éditeurs + « Ouvrir avec… »
     │   ├── logiciels.js         barre de raccourcis vers des logiciels du PC (reglages.logiciels)
-    │   ├── explorateur.js       onglet « Code » : lister, lire, écrire, créer, renommer, Corbeille, surveiller
+    │   ├── explorateur.js       onglet « Code » : lister, lire, écrire, créer, renommer, copier/déplacer, Corbeille, Explorateur, surveiller
     │   ├── lsp-python.js        Pyright (aide Python) : processus, messages LSP, traduction des adresses
     │   ├── outils-html.js       protocole toolkit-outil://, partitions, sécurité des <webview>
     │   ├── outils-donnees.js    export / import localStorage + IndexedDB en JSON
@@ -519,6 +519,11 @@ dans `docs/projet-json.md`. Points clés :
   l'enregistrement (UTF-8, UTF-8 avec BOM, Windows-1252) ; fins de ligne conservées par
   Monaco. Enregistrement refusé si le fichier a changé depuis la lecture
   (`{ modifieAilleurs: true }`) sauf choix « écraser ».
+- Clic droit dans l'arbre : Couper / Copier / Coller (Ctrl+X/C/V, presse-papiers interne commun
+  à tous les onglets Code, donc d'un projet à l'autre ; `code:coller` = `explorateur.coller()` :
+  copie nommée « nom - copie », `.git` jamais copié, déplacement refusé si le nom est pris ou si
+  des fichiers concernés ne sont pas enregistrés) et « Afficher dans l'Explorateur »
+  (`code:afficher-explorateur` : `showItemInFolder`, ou `openPath` du dossier sur le fond de l'arbre).
 - Surveillance `fs.watch` récursive tant que l'onglet est ouvert (dossiers de
   compilation ignorés) : fichiers ouverts sans modification rechargés (avec
   `pushEditOperations` : Ctrl+Z reste possible).

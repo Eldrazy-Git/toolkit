@@ -1449,6 +1449,7 @@ mark { background: rgba(229, 192, 73, 0.3); color: var(--texte-fort); border-rad
 .code-arbre:focus .noeud-code.choisi { outline: 1px solid var(--accent); outline-offset: -1px; }
 .noeud-code.actif .nom-noeud { color: var(--texte-fort); }
 .noeud-code.genere { opacity: 0.55; }
+.noeud-code.coupe { opacity: 0.45; font-style: italic; }
 .noeud-code.vide { color: var(--texte-faible); font-style: italic; cursor: default; padding-left: calc(26px + var(--profondeur, 0) * 12px); }
 .noeud-code.vide:hover { background: none; }
 .nom-noeud { overflow: hidden; text-overflow: ellipsis; }

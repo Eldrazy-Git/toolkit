@@ -212,6 +212,92 @@ async function mettreALaCorbeille(dossier, relatif) {
   }
 }
 
+// --- Copier / couper / coller ----------------------------------------------------------------
+// La source et la destination peuvent être dans deux dossiers différents (deux projets).
+
+// « nom - copie.ext », puis « nom - copie (2).ext »… : premier nom libre dans le dossier.
+async function nomLibre(dossierDest, nom, dossier) {
+  const point = dossier ? -1 : nom.lastIndexOf('.');
+  const base = point > 0 ? nom.slice(0, point) : nom;
+  const extension = point > 0 ? nom.slice(point) : '';
+  for (let i = 1; i < 1000; i++) {
+    const candidat = `${base} - copie${i > 1 ? ` (${i})` : ''}${extension}`;
+    if (!(await existe(path.join(dossierDest, candidat)))) return candidat;
+  }
+  throw new Error('Impossible de trouver un nom libre pour la copie.');
+}
+
+// Copie (ou déplace si `deplacer`) une entrée dans le dossier `parentDest`. Renvoie le
+// chemin relatif (au dossier de destination) de l'élément collé.
+async function coller(dossierSource, relatifSource, dossierDest, parentDest, { deplacer = false } = {}) {
+  const source = absolu(dossierSource, relatifSource);
+  const destParent = absolu(dossierDest, parentDest, { racineAutorisee: true });
+  let infos;
+  try {
+    infos = await fsp.stat(source);
+  } catch {
+    throw new Error(`« ${path.basename(source)} » n'existe plus.`);
+  }
+  if (!(await fsp.stat(destParent).catch(() => null))?.isDirectory()) throw new Error('Le dossier de destination n\'existe plus.');
+  const sourceMin = source.toLowerCase();
+  const destMin = destParent.toLowerCase();
+  if (infos.isDirectory() && (destMin === sourceMin || destMin.startsWith(sourceMin + path.sep))) {
+    throw new Error('Impossible de coller un dossier dans lui-même.');
+  }
+  const memeDossier = path.dirname(source).toLowerCase() === destMin;
+  if (deplacer && memeDossier) return relatifDe(dossierDest, source); // déjà là : rien à faire
+  let nom = path.basename(source);
+  if (await existe(path.join(destParent, nom))) {
+    if (deplacer) throw new Error(`« ${nom} » existe déjà dans ce dossier.`);
+    nom = await nomLibre(destParent, nom, infos.isDirectory());
+  }
+  const dest = path.join(destParent, nom);
+  absolu(dossierDest, relatifDe(dossierDest, dest));
+  try {
+    if (deplacer) {
+      try {
+        await fsp.rename(source, dest);
+      } catch (erreur) {
+        if (erreur.code !== 'EXDEV') throw erreur;
+        // Autre disque : copie, puis l'original part à la Corbeille (jamais effacé).
+        await copierSansGit(source, dest);
+        await shell.trashItem(source);
+      }
+    } else {
+      await copierSansGit(source, dest);
+    }
+  } catch (erreur) {
+    if (['EBUSY', 'EPERM', 'EACCES'].includes(erreur.code)) {
+      throw new Error(`Windows refuse de ${deplacer ? 'déplacer' : 'copier'} : un fichier est ouvert dans un autre programme. Ferme-le puis réessaie.`);
+    }
+    throw erreur;
+  }
+  return relatifDe(dossierDest, dest);
+}
+
+// Copie récursive, sans les dossiers .git (un sous-dépôt ne se duplique pas en douce).
+async function copierSansGit(source, dest) {
+  await fsp.cp(source, dest, {
+    recursive: true,
+    errorOnExist: true,
+    force: false,
+    preserveTimestamps: true,
+    filter: (chemin) => !CACHES.has(path.basename(chemin).toLowerCase()),
+  });
+}
+
+// Ouvre l'Explorateur Windows sur l'élément (sélectionné) ou sur le dossier lui-même.
+async function afficherDansExplorateur(dossier, relatif) {
+  if (!relatif) {
+    const erreur = await shell.openPath(path.resolve(dossier));
+    if (erreur) throw new Error('Impossible d\'ouvrir l\'Explorateur Windows.');
+    return;
+  }
+  const chemin = absolu(dossier, relatif);
+  if (!(await existe(chemin))) throw new Error(`« ${path.basename(chemin)} » n'existe plus.`);
+  shell.showItemInFolder(chemin);
+}
+
 // --- Surveillance --------------------------------------------------------------------------
 // Une surveillance par onglet « Code » ouvert ; les changements sont regroupés (300 ms).
 
@@ -381,6 +467,6 @@ async function remplacer(dossier, options, remplacement, chemins) {
 }
 
 module.exports = {
-  lister, listerTout, lire, ecrire, creer, renommer, mettreALaCorbeille,
+  lister, listerTout, lire, ecrire, creer, renommer, mettreALaCorbeille, coller, afficherDansExplorateur,
   surveiller, arreterSurveillance, arreterToutesSurveillances, rechercher, remplacer,
 };
