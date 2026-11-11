@@ -264,6 +264,10 @@ Voir `src/main/outils-html.js` (explications en tête du fichier) et
 - Protocole `toolkit-outil://<hote>/...` : `<hote>` est stable (nom du dossier du projet +
   empreinte), donc localStorage et IndexedDB sont conservés. Racine servie = dossier du
   projet ; tout chemin qui en sort reçoit une erreur 403.
+- Isolation entre outils : le registre retient la partition de chaque hôte (outil ou aperçu) ;
+  `repondre(requete, partition)` refuse (403) un hôte d'une autre partition, page vide
+  comprise. `will-navigate` refuse une navigation vers un autre hôte `toolkit-outil://`
+  (les `loadURL` de Toolkit, comme l'import, n'y passent pas).
 - Une partition persistante par outil (`persist:outil-<hote>`), stockée dans
   `donnees/electron/Partitions/`. Renommer le dossier d'un projet change l'hôte, donc le
   stockage : passer par Exporter / Importer.

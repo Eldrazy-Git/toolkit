@@ -5,7 +5,8 @@
 //   change jamais et localStorage / IndexedDB sont conservés d'une session à l'autre ;
 // - chaque outil a sa propre partition persistante « persist:outil-<hote> »
 //   (stockée dans donnees/electron/Partitions/) : les outils ne voient pas les données
-//   des autres ;
+//   des autres ; le registre retient la partition de chaque hôte, et une requête venue
+//   d'une autre partition est refusée (403) : un outil ne lit pas les fichiers d'un autre ;
 // - la racine servie est le dossier du projet : les chemins relatifs, fetch(), les
 //   modules ES fonctionnent comme sur un vrai site. Rien n'est servi hors de ce dossier.
 //
@@ -83,13 +84,19 @@ function echapper(texte) {
   return texte.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
-async function repondre(requete) {
+// partition : celle de la session qui fait la requête. Un outil ne peut charger que les
+// fichiers de SON hôte : sans ce contrôle, une page pourrait lire (fetch, iframe…) les
+// fichiers d'un autre projet ouvert en appelant toolkit-outil://<autre-hote>/.
+async function repondre(requete, partition) {
   const url = new URL(requete.url);
+  const outil = registre.get(url.host);
+  if (!outil) return pageErreur(404, 'Cet outil n\'est plus ouvert. Ferme cet onglet et rouvre l\'outil depuis la bibliothèque.');
+  if (outil.partition !== partition) {
+    return pageErreur(403, 'Un outil ne peut pas lire les fichiers d\'un autre outil.');
+  }
   if (url.pathname === CHEMIN_PAGE_VIDE) {
     return new Response('<!doctype html><title>Toolkit</title>', { headers: { 'content-type': 'text/html' } });
   }
-  const outil = registre.get(url.host);
-  if (!outil) return pageErreur(404, 'Cet outil n\'est plus ouvert. Ferme cet onglet et rouvre l\'outil depuis la bibliothèque.');
 
   let relatif;
   try {
@@ -114,7 +121,7 @@ async function repondre(requete) {
 function configurerSession(partition) {
   if (sessionsConfigurees.has(partition)) return;
   const ses = session.fromPartition(partition);
-  ses.protocol.handle(SCHEMA, (requete) => repondre(requete).catch((erreur) => {
+  ses.protocol.handle(SCHEMA, (requete) => repondre(requete, partition).catch((erreur) => {
     journal.erreur('Service d\'un fichier d\'outil :', erreur);
     return pageErreur(404, 'Erreur pendant la lecture du fichier.');
   }));
@@ -169,7 +176,7 @@ async function preparer(projetId, outilLie) {
 
   const hote = calculerHote(projetId, outilLie);
   const partition = `${PREFIXE_PARTITION}${hote}`;
-  registre.set(hote, { racine, entree, nom });
+  registre.set(hote, { racine, entree, nom, partition });
   configurerSession(partition);
 
   const cheminUrl = entree.split('/').map(encodeURIComponent).join('/');
@@ -191,8 +198,8 @@ function preparerApercu(dossier, cle) {
   const racine = path.resolve(dossier);
   const empreinte = crypto.createHash('sha1').update(racine.toLowerCase()).digest('hex').slice(0, 8);
   const hote = `apercu-${slug(cle)}-${empreinte}`;
-  registre.set(hote, { racine, entree: '', nom: 'Aperçu' });
   const partition = `${PREFIXE_APERCU}${hote}`;
+  registre.set(hote, { racine, entree: '', nom: 'Aperçu', partition });
   configurerSession(partition);
   return { racine: `${SCHEMA}://${hote}/`, partition };
 }
@@ -272,6 +279,21 @@ function attacher(contenuPrincipal) {
       if (!url.startsWith(`${SCHEMA}://`)) {
         evenement.preventDefault();
         ouvrirLienExterne(url);
+        return;
+      }
+      // Navigation interne : seulement vers l'hôte de la page (jamais vers un autre outil).
+      // (Les chargements faits par Toolkit, loadURL ou src de la webview, ne passent pas ici.)
+      let hoteCible;
+      let hotePage;
+      try {
+        hoteCible = new URL(url).host;
+        hotePage = new URL(invite.getURL()).host;
+      } catch {
+        hoteCible = null;
+      }
+      if (!hoteCible || hoteCible !== hotePage) {
+        evenement.preventDefault();
+        journal.erreur('Navigation vers un autre outil refusée :', url);
       }
     });
     // Les touches pressées dans un outil n'arrivent pas jusqu'à l'interface.
