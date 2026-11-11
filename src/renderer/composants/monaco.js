@@ -86,6 +86,44 @@ export function nomLangage(monaco, id) {
   return langage?.aliases?.[0] || id;
 }
 
+// Menu clic droit de Monaco, aligné sur les menus de Toolkit (.menu de app.css). Il est
+// dessiné dans un shadow DOM (ouvert) ajouté au conteneur de l'éditeur : app.css ne
+// l'atteint pas (sauf les variables, voir .code-editeur.monaco-component), d'où ce style
+// glissé dans le shadow DOM. « !important » : Monaco met les couleurs de survol en ligne.
+const STYLE_MENU = `
+.context-view.monaco-menu-container { box-shadow: var(--ombre) !important; animation: none !important; }
+.monaco-menu { font-family: var(--police); }
+.monaco-menu .monaco-action-bar.vertical .actions-container { padding: 4px 0; }
+.monaco-menu .monaco-action-bar.vertical .action-menu-item { height: 26px; }
+.monaco-menu .monaco-action-bar.vertical .action-label:not(.separator) { font-size: 13px; padding: 0 12px; }
+.monaco-menu .monaco-action-bar.vertical .keybinding { font-size: 12px; padding: 0 12px; }
+.monaco-menu .monaco-action-bar.vertical .action-item.focused > .action-menu-item,
+.monaco-menu .monaco-action-bar.vertical .action-item:hover > .action-menu-item {
+  background-color: var(--accent) !important;
+  color: #fff !important;
+  outline: none !important;
+}
+.monaco-menu .monaco-action-bar.vertical .action-label.separator {
+  width: auto !important;
+  margin: 4px 8px !important;
+  padding: 0 !important;
+  border-bottom-color: var(--bordure-forte) !important;
+}
+`;
+
+// Ajoute STYLE_MENU à chaque menu que Monaco crée dans « zone » (le conteneur de l'éditeur).
+export function habillerMenus(zone) {
+  const habiller = (noeud) => {
+    const racine = noeud.shadowRoot;
+    if (!racine || racine.querySelector('style[data-toolkit]')) return;
+    racine.append(el('style', { 'data-toolkit': '' }, STYLE_MENU));
+  };
+  [...zone.children].forEach(habiller);
+  new MutationObserver((changements) => {
+    for (const c of changements) for (const n of c.addedNodes) if (n.nodeType === 1) habiller(n);
+  }).observe(zone, { childList: true });
+}
+
 // Options communes de l'éditeur (proches de VS Code).
 export const OPTIONS_EDITEUR = {
   theme: 'vs-dark',

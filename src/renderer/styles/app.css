@@ -1503,6 +1503,20 @@ mark { background: rgba(229, 192, 73, 0.3); color: var(--texte-fort); border-rad
 .code-zone { position: relative; flex: 1; min-height: 0; }
 .code-editeur, .code-message { position: absolute; inset: 0; }
 .code-editeur[hidden], .code-message[hidden] { display: none; }
+/* Menu clic droit de Monaco : il vit dans un « shadow DOM », seules ces variables l'atteignent.
+   Mêmes couleurs, bordure, angles et ombre que les menus de Toolkit (.menu). */
+.code-editeur.monaco-component {
+  --vscode-menu-background: #252526;
+  --vscode-menu-foreground: var(--texte);
+  --vscode-menu-border: var(--bordure-forte);
+  --vscode-menu-selectionBackground: var(--accent);
+  --vscode-menu-selectionForeground: #fff;
+  --vscode-menu-separatorBackground: var(--bordure-forte);
+  --vscode-widget-shadow: rgba(0, 0, 0, 0.45);
+  --vscode-cornerRadius-large: var(--rayon);
+  --vscode-cornerRadius-medium: 4px;
+  --vscode-strokeThickness: 1px;
+}
 .code-message { display: flex; align-items: center; justify-content: center; overflow: auto; padding: 24px; }
 .code-accueil { max-width: 460px; color: var(--texte-faible); text-align: center; }
 .code-accueil h2 { color: var(--texte-fort); font-size: 18px; font-weight: 600; }

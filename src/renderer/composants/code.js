@@ -12,7 +12,7 @@ import { notifier } from './notifications.js';
 import { demanderTexte, confirmer, choisir } from './dialogue.js';
 import { ouvrirMenu } from './menu.js';
 import * as etat from './etat.js';
-import { chargerMonaco, langageDe, nomLangage, OPTIONS_EDITEUR } from './monaco.js';
+import { chargerMonaco, habillerMenus, langageDe, nomLangage, OPTIONS_EDITEUR } from './monaco.js';
 import * as lsp from './lsp-python.js';
 import { afficherHistorique } from './historique.js';
 import * as recents from './recents.js';
@@ -1132,6 +1132,7 @@ export function creerPanneauCode(o, zone) {
     }
     if (!panneaux.has(cle)) return; // onglet fermé pendant le chargement
     preparerMonaco(monaco);
+    habillerMenus(zoneEditeur);
     editeur = monaco.editor.create(zoneEditeur, { ...OPTIONS_EDITEUR, ...optionsPreferences(), model: null });
     // Enregistrement automatique « quand je quitte le fichier » : aussi quand l'éditeur perd le clavier.
     editeur.onDidBlurEditorWidget(() => {
