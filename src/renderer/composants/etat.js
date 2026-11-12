@@ -12,7 +12,7 @@ const etat = {
   filtre: { type: 'tous' }, // tous | favoris | categorie (valeur) | tag (valeur) | groupe (valeur = id)
   texteFiltre: '',
   vue: 'grille', // grille | liste
-  tri: 'nom', // nom | modification | ajout | type | categorie (voir bibliotheque.js > TRIS)
+  tri: 'nom', // nom | modification | ajout | type | categorie | groupe (voir bibliotheque.js > TRIS)
   epingles: [], // ids des projets épinglés dans la barre latérale, dans l'ordre
   couleursCategories: {}, // nom de catégorie -> couleur choisie ('#rrggbb'), absente = automatique
   groupes: [], // groupes de projets de la barre latérale (voir groupes.js)

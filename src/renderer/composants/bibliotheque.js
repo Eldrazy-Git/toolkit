@@ -16,13 +16,14 @@ export const LIBELLES_TYPES = {
   autre: 'Autre',
 };
 
-// Tris proposés. « type » et « categorie » regroupent les projets sous des titres.
+// Tris proposés. « type », « categorie » et « groupe » regroupent les projets sous des titres.
 export const TRIS = {
   nom: 'Nom (A → Z)',
   modification: 'Modifié récemment',
   ajout: 'Ajouté récemment',
   type: 'Type de projet',
   categorie: 'Catégorie',
+  groupe: 'Groupe',
 };
 
 const conteneur = document.getElementById('bibliotheque');
@@ -107,6 +108,7 @@ function trier(projets, tri) {
 // Renvoie [{ titre, projets }] ; un seul groupe sans titre si le tri ne regroupe pas.
 function grouper(projets, tri) {
   const tries = trier(projets, tri);
+  if (tri === 'groupe') return parGroupe(tries);
   if (tri !== 'type' && tri !== 'categorie') return [{ titre: null, projets: tries }];
   const groupes = new Map();
   for (const p of tries) {
@@ -118,6 +120,19 @@ function grouper(projets, tri) {
     ? ORDRE_TYPES.indexOf(a) - ORDRE_TYPES.indexOf(b)
     : a.localeCompare(b, 'fr', { sensitivity: 'base' })));
   return cles.map((cle) => ({ titre: tri === 'type' ? LIBELLES_TYPES[cle] : cle, projets: groupes.get(cle) }));
+}
+
+// Tri « Groupe » : une section par groupe, dans l'ordre de l'arbre de la barre latérale (titre =
+// chemin complet, « Catalogue › Outils »), puis « Sans groupe ». Un projet rangé dans plusieurs
+// groupes apparaît dans chacun ; un projet d'un sous-groupe n'est montré que sous ce sous-groupe.
+function parGroupe(tries) {
+  const sections = groupes.arbre().map(({ groupe }) => {
+    const ids = new Set(groupe.projets);
+    return { titre: groupes.chemin(groupe.id), projets: tries.filter((p) => ids.has(p.id)) };
+  });
+  const ranges = new Set(groupes.tous().flatMap((g) => g.projets));
+  sections.push({ titre: 'Sans groupe', projets: tries.filter((p) => !ranges.has(p.id)) });
+  return sections.filter((s) => s.projets.length > 0);
 }
 
 // --- Éléments ---------------------------------------------------------------------------------
@@ -223,7 +238,9 @@ export function rendre() {
   const projetsEn = (liste) => (e.vue === 'liste'
     ? el('div', { classe: 'liste' }, liste.map((p) => ligne(p, e.selection)))
     : el('div', { classe: 'grille' }, liste.map((p) => carte(p, e.selection))));
-  const sections = (liste, classeTitre) => grouper(liste, e.tri).map((g) => el('section', { classe: 'groupe-projets' },
+  // Dans un groupe, les projets sont déjà répartis par sous-groupe : « Groupe » y trie par nom.
+  const tri = e.tri === 'groupe' && e.filtre.type === 'groupe' ? 'nom' : e.tri;
+  const sections = (liste, classeTitre) => grouper(liste, tri).map((g) => el('section', { classe: 'groupe-projets' },
     g.titre ? el('h2', { classe: classeTitre }, g.titre, el('span', {}, g.projets.length)) : null,
     projetsEn(g.projets)));
 
