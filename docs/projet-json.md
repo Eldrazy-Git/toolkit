@@ -176,13 +176,24 @@ application Android.
 | `point_entree` | Chemin de la page HTML, relatif au projet (obligatoire). |
 | `description` | Texte d'aide facultatif. |
 
-## Boutons de compilation automatiques
+## Boutons automatiques (compilation, test en jeu)
 
 Pour un projet de type `java` (projet Java ou Kotlin compilé avec Gradle) ou `android` qui
 contient `gradlew.bat`, Toolkit ajoute de lui-même l'action « Compiler » (`gradlew build`) ou « Compiler l'APK de
-debug » (`gradlew assembleDebug`). Elle reste modifiable ; si tu la supprimes, elle n'est
-pas rajoutée. Pour toute action qui lance `gradlew`, Toolkit choisit automatiquement le
-Java adapté (version demandée par build.gradle) et le SDK Android.
+debug » (`gradlew assembleDebug`).
+
+Pour un **mod Fabric** (`gradlew` + plugin `fabric-loom` dans `build.gradle` ou
+`build.gradle.kts`, quel que soit le `type`), Toolkit ajoute aussi « Tester en jeu »
+(`gradlew runClient`, « Lance Minecraft avec le mod pour l'essayer. »). « Arrêter » ferme
+Minecraft. Si une action lance déjà `gradlew runClient`, rien n'est ajouté ; si le nom
+« Tester en jeu » est déjà pris par une autre commande, le bouton s'appelle « Lancer le jeu ».
+
+Ces boutons sont ajoutés au démarrage de Toolkit, à l'import, et dès que les fichiers Gradle
+d'un projet apparaissent (projet créé par Claude). Ils restent modifiables ; si tu en
+supprimes un, il n'est jamais rajouté (Toolkit note chaque bouton proposé dans
+`donnees/reglages.json > actionsAuto`, une clé par bouton : `compiler-java`,
+`compiler-apk-debug`, `tester-en-jeu-fabric`). Pour toute action qui lance `gradlew`, Toolkit
+choisit automatiquement le Java adapté (version demandée par build.gradle) et le SDK Android.
 
 ## Données des outils HTML
 

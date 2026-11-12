@@ -608,12 +608,25 @@ async function renommerTag(ancien, nouveau) {
 // projet.json et l'icône), ce qui évite d'être inondé pendant une compilation.
 
 const FICHIERS_SURVEILLES = /(^|[\\/])projet\.json$|\.(png|jpe?g|gif|webp|svg|ico)$/i;
+// Fichiers Gradle à la racine : boutons automatiques à revoir (projet créé par Claude…).
+const FICHIERS_GRADLE = /^(build\.gradle(\.kts)?|gradlew(\.bat)?)$/i;
 const DELAI = 300;
+const DELAI_GRADLE = 2000;
 
 let surveillants = [];
 let minuteurChangement = null;
 let minuteurReconstruction = null;
 let rappelChangement = null;
+let rappelGradle = null;
+const minuteursGradle = new Map();
+
+function signalerGradle(id) {
+  clearTimeout(minuteursGradle.get(id));
+  minuteursGradle.set(id, setTimeout(() => {
+    minuteursGradle.delete(id);
+    rappelGradle?.(id);
+  }, DELAI_GRADLE));
+}
 
 function signalerChangement() {
   clearTimeout(minuteurChangement);
@@ -659,17 +672,24 @@ function reconstruire() {
     if (!e.isDirectory() || e.name.startsWith('.')) continue;
     surveiller(path.join(racine, e.name), (_type, nom) => {
       if (!nom || FICHIERS_SURVEILLES.test(nom)) signalerChangement();
+      if (nom && FICHIERS_GRADLE.test(nom)) signalerGradle(e.name);
     });
   }
 }
 
-function demarrerSurveillance(rappel) {
+// surGradle(id) : appelé (2 s après le dernier changement) quand un fichier Gradle de la
+// racine d'un projet change.
+function demarrerSurveillance(rappel, { surGradle } = {}) {
   rappelChangement = rappel;
+  rappelGradle = surGradle || null;
   reconstruire();
 }
 
 function arreterSurveillance() {
   rappelChangement = null;
+  rappelGradle = null;
+  minuteursGradle.forEach((m) => clearTimeout(m));
+  minuteursGradle.clear();
   clearTimeout(minuteurChangement);
   clearTimeout(minuteurReconstruction);
   fermerSurveillants();

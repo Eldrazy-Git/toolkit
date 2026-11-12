@@ -94,7 +94,7 @@ app/
     │   ├── terminal.js          terminaux node-pty (Claude Code, PowerShell)
     │   ├── executions.js        actions de projet.json : commande, programme, sortie, arrêt
     │   ├── java.js              JDK et SDK Android pour Gradle (choix automatique)
-    │   ├── actions-auto.js      boutons de compilation ajoutés selon le type (Java, Android)
+    │   ├── actions-auto.js      boutons ajoutés selon le type (Compiler, APK de debug, Tester en jeu des mods Fabric)
     │   ├── cibles.js            résout une « cible » ({ type: 'projet', id } / toolkit / racine) en dossier
     │   ├── git.js               Git : état d'un dépôt, commit, push, pull, fetch, .gitignore, clone
     │   ├── github.js            GitHub via « gh » (état de connexion, dépôt privé)
@@ -555,13 +555,22 @@ dans `docs/projet-json.md`. Points clés :
   principal (`application:non-enregistre`) : la fenêtre est alors cachée au lieu d'être
   détruite, et « Quitter » demande confirmation.
 
-### Compilation (projets Java / Gradle, APK de debug)
+### Compilation (projets Java / Gradle, APK de debug, mods Fabric)
 
 - Les boutons sont des **actions** de projet.json (`gradlew build` -> `build/libs`,
-  `gradlew assembleDebug` -> `<module>/build/outputs/apk/debug`), ajoutées à l'import, à la
-  création, et au démarrage par `actions-auto.js` pour les projets qui ont un `gradlew`.
-  Ce qui a déjà été proposé est noté dans `reglages.actionsAuto` : un bouton supprimé par
-  l'utilisateur n'est pas rajouté.
+  `gradlew assembleDebug` -> `<module>/build/outputs/apk/debug`, et « Tester en jeu » =
+  `gradlew runClient` pour un mod Fabric : `fabric-loom` dans build.gradle(.kts), quel que
+  soit le type), écrits par `actions-auto.js` pour les projets qui ont un `gradlew` : au
+  démarrage (tous), quand un fichier Gradle de la racine d'un projet change (surveillance
+  de `projets.js`, option `surGradle` : projet créé par Claude, fenêtre ouverte) et à l'import
+  (`import.js > detecter()` les propose, `noterProposees()` note même ceux décochés).
+  Ce qui a déjà été proposé est noté dans `reglages.actionsAuto` (UNE clé par bouton :
+  `compiler-java`, `compiler-apk-debug`, `tester-en-jeu-fabric`) : un bouton supprimé par
+  l'utilisateur n'est pas rajouté. Commande déjà présente = rien d'ajouté ; nom
+  « Tester en jeu » déjà pris = « Lancer le jeu ». Passages mis à la file (pas de doublon).
+- « Arrêter » sur `runClient` ferme Minecraft : `taskkill /T` arrête gradlew, et le démon
+  Gradle (hors de l'arbre) annule alors la tâche JavaExec et ferme le jeu (vérifié avec un
+  faux jeu, démon neuf ou réutilisé).
 - Lancement d'un `gradlew` (`executions.js`) : `java.environnementGradle()` lit la version
   minimale de Java dans build.gradle, garde `JAVA_HOME` s'il convient, sinon prend le plus
   petit JDK installé qui convient ; ajoute `ANDROID_HOME` si le SDK n'est configuré nulle

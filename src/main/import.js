@@ -25,6 +25,8 @@ const git = require('./git');
 const github = require('./github');
 const depotPartage = require('./depot-partage');
 const journal = require('./journal');
+const actionsAuto = require('./actions-auto');
+const { estModFabric, ACTION_TESTER_EN_JEU } = actionsAuto;
 
 const { raisonExclusion, creerBilanSources, estSousSource, EXTENSIONS_SOURCE } = require('./import-exclusions');
 
@@ -262,6 +264,8 @@ async function detecter(racine, fichiers) {
   if (gradle) {
     const kotlin = rels.some((r) => r.endsWith('.kt'));
     const pointEntree = ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts'].find(aRacine);
+    const scriptGradle = rels.find((r) => /^build\.gradle(\.kts)?$/i.test(r));
+    const fabric = estModFabric(scriptGradle ? await lireTexte(racine, scriptGradle) : '');
     return {
       type: 'java',
       technologies: `Projet ${kotlin ? 'Kotlin' : 'Java'} (Gradle).`,
@@ -274,10 +278,10 @@ async function detecter(racine, fichiers) {
         commande: 'gradlew build',
         parametres: [],
         ouvrir_dossier_apres: 'build/libs',
-      }] : [],
+      }, ...(fabric ? [{ ...ACTION_TESTER_EN_JEU }] : [])] : [],
       description,
       outilsHtml: [],
-      details: `${kotlin ? 'Kotlin' : 'Java'} (Gradle)`,
+      details: fabric ? 'Mod Fabric (Gradle)' : `${kotlin ? 'Kotlin' : 'Java'} (Gradle)`,
     };
   }
 
@@ -923,6 +927,9 @@ async function executer(idAnalyse, choix, surProgression) {
     await ecrireJson(path.join(destination, 'projet.json'), fiche);
     fichiersToolkit.push('projet.json');
     noter('Fiche projet.json créée.');
+    // Boutons automatiques (Compiler, Tester en jeu…) : décochés ici = jamais rajoutés au démarrage.
+    await actionsAuto.noterProposees(id, destination, fiche.type)
+      .catch((erreur) => journal.erreur('Boutons automatiques (import) :', erreur));
   }
 
   // 3. CLAUDE.md (créé, ou complété sans rien effacer)

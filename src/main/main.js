@@ -156,6 +156,11 @@ function creerFenetre() {
   projets.demarrerSurveillance(() => {
     fenetre?.webContents.send('projets:changes');
     require('./contexte-claude').planifier();
+  }, {
+    // Projet en cours de création par Claude (ou converti) : boutons Compiler / Tester en jeu.
+    // L'écriture de projet.json est elle-même vue par la surveillance (liste redessinée).
+    surGradle: (id) => require('./actions-auto').completerProjets([id])
+      .catch((erreur) => journal.erreur('Boutons automatiques :', erreur)),
   });
 }
 
@@ -196,7 +201,7 @@ async function demarrer() {
   lanceur.mettreAJour().catch((erreur) => journal.erreur('Lanceur :', erreur));
   // Démarrage avec Windows : entrée réécrite avec les chemins actuels (si Toolkit a été déplacé).
   require('./demarrage-windows').mettreAJour();
-  // Boutons de compilation des projets Java / applications Android (un peu après le démarrage).
+  // Boutons automatiques (Compiler, APK de debug, Tester en jeu des mods Fabric), un peu après le démarrage.
   setTimeout(() => require('./actions-auto').completerProjets()
     .catch((erreur) => journal.erreur('Boutons de compilation :', erreur)), 3000);
   // Mises à jour : vérification si la dernière date de plus d'une semaine (une seule fois).
