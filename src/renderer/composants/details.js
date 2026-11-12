@@ -2,7 +2,7 @@
 import { el } from './dom.js';
 import { icone } from './icones.js';
 import { iconeProjet } from './icone-projet.js';
-import { LIBELLES_TYPES } from './bibliotheque.js';
+import { LIBELLES_TYPES, etiquetteMinecraft } from './bibliotheque.js';
 import * as etat from './etat.js';
 import * as actions from './actions.js';
 import { ouvrirMenu } from './menu.js';
@@ -284,7 +284,7 @@ function rendreProjet(projet) {
 
   return [
     entete(boutonIcone, f.nom,
-      el('span', { classe: 'etiquette type' }, LIBELLES_TYPES[f.type]),
+      [el('span', { classe: 'etiquette type' }, LIBELLES_TYPES[f.type]), etiquetteMinecraft(projet)],
       [boutonEpingle, boutonFavori],
       projet.erreur ? null : () => actions.renommerProjet(projet)),
     el('div', { classe: 'details-corps' },

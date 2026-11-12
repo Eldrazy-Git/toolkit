@@ -713,6 +713,21 @@ button.lien-sous-groupe:hover { text-decoration: underline; }
   white-space: nowrap;
 }
 .carte-meta { font-size: 12px; color: var(--texte-faible); }
+/* Version de Minecraft d'un mod (« MC 26.2 ») : petite étiquette discrète. */
+.etiquette-mc {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border: 1px solid var(--bordure);
+  border-radius: 3px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--texte-faible);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.details-sous-titre .etiquette-mc,
+.ligne-nom .etiquette-mc { margin-left: 0; font-weight: normal; }
 .carte-marques {
   position: absolute;
   top: 8px;

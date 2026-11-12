@@ -241,7 +241,37 @@ async function chargerProjet(id) {
     };
   }
   const { fiche, problemes } = normaliserFiche(brut, id);
-  return { ...base, fiche, problemes, icone: await urlIcone(dossier, fiche.icone), ...(await datesProjet(dossier)) };
+  return {
+    ...base,
+    fiche,
+    problemes,
+    icone: await urlIcone(dossier, fiche.icone),
+    versionMinecraft: await versionMinecraft(dossier),
+    ...(await datesProjet(dossier)),
+  };
+}
+
+// --- Version de Minecraft (mods Gradle) ---------------------------------------------------
+// Lue dans gradle.properties (ligne « minecraft_version ») à chaque chargement, jamais écrite
+// dans projet.json. Relue quand gradle.properties change (surveillance ci-dessous).
+
+const TAILLE_MAX_PROPRIETES = 256 * 1024;
+
+function versionMinecraftDe(texte) {
+  // Format .properties : « cle=valeur », « cle: valeur » ou « cle valeur » ; # et ! = commentaires.
+  const ligne = /^[ \t]*minecraft_version[ \t]*[=: \t][ \t]*(\S[^\r\n]*?)[ \t]*$/m.exec(String(texte || ''));
+  const valeur = ligne?.[1]?.replace(/^[=:][ \t]*/, '').trim();
+  return valeur ? valeur.slice(0, 40) : null;
+}
+
+async function versionMinecraft(dossier) {
+  try {
+    const chemin = path.join(dossier, 'gradle.properties');
+    if ((await fsp.stat(chemin)).size > TAILLE_MAX_PROPRIETES) return null;
+    return versionMinecraftDe(await fsp.readFile(chemin, 'utf8'));
+  } catch {
+    return null; // pas de gradle.properties : rien à afficher
+  }
 }
 
 // --- Dates (pour trier la bibliothèque) ----------------------------------------------------
@@ -670,11 +700,31 @@ function reconstruire() {
   }
   for (const e of entrees) {
     if (!e.isDirectory() || e.name.startsWith('.')) continue;
-    surveiller(path.join(racine, e.name), (_type, nom) => {
+    const dossier = path.join(racine, e.name);
+    noterEmpreinteProprietes(dossier);
+    surveiller(dossier, (_type, nom) => {
       if (!nom || FICHIERS_SURVEILLES.test(nom)) signalerChangement();
       if (nom && FICHIERS_GRADLE.test(nom)) signalerGradle(e.name);
+      if (nom && /^gradle\.properties$/i.test(nom) && noterEmpreinteProprietes(dossier)) signalerChangement();
     });
   }
+}
+
+// gradle.properties (version de Minecraft) : fs.watch signale aussi les simples lectures
+// (date de dernier accès) ; seul un vrai changement (date de modification, taille,
+// apparition, disparition) relance le chargement, sinon chaque relecture en provoquerait une autre.
+const empreintesProprietes = new Map();
+function noterEmpreinteProprietes(dossier) {
+  let empreinte = 'absent';
+  try {
+    const infos = fs.statSync(path.join(dossier, 'gradle.properties'));
+    empreinte = `${infos.mtimeMs}:${infos.size}`;
+  } catch {
+    // Absent.
+  }
+  const change = empreintesProprietes.get(dossier) !== empreinte;
+  empreintesProprietes.set(dossier, empreinte);
+  return change;
 }
 
 // surGradle(id) : appelé (2 s après le dernier changement) quand un fichier Gradle de la
@@ -690,6 +740,7 @@ function arreterSurveillance() {
   rappelGradle = null;
   minuteursGradle.forEach((m) => clearTimeout(m));
   minuteursGradle.clear();
+  empreintesProprietes.clear();
   clearTimeout(minuteurChangement);
   clearTimeout(minuteurReconstruction);
   fermerSurveillants();
@@ -701,6 +752,7 @@ module.exports = {
   EDITEURS,
   SANS_CATEGORIE,
   normaliserFiche,
+  versionMinecraftDe,
   chargerProjet,
   listerProjets,
   modifierFiche,

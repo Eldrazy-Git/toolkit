@@ -152,7 +152,16 @@ function carte(projet, selection) {
   el('div', { classe: 'carte-marques' }, marques(projet)),
   iconeProjet(projet, 56),
   el('div', { classe: 'carte-nom' }, projet.fiche.nom),
-  el('div', { classe: 'carte-meta' }, LIBELLES_TYPES[projet.fiche.type]));
+  el('div', { classe: 'carte-meta' }, LIBELLES_TYPES[projet.fiche.type], etiquetteMinecraft(projet)));
+}
+
+// « MC 26.2 » : version de Minecraft lue dans gradle.properties (rien si absente).
+export function etiquetteMinecraft(projet) {
+  if (!projet.versionMinecraft) return null;
+  return el('span', {
+    classe: 'etiquette-mc',
+    title: `Minecraft ${projet.versionMinecraft} (minecraft_version de gradle.properties)`,
+  }, `MC ${projet.versionMinecraft}`);
 }
 
 function ligne(projet, selection) {
@@ -166,7 +175,7 @@ function ligne(projet, selection) {
   },
   iconeProjet(projet, 32),
   el('div', { classe: 'ligne-texte' },
-    el('div', { classe: 'ligne-nom' }, f.nom, marques(projet)),
+    el('div', { classe: 'ligne-nom' }, f.nom, etiquetteMinecraft(projet), marques(projet)),
     el('div', { classe: 'ligne-description' }, f.description || '—')),
   el('div', { classe: 'ligne-colonne' }, f.categorie),
   el('div', { classe: 'ligne-colonne' }, LIBELLES_TYPES[f.type]),

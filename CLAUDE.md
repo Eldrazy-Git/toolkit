@@ -227,7 +227,12 @@ la boîte le dit et renvoie vers Exporter / Importer.
 
 Bibliothèque : chaque projet chargé porte aussi `dateAjout` (création du dossier) et
 `dateModification` (fichier le plus récent sur 2 niveaux, dossiers générés ignorés) pour
-le tri. Préférences d'affichage dans `reglages.interface` : `vue`, `tri`, `couleursCategories`
+le tri, et `versionMinecraft` (`projets.js > versionMinecraft()` : ligne `minecraft_version`
+du `gradle.properties` de la racine, `null` sinon ; LECTURE SEULE, jamais dans projet.json),
+affichée en petite étiquette « MC 26.2 » (`bibliotheque.js > etiquetteMinecraft`, classe
+`.etiquette-mc`) sur la carte, à côté du nom en vue liste et dans l'en-tête des détails.
+Relue quand `gradle.properties` change (surveillance des projets ; filtre date de
+modification + taille, car `fs.watch` signale aussi les simples lectures). Aucune lecture périodique. Préférences d'affichage dans `reglages.interface` : `vue`, `tri`, `couleursCategories`
 (nom -> `#rrggbb` choisi par clic sur la pastille d'une catégorie ; `null` = couleur automatique
 tirée du nom, voir `icone-projet.js > couleurCategorie`), `epingles`
 (ids des projets épinglés, dans l'ordre ; pas dans projet.json), `recents` (voir

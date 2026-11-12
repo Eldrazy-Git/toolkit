@@ -195,6 +195,14 @@ supprimes un, il n'est jamais rajouté (Toolkit note chaque bouton proposé dans
 `compiler-apk-debug`, `tester-en-jeu-fabric`). Pour toute action qui lance `gradlew`, Toolkit
 choisit automatiquement le Java adapté (version demandée par build.gradle) et le SDK Android.
 
+## Version de Minecraft (mods)
+
+Il n'y a **pas** de champ pour la version de Minecraft : Toolkit la lit dans le
+`gradle.properties` à la racine du projet (ligne `minecraft_version=26.2`) et l'affiche en
+petite étiquette « MC 26.2 » dans la bibliothèque et les détails. Pour la changer, modifie
+`gradle.properties` : l'étiquette suit d'elle-même. Sans ce fichier ou sans cette ligne,
+rien n'est affiché.
+
 ## Données des outils HTML
 
 Un outil HTML (point d'entrée `.html`, ou outil lié) garde ses données (localStorage,
