@@ -118,6 +118,56 @@ function ligne(e) {
     el('div', { classe: 'ligne-git-boutons' }, boutonsGit(e)));
 }
 
+// États servant au filtre et au tri (un dépôt peut en avoir plusieurs). Dans l'ordre du tri
+// « Par état » : ce qui demande une action d'abord, ce qui est à jour en dernier.
+const ETATS = [
+  { id: 'alertes', libelle: 'Problèmes', teste: (e) => Boolean(e.erreur || e.secretsSuivis?.length || e.secretsNonProteges?.length) },
+  { id: 'recuperer', libelle: 'À récupérer', teste: (e) => e.estDepot && e.enRetard > 0 },
+  { id: 'commit', libelle: 'Modifications à commit', teste: (e) => e.estDepot && e.nbModifications > 0 },
+  { id: 'envoyer', libelle: 'Commits à envoyer', teste: (e) => git.peutEnvoyer(e) },
+  { id: 'hors-github', libelle: 'Pas encore sur GitHub', teste: (e) => e.estDepot && !e.remote },
+  { id: 'sans-git', libelle: 'Sans Git', teste: (e) => !e.erreur && !e.estDepot },
+  { id: 'a-jour', libelle: 'À jour sur GitHub', teste: (e) => e.estDepot && Boolean(e.remote) && !e.aucunCommit && Boolean(e.amont)
+    && !e.nbModifications && !e.enAvance && !e.enRetard },
+  { id: 'github', libelle: 'Sur GitHub', teste: (e) => e.estDepot && Boolean(e.remote), sansTri: true },
+];
+const TRIS_GIT = { habituel: 'Ordre habituel', etat: 'Par état', nom: 'Par nom' };
+
+function rangEtat(e) {
+  if (e.absente) return ETATS.length + 1; // bibliothèque de skills pas encore créée : en dernier
+  const i = ETATS.findIndex((s) => !s.sansTri && s.teste(e));
+  return i === -1 ? ETATS.length : i;
+}
+
+function trierDepots(depots, tri) {
+  if (tri === 'nom') return [...depots].sort((a, b) => a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' }));
+  if (tri === 'etat') return [...depots].sort((a, b) => rangEtat(a) - rangEtat(b)); // tri stable : ordre habituel ensuite
+  return depots;
+}
+
+function changerAffichageGit(valeurs) {
+  etat.modifier(valeurs);
+  window.toolkit.reglages.modifier({ interface: valeurs }).catch(() => {});
+}
+
+// Puces de filtre (avec le nombre de dépôts concernés) + choix du tri.
+function barreFiltres(depots, filtre, tri) {
+  const charges = depots.filter((e) => e && !e.absente);
+  const puce = (id, libelle, nombre) => el('button', {
+    classe: `filtre-git${filtre === id ? ' actif' : ''}`,
+    onClick: () => changerAffichageGit({ gitFiltre: filtre === id && id !== 'tous' ? 'tous' : id }),
+  }, libelle, el('span', { classe: 'filtre-git-nombre' }, String(nombre)));
+  const puces = ETATS.map((s) => ({ s, n: charges.filter(s.teste).length }))
+    .filter(({ s, n }) => n > 0 || filtre === s.id)
+    .map(({ s, n }) => puce(s.id, s.libelle, n));
+  const choix = el('select', { classe: 'choix-tri', title: 'Trier les dépôts', onChange: () => changerAffichageGit({ gitTri: choix.value }) },
+    Object.entries(TRIS_GIT).map(([valeur, libelle]) => el('option', { value: valeur }, libelle)));
+  choix.value = tri;
+  return el('div', { classe: 'barre-filtres-git' },
+    el('div', { classe: 'liste-filtres-git' }, puce('tous', 'Tous', depots.length), ...puces),
+    el('label', { classe: 'champ-tri', title: 'Trier les dépôts' }, icone('tri'), choix));
+}
+
 // Page « Repositories » du compte connecté (gh renvoie son identifiant : lettres, chiffres, tirets).
 function ouvrirMesDepots() {
   const { github } = etat.obtenir();
@@ -146,6 +196,10 @@ export function rendre() {
   const { gitOuvert, git: etats, gitOrdre = [], gitChargement, gitVerification } = etat.obtenir();
   if (!gitOuvert) return;
   const depots = gitOrdre.map((c) => etats[c]).filter(Boolean);
+  const tri = TRIS_GIT[etat.obtenir().gitTri] ? etat.obtenir().gitTri : 'habituel';
+  const filtre = ETATS.some((s) => s.id === etat.obtenir().gitFiltre) ? etat.obtenir().gitFiltre : 'tous';
+  const testeFiltre = ETATS.find((s) => s.id === filtre)?.teste;
+  const affiches = trierDepots(testeFiltre ? depots.filter((e) => !e.absente && testeFiltre(e)) : depots, tri);
   const nbAEnvoyer = depots.filter(git.peutEnvoyer).length;
   const nbACommiter = depots.filter(git.peutCommiter).length;
   panneau.replaceChildren(el('div', { classe: 'page-reglages page-git' },
@@ -162,5 +216,10 @@ export function rendre() {
       el('strong', {}, 'Push'), ' = envoyer les versions sur GitHub. ',
       el('strong', {}, 'Pull'), ' = récupérer les versions depuis GitHub.'),
     depots.length === 0 && gitChargement ? el('p', { classe: 'details-aide' }, 'Lecture de l\'état des projets…') : null,
-    el('div', { classe: 'liste-git' }, depots.map(ligne))));
+    depots.length > 0 ? barreFiltres(depots, filtre, tri) : null,
+    depots.length > 0 && affiches.length === 0
+      ? el('p', { classe: 'details-aide' }, 'Aucun projet dans cet état. ',
+        el('button', { classe: 'bouton petit', onClick: () => changerAffichageGit({ gitFiltre: 'tous' }) }, 'Tout afficher'))
+      : null,
+    el('div', { classe: 'liste-git' }, affiches.map(ligne))));
 }

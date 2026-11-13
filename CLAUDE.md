@@ -466,6 +466,10 @@ dans `docs/projet-json.md`. Points clés :
 - Commandes réseau (`gitReseau`) : identification par `gh auth git-credential` passée en
   `-c` pour CETTE commande seulement (rien n'est stocké, la config Git de l'utilisateur
   n'est pas modifiée), `GIT_TERMINAL_PROMPT=0` (jamais de question bloquante), délai 2 min.
+- Filtre et tri de l'onglet (`composants/git.js > ETATS`, `barreFiltres`) : puces par état avec
+  leur nombre (problèmes, à récupérer, à commit, à envoyer, pas encore sur GitHub, sans Git, à jour,
+  sur GitHub ; un dépôt peut en avoir plusieurs) + tri habituel / par état (ordre de `ETATS`) / par
+  nom. Retenus dans `reglages.interface.gitFiltre` / `gitTri` (état `gitFiltre`, `gitTri`).
 - Pull = `--ff-only` : jamais de fusion automatique ; en cas de divergence, le message
   oriente vers Claude.
 - « Tout commit » : commit de chaque projet modifié avec le message proposé d'après ses

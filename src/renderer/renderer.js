@@ -106,6 +106,8 @@ async function demarrer() {
     etat.modifier({
       vue: preferences.vue === 'liste' ? 'liste' : 'grille',
       tri: typeof preferences.tri === 'string' ? preferences.tri : 'nom',
+      gitTri: typeof preferences.gitTri === 'string' ? preferences.gitTri : 'habituel',
+      gitFiltre: typeof preferences.gitFiltre === 'string' ? preferences.gitFiltre : 'tous',
       epingles: Array.isArray(preferences.epingles) ? preferences.epingles : [],
       couleursCategories: Object.fromEntries(Object.entries(preferences.couleursCategories || {})
         .filter(([, c]) => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c))),

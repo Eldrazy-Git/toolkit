@@ -33,6 +33,8 @@ const etat = {
   verificationEnCours: null, // { fait, total, nom } pendant une vérification
   git: {}, // état Git par cible (clé : 'toolkit:' ou 'projet:<id>'), voir actions-git.js
   gitOccupe: {}, // clé -> texte de l'opération en cours (ex. « Envoi… »)
+  gitFiltre: 'tous', // filtre par état de l'onglet Git (voir git.js > ETATS), réglages interface.gitFiltre
+  gitTri: 'habituel', // habituel | etat | nom, réglages interface.gitTri
   github: null, // { installe, connecte, compte }
   editeurs: [], // [{ id, nom, chemin, source, disponible }]
   programmes: null, // [{ nom, libelle, chemin, version, installation }] (chargé à l'ouverture des Réglages)

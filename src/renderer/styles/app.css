@@ -1064,6 +1064,27 @@ button.lien-sous-groupe:hover { text-decoration: underline; }
 .bloc-verification > summary::-webkit-details-marker { display: none; }
 .progression-verification { align-items: center; }
 .boutons-cases { margin: 4px 0; }
+/* Filtre par état (puces avec un nombre) + tri */
+.barre-filtres-git { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.liste-filtres-git { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 0; min-width: 0; }
+.barre-filtres-git .champ-tri { flex-shrink: 0; }
+.filtre-git {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 13px;
+  background: var(--fond-element);
+  color: var(--texte-faible);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.filtre-git:hover { color: var(--texte-fort); }
+.filtre-git.actif { border-color: var(--accent); background: rgba(0, 120, 212, 0.18); color: var(--texte-fort); }
+.filtre-git-nombre { opacity: 0.7; }
 .liste-git { display: flex; flex-direction: column; gap: 8px; }
 .ligne-git {
   display: flex;
