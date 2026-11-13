@@ -137,11 +137,28 @@ function parGroupe(tries) {
 
 // --- Éléments ---------------------------------------------------------------------------------
 
+// Étoile cliquable (cartes, lignes, barre latérale) : ajoute ou retire des favoris sans passer
+// par les détails. Pleine si favori ; sinon visible seulement au survol (voir app.css).
+export function boutonFavori(projet, classe = 'bouton-favori') {
+  if (projet.erreur) return null; // fiche illisible : rien à modifier
+  const favori = Boolean(projet.fiche.favori);
+  const titre = favori ? 'Retirer des favoris' : 'Ajouter aux favoris';
+  return el('button', {
+    classe: `${classe}${favori ? ' actif' : ''}`,
+    title: titre,
+    'aria-label': `${titre} : ${projet.fiche.nom}`,
+    'aria-pressed': favori ? 'true' : 'false',
+    draggable: 'false',
+    onClick: (e) => { e.stopPropagation(); actions.basculerFavori(projet); },
+    onDblclick: (e) => e.stopPropagation(),
+  }, icone('etoile'));
+}
+
 function marques(projet) {
   const aProbleme = projet.erreur || projet.problemes.length > 0;
   return [
     actions.estEpingle(projet.id) ? el('span', { classe: 'marque-epingle', title: 'Épinglé dans la barre latérale' }, icone('epingle')) : null,
-    projet.fiche.favori ? el('span', { classe: 'marque-favori', title: 'Favori' }, icone('etoile')) : null,
+    boutonFavori(projet),
     aProbleme ? el('span', { classe: 'marque-erreur', title: 'La fiche projet.json a un problème' }, icone('attention')) : null,
   ];
 }

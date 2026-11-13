@@ -337,3 +337,27 @@ export function deposable(groupeId) {
     },
   };
 }
+
+// Cible qui n'accepte que des projets (ex. « Favoris » de la barre latérale) : auDepot(id).
+export function deposableProjet(auDepot) {
+  const accepteProjet = (e) => Boolean(glisse) && glisse.type === 'projet' && e.dataTransfer.types.includes(TYPE_GLISSE);
+  return {
+    onDragover: (e) => {
+      if (!accepteProjet(e)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      e.currentTarget.classList.add('survol-depot');
+    },
+    onDragleave: (e) => {
+      if (!e.currentTarget.contains(e.relatedTarget)) e.currentTarget.classList.remove('survol-depot');
+    },
+    onDrop: (e) => {
+      e.currentTarget.classList.remove('survol-depot');
+      if (!accepteProjet(e)) return;
+      e.preventDefault();
+      const { id } = glisse;
+      glisse = null;
+      auDepot(id);
+    },
+  };
+}

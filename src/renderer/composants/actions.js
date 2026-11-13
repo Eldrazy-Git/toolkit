@@ -908,6 +908,21 @@ export async function basculerFavori(projet) {
   remplacerProjet(nouveau);
 }
 
+// Projet glissé sur « Favoris » dans la barre latérale.
+export async function ajouterAuxFavoris(id) {
+  const projet = etat.obtenir().projets.find((p) => p.id === id);
+  if (!projet) return;
+  if (projet.erreur) {
+    notifier('La fiche projet.json de ce projet a un problème : corrige-la d\'abord.', 'erreur');
+    return;
+  }
+  if (projet.fiche.favori) {
+    notifier(`« ${projet.fiche.nom} » est déjà dans les favoris.`);
+    return;
+  }
+  await basculerFavori(projet);
+}
+
 export async function changerCategorie(projet, categorie) {
   remplacerProjet(await essayer(() => api.projets.modifier(projet.id, { categorie })));
 }

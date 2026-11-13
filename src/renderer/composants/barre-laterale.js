@@ -10,22 +10,26 @@ import * as groupes from './groupes.js';
 import * as recents from './recents.js';
 import * as preferences from './preferences.js';
 import * as raccourcis from './raccourcis.js';
+import { boutonFavori } from './bibliotheque.js';
 
 const conteneur = document.getElementById('barre-laterale');
+// Étoile des lignes de projet : comme les autres boutons, visible au survol de la ligne.
+const FAVORI_NAV = 'bouton-icone bouton-favori-nav';
 
 function memeFiltre(a, b) {
   return a.type === b.type && a.valeur === b.valeur;
 }
 
-function elementNav({ libelle, visuel, compteur, actif, auClic, renommer, auClicDroit }) {
+function elementNav({ libelle, visuel, compteur, actif, auClic, renommer, auClicDroit, titre, depot }) {
   return el('div', {
     classe: `element-nav${actif ? ' actif' : ''}`,
     role: 'button',
     tabindex: '0',
-    title: libelle,
+    title: titre || libelle,
     onClick: auClic,
     onKeydown: (e) => { if (e.key === 'Enter') auClic(); },
     onContextmenu: auClicDroit,
+    ...depot,
   },
     visuel,
     el('span', { classe: 'libelle' }, libelle),
@@ -74,6 +78,7 @@ function projetsEpingles(projets, selection, ongletActif) {
     },
     iconeProjet(projet, 18),
     el('span', { classe: 'libelle' }, projet.fiche.nom),
+    boutonFavori(projet, FAVORI_NAV),
     el('button', {
       classe: 'bouton-icone',
       title: 'Désépingler',
@@ -150,6 +155,7 @@ function ligneProjetGroupe(projet, groupe, niveau, actif) {
   },
   iconeProjet(projet, 18),
   el('span', { classe: 'libelle' }, projet.fiche.nom),
+  boutonFavori(projet, FAVORI_NAV),
   el('button', {
     classe: 'bouton-icone',
     title: `Retirer du groupe « ${groupe.nom} » (le projet n'est pas supprimé)`,
@@ -353,6 +359,8 @@ export function rendre() {
         compteur: projets.filter((p) => p.fiche.favori).length,
         actif: filtre.type === 'favoris',
         auClic: choisir({ type: 'favoris' }),
+        titre: 'Favoris (glisse un projet ici pour l\'ajouter)',
+        depot: groupes.deposableProjet(actions.ajouterAuxFavoris),
       }),
       visible('epingles') ? projetsEpingles(projets, selection, ongletActif) : null,
 

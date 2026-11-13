@@ -246,6 +246,10 @@ affichés en une section par sous-groupe s'il en a (`groupes.repartition()`, tit
 glisser-déposer par `groupes.glissable()` / `groupes.deposable()`). Icône : `changerIcone()`
 référence une image déjà dans le projet, sinon la copie en `icone.<ext>` (ou
 `icone-toolkit.<ext>` si ce nom est déjà pris) ; une image n'est jamais supprimée.
+Favoris (`fiche.favori`) sans passer par les détails : étoile cliquable
+(`bibliotheque.js > boutonFavori`) sur les cartes et lignes (pleine si favori, sinon visible au
+survol) et sur les projets de la barre latérale (épinglés, groupes) ; projet glissé sur l'entrée
+« Favoris » (`groupes.deposableProjet` -> `actions.ajouterAuxFavoris`).
 
 ### Bibliothèques
 

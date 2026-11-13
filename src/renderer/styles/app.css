@@ -737,6 +737,33 @@ button.lien-sous-groupe:hover { text-decoration: underline; }
 }
 .marque-favori { color: var(--favori); }
 .marque-favori .ico { fill: currentColor; }
+/* Étoile cliquable : pleine si favori, sinon visible au survol ou sur le projet sélectionné. */
+.bouton-favori {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: var(--texte-faible);
+  cursor: pointer;
+}
+.bouton-favori:hover { color: var(--favori); background: var(--fond-survol); }
+.bouton-favori.actif { color: var(--favori); }
+.bouton-favori.actif .ico { fill: currentColor; }
+.carte .bouton-favori:not(.actif),
+.ligne .bouton-favori:not(.actif) { visibility: hidden; }
+.carte:hover .bouton-favori,
+.carte.selectionne .bouton-favori,
+.ligne:hover .bouton-favori,
+.ligne.selectionne .bouton-favori,
+.bouton-favori:focus-visible { visibility: visible; }
+/* Barre latérale : étoile jaune si le projet est déjà favori. */
+.element-nav .bouton-icone.bouton-favori-nav.actif { background: none; color: var(--favori); }
+.element-nav .bouton-icone.bouton-favori-nav.actif .ico { fill: currentColor; }
 .marque-erreur { color: var(--attention); }
 
 /* Liste */
