@@ -1,4 +1,6 @@
 // Icônes de l'interface (SVG au trait, 24x24). Pour en ajouter une : une entrée de plus.
+// Beaucoup de tracés viennent de Feather (MIT, © Cole Bemis) et de Lucide (ISC, © Lucide
+// Contributors) : leurs licences, qui doivent rester jointes, sont dans LICENCES-TIERCES.md.
 
 const TRACES = {
   grille: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',

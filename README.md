@@ -471,4 +471,5 @@ supprime-les et recrée-en un (clic droit sur `Toolkit.exe` > « Créer un racco
   licence, avec son code source. Copyright © 2026 Eldrazy-Git.
 - Bibliothèques utilisées (licences libres compatibles) : Electron, Monaco Editor, Pyright,
   xterm.js, node-pty, markdown-it et MiniSearch (MIT) ; leurs licences sont fournies avec
-  elles dans `node_modules`.
+  elles dans `node_modules`. Une partie des icônes de l'interface vient de Feather (MIT) et
+  de Lucide (ISC) : voir `LICENCES-TIERCES.md`.
