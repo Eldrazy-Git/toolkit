@@ -168,8 +168,11 @@ export function creerPanneauTerminal(onglet, parent) {
     return true;
   });
   // Clic droit : copie la sélection, ou colle s'il n'y en a pas.
+  // Si le programme suit la souris (Claude Code active ce mode), le clic lui est déjà transmis
+  // et il copie ou colle lui-même : coller ici aussi collait deux fois.
   zone.addEventListener('contextmenu', async (e) => {
     e.preventDefault();
+    if (!term.hasSelection() && term.modes.mouseTrackingMode !== 'none') return;
     if (term.hasSelection()) {
       await navigator.clipboard.writeText(term.getSelection());
       term.clearSelection();
@@ -177,6 +180,25 @@ export function creerPanneauTerminal(onglet, parent) {
       term.paste(await navigator.clipboard.readText());
     }
   });
+  // Affichage abîmé (restes de l'écran précédent, lignes décalées) : xterm redessine ses lignes,
+  // puis la taille envoyée au programme change d'une ligne et revient, ce qui oblige ConPTY et
+  // Claude à tout redessiner (comme passer en plein écran et revenir, à la main).
+  let minuteurRedessin = null;
+  function redessiner() {
+    clearTimeout(minuteurRedessin);
+    minuteurRedessin = setTimeout(() => {
+      ajuster();
+      term.refresh(0, term.rows - 1);
+      const id = idProcessus;
+      if (!id || term.rows < 2) return;
+      api.redimensionner(id, term.cols, term.rows - 1);
+      setTimeout(() => { if (idProcessus === id) api.redimensionner(id, term.cols, term.rows); }, 50);
+    }, 100);
+  }
+  // Fenêtre de Toolkit réaffichée (zone de notification, fenêtre réduite) : rien n'y était dessiné.
+  const surVisibilite = () => { if (!document.hidden && !element.classList.contains('inactif')) redessiner(); };
+  document.addEventListener('visibilitychange', surVisibilite);
+
   // Clic dans la marge autour du terminal : le curseur y revient.
   zone.addEventListener('mousedown', (e) => { if (e.target === zone) queueMicrotask(() => term.focus()); });
 
@@ -359,10 +381,14 @@ export function creerPanneauTerminal(onglet, parent) {
   return {
     element,
     focus: () => term.focus(),
+    // Onglet de nouveau affiché : son contenu a pu être abîmé pendant qu'on regardait ailleurs.
+    surActivation: redessiner,
     estEnCours: () => idProcessus !== null,
     detruire() {
       observateur.disconnect();
       clearTimeout(minuteurTaille);
+      clearTimeout(minuteurRedessin);
+      document.removeEventListener('visibilitychange', surVisibilite);
       window.removeEventListener('toolkit:preferences', afficherChoix);
       relanceEnAttente = null;
       if (idProcessus) api.fermer(idProcessus).catch(() => {});

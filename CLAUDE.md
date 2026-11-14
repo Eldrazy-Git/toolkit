@@ -322,6 +322,12 @@ Les données d'Electron (`userData`) sont redirigées vers `donnees/electron/`.
   `windowsPty: { backend: 'conpty', buildNumber }` (ConPTY redessine lui-même au
   redimensionnement : xterm ne réorganise pas les lignes) ; taille transmise au pty après
   60 ms de stabilité. Maj+Entrée = retour à la ligne dans la demande (Échap + Entrée).
+  Clic droit = copier la sélection ou coller, SAUF si le programme suit la souris
+  (`term.modes.mouseTrackingMode`, Claude Code l'active) : le clic lui est transmis et Claude
+  copie / colle lui-même (coller aussi = collage en double). Redessin (`redessiner()`) au retour
+  sur l'onglet (`surActivation`, appelé par `onglets.js`) et quand la fenêtre redevient visible :
+  `term.refresh` + taille envoyée au pty avec une ligne de moins puis la vraie (ConPTY et Claude
+  redessinent tout, comme un passage en plein écran).
 - Barre du terminal Claude : bouton **modèle · effort** (pour cet onglet : `--model` /
   `--effort` ; défauts dans Réglages > Claude) et **Conversations** (`terminal:sessions` =
   `sessions-claude.lister()` : 15 dernières, titre « custom-title » / « ai-title » / première

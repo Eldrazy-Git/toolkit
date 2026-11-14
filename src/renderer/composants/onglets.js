@@ -183,5 +183,6 @@ export function rendre() {
     dernierActif = ongletActif;
     const focus = panneaux.get(ongletActif)?.focus;
     if (focus) requestAnimationFrame(focus);
+    panneaux.get(ongletActif)?.surActivation?.();
   }
 }
