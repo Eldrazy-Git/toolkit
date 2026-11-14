@@ -458,6 +458,8 @@ supprime-les et recrée-en un (clic droit sur `Toolkit.exe` > « Créer un racco
   utilisateur. Toolkit ne contient et ne stocke aucune clé, aucun mot de passe ni jeton.
 - **GitHub** : Toolkit utilise la commande `gh` connectée au compte de chacun ; les dépôts
   qu'il crée sont toujours privés et il n'envoie jamais rien sans qu'on le demande.
+- **Confidentialité** : Toolkit n'envoie aucune donnée. Il contacte seulement npm, GitHub et
+  nodejs.org pour vérifier les mises à jour.
 - **Alerte `npm audit`** pendant l'installation (DOMPurify, « critical ») : elle concerne une
   copie de DOMPurify incluse dans l'éditeur Monaco, utilisée d'une façon que ces failles ne
   touchent pas ; le risque est quasi nul pour Toolkit, et une prochaine version de Monaco la

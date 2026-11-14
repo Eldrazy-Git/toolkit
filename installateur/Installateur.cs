@@ -315,7 +315,7 @@ namespace InstallateurToolkit
             sousTitre.Text = "Cet assistant installe Toolkit " + Infos.Version + " sur ton PC.";
             Texte("Toolkit rassemble tous tes projets au même endroit et te permet de les créer et de les modifier avec Claude.", 0, 48);
             Texte("L'installation :\n  • vérifie les logiciels nécessaires et propose d'installer ceux qui manquent ;\n  • copie Toolkit dans le dossier de ton choix ;\n  • crée les raccourcis.\n\nToolkit reste modifiable après l'installation (il est installé avec son code), sans rien réinstaller.", 56, 140);
-            Texte("Toolkit est un logiciel libre, sous licence GNU GPL version 3. Il n'est pas édité par Anthropic : pour utiliser Claude, il faut un compte Claude (abonnement Pro ou Max).", 210, 60);
+            Texte("Toolkit est un logiciel libre, sous licence GNU GPL version 3 ou ultérieure. Il n'est pas édité par Anthropic : pour utiliser Claude, il faut un compte Claude (abonnement Pro ou Max).", 210, 60);
             Texte("Une connexion Internet est nécessaire (environ 200 Mo à télécharger).", 280, 24).ForeColor = Color.DimGray;
         }
 
@@ -404,8 +404,9 @@ namespace InstallateurToolkit
                 contenu.Controls.Add(role);
                 y += 50;
             }
-            var aide = Texte("", y + 4, 60);
+            var aide = Texte("", y + 4, 40);
             aide.ForeColor = Color.DimGray;
+            Texte("En installant ces logiciels, tu acceptes leurs licences respectives, et pour Claude Code les conditions d'utilisation d'Anthropic.", y + 46, 40);
             new Thread(() =>
             {
                 wingetPresent = Outils.Version("winget") != null;
@@ -567,7 +568,7 @@ namespace InstallateurToolkit
                 {
                     cle.SetValue("DisplayName", "Toolkit");
                     cle.SetValue("DisplayVersion", Infos.Version);
-                    cle.SetValue("Publisher", "Toolkit (logiciel libre, GPL v3)");
+                    cle.SetValue("Publisher", "Toolkit (logiciel libre, GPL v3 ou ultérieure)");
                     cle.SetValue("DisplayIcon", icone);
                     cle.SetValue("InstallLocation", dossier);
                     cle.SetValue("UninstallString", "\"" + desinstallateur + "\" /desinstaller");
