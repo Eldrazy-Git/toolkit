@@ -358,6 +358,7 @@ export function elementsMenuProjet(projet, position) {
     { libelle: 'Explorer le code', icone: 'code', action: () => ouvrirCode({ type: 'projet', id: projet.id }, projet.fiche.nom) },
     { libelle: 'Historique des versions…', icone: 'historique', action: () => import('./historique.js').then((h) => h.afficherHistorique({ type: 'projet', id: projet.id }, projet.fiche.nom)) },
     { libelle: 'Modifier avec Claude', icone: 'claude', desactive: bloque, action: () => modifierAvecClaude(projet) },
+    projet.versionMinecraft ? { libelle: 'Changer de version de Minecraft…', icone: 'redemarrer', desactive: bloque, action: () => changerVersionMinecraft(projet) } : null,
     'separateur',
     { libelle: projet.fiche.favori ? 'Retirer des favoris' : 'Ajouter aux favoris', icone: 'etoile', desactive: bloque, action: () => basculerFavori(projet) },
     { libelle: estEpingle(projet.id) ? 'Désépingler de la barre latérale' : 'Épingler dans la barre latérale', icone: 'epingle', action: () => basculerEpingle(projet) },
@@ -1412,6 +1413,93 @@ export function demanderCorrection(projetId, nomAction, commande, erreur) {
     + 'S\'il vient de l\'installation (Java, SDK, programme manquant…), dis-moi exactement quoi faire. '
     + 'Ne touche jamais à une keystore ni à ses mots de passe.';
   return modifierAvecClaude(projet, demande);
+}
+
+// --- Mods Minecraft : changer de version du jeu -------------------------------------------
+// Toolkit cherche les versions disponibles (et, pour Fabric, les bons numéros de loader,
+// Fabric API et Loom), puis confie la mise à jour à Claude : le code doit souvent être adapté.
+
+// Clés de gradle.properties montrées à Claude (version actuelle des dépendances).
+const CLES_VERSIONS_MOD = /version|mappings/i;
+
+function demandeChangementMinecraft(infos, cible, deps) {
+  const lignes = [
+    `Mets à jour ce mod Minecraft${infos.nomChargeur ? ` ${infos.nomChargeur}` : ''} de la version ${infos.versionMinecraft} vers la version ${cible} de Minecraft.`,
+    '',
+    'Versions actuelles (gradle.properties) :',
+    ...Object.entries(infos.proprietes).filter(([cle]) => CLES_VERSIONS_MOD.test(cle)).map(([cle, valeur]) => `- ${cle} = ${valeur}`),
+    '',
+  ];
+  if (deps) {
+    const ou = (v, absent) => v || absent;
+    lignes.push(
+      `Versions trouvées par Toolkit pour Minecraft ${cible} (meta.fabricmc.net, Modrinth, maven.fabricmc.net) :`,
+      `- Fabric Loader : ${ou(deps.loader, 'introuvable')}`,
+      `- Fabric API : ${ou(deps.fabricApi, 'pas encore publiée pour cette version')}`,
+      `- Fabric Loom (dernière version) : ${ou(deps.loom, 'introuvable')}`,
+      'Vérifie-les si un doute subsiste (https://fabricmc.net/develop).',
+      '',
+    );
+  } else {
+    lignes.push(`Trouve les bonnes versions du chargeur${infos.nomChargeur ? ` ${infos.nomChargeur}` : ''} et des dépendances pour Minecraft ${cible} sur leurs sites officiels.`, '');
+  }
+  lignes.push(
+    'Étapes :',
+    '1. Mets à jour gradle.properties (minecraft_version et versions des dépendances, y compris les autres mods utilisés comme dépendances), '
+      + 'build.gradle si besoin, la version de Gradle (gradle/wrapper/gradle-wrapper.properties) si Loom l\'exige, la version de Java demandée par le jeu, '
+      + 'et la dépendance « minecraft » des fichiers de description du mod (fabric.mod.json, neoforge.mods.toml…). Augmente aussi la version du mod si c\'est l\'usage du projet.',
+    '2. Cherche les changements de Minecraft et des API entre ces deux versions, et adapte le code.',
+    '3. Compile avec « gradlew build » et corrige jusqu\'à ce que la compilation réussisse. Ne lance pas le jeu : je le testerai moi-même avec « Tester en jeu ».',
+    '4. Résume-moi simplement ce qui a changé et ce que je dois vérifier en jeu.',
+    'N\'envoie rien sur GitHub.',
+  );
+  return lignes.join('\n');
+}
+
+export async function changerVersionMinecraft(projet) {
+  if (projet.erreur) return;
+  const infos = await essayer(() => api.minecraft.preparer(projet.id));
+  if (!infos) return;
+  const stables = infos.versions.filter((v) => v.stable).map((v) => v.version);
+  const valeurs = await formulaire({
+    titre: 'Changer de version de Minecraft',
+    message: `« ${projet.fiche.nom} » est actuellement pour Minecraft ${infos.versionMinecraft}${infos.nomChargeur ? ` (${infos.nomChargeur})` : ''}. `
+      + 'Toolkit fait une sauvegarde Git, puis Claude met le mod à jour (versions, code à adapter) et vérifie qu\'il compile.',
+    champs: [{
+      id: 'version',
+      libelle: 'Nouvelle version de Minecraft',
+      type: 'texte',
+      valeur: stables[0] || '',
+      suggestions: stables.slice(0, 40),
+      obligatoire: true,
+      aide: 'Les versions proposées sont les versions stables. Une snapshot peut aussi être tapée.',
+    }],
+    bouton: 'Mettre à jour avec Claude',
+  });
+  if (!valeurs) return;
+  const cible = valeurs.version;
+  if (!infos.versions.some((v) => v.version === cible)) {
+    notifier(`La version « ${cible} » n'existe pas${infos.chargeur === 'fabric' ? ' (ou n\'est pas encore prise en charge par Fabric)' : ''}.`, 'erreur');
+    return;
+  }
+  if (cible === infos.versionMinecraft) {
+    notifier(`Le mod est déjà pour Minecraft ${cible}.`);
+    return;
+  }
+  let deps = null;
+  if (infos.chargeur === 'fabric') {
+    deps = await essayer(() => api.minecraft.dependances(projet.id, cible));
+    if (deps === undefined) return;
+    if (deps && !deps.fabricApi && Object.keys(infos.proprietes).some((cle) => /fabric_(api_)?version/i.test(cle))) {
+      const suite = await choisir({
+        titre: 'Fabric API pas encore disponible',
+        message: `Fabric API n'est pas encore publiée pour Minecraft ${cible}. Ce mod en a besoin : la mise à jour risque de ne pas aboutir. Continuer quand même ?`,
+        boutons: [{ libelle: 'Continuer', valeur: true, style: 'principal' }],
+      });
+      if (!suite) return;
+    }
+  }
+  return modifierAvecClaude(projet, demandeChangementMinecraft(infos, cible, deps));
 }
 
 export function modifierToolkitAvecClaude(demande) {

@@ -95,6 +95,7 @@ app/
     │   ├── executions.js        actions de projet.json : commande, programme, sortie, arrêt
     │   ├── java.js              JDK et SDK Android pour Gradle (choix automatique)
     │   ├── actions-auto.js      boutons ajoutés selon le type (Compiler, APK de debug, Tester en jeu des mods Fabric)
+    │   ├── minecraft.js         mods : chargeur, versions du jeu et des dépendances (changement de version)
     │   ├── cibles.js            résout une « cible » ({ type: 'projet', id } / toolkit / racine) en dossier
     │   ├── git.js               Git : état d'un dépôt, commit, push, pull, fetch, .gitignore, clone
     │   ├── github.js            GitHub via « gh » (état de connexion, dépôt privé)
@@ -599,6 +600,14 @@ dans `docs/projet-json.md`. Points clés :
   went wrong » + erreurs du compilateur), conseil pour les cas courants, et bouton
   « Demander à Claude de corriger » (Claude reçoit l'erreur comme demande initiale).
 - Jamais de compilation release ni de keystore : cela reste dans Android Studio.
+- « Changer de version de Minecraft… » (projet avec `versionMinecraft` : bouton sous les actions
+  des détails + clic droit ; PAS une action de projet.json) : `actions.changerVersionMinecraft`.
+  `src/main/minecraft.js` (lecture seule, `ipc/minecraft.js`) : chargeur d'après build.gradle
+  (fabric-loom / neoforged / minecraftforge), versions du jeu (meta.fabricmc.net pour Fabric,
+  manifeste Mojang sinon), et pour Fabric les numéros loader / Fabric API (Modrinth) / Loom
+  (maven-metadata) ; cache 10 min en mémoire. La mise à jour est faite par Claude
+  (`modifierAvecClaude` = sauvegarde Git puis demande prête : fichiers à modifier, code à adapter,
+  `gradlew build`, pas de lancement du jeu ni d'envoi sur GitHub).
 
 ### Éditeurs (« Ouvrir avec… »)
 

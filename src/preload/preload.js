@@ -59,6 +59,13 @@ contextBridge.exposeInMainWorld('toolkit', {
     ouvrirProjet: (projetId, editeurId) => appeler('editeurs:ouvrir-projet', projetId, editeurId),
     ouvrirToolkit: (editeurId) => appeler('editeurs:ouvrir-toolkit', editeurId),
   },
+  // Mods Minecraft : changement de version (la mise à jour elle-même est faite par Claude).
+  minecraft: {
+    // { chargeur, nomChargeur, versionMinecraft, proprietes, versions: [{ version, stable }] }
+    preparer: (id) => appeler('minecraft:preparer', id),
+    // Fabric : { loader, fabricApi, loom } (null = introuvable) ; autres chargeurs : null
+    dependances: (id, version) => appeler('minecraft:dependances', id, version),
+  },
   // Barre de raccourcis vers des logiciels du PC (au-dessus des onglets).
   logiciels: {
     lister: () => appeler('logiciels:lister'), // [{ id, nom, chemin, icone, existe }]

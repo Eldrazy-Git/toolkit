@@ -152,6 +152,13 @@ function listeActions(projet) {
           }, icone(a.genre === 'fichier' ? 'note' : 'lecture'), a.nom, parDefaut ? el('span', { classe: 'marque-defaut' }, 'par défaut') : null),
           menu);
       })),
+    // Mod Minecraft (minecraft_version dans gradle.properties) : mise à jour vers une autre version du jeu.
+    bloque || !projet.versionMinecraft ? null : el('div', { classe: 'liste-actions' },
+      el('button', {
+        classe: 'bouton',
+        title: `Le mod est pour Minecraft ${projet.versionMinecraft}. Choisir une autre version : Toolkit sauvegarde, puis Claude met le mod à jour.`,
+        onClick: () => actions.changerVersionMinecraft(projet),
+      }, icone('redemarrer'), 'Changer de version de Minecraft…')),
     bloque ? null : el('div', { classe: 'details-boutons' },
       el('button', { classe: 'etiquette', onClick: () => actions.ajouterAction(projet) }, icone('plus'), 'Ajouter une action')),
   ];
