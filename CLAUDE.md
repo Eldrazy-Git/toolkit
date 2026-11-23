@@ -608,7 +608,8 @@ dans `docs/projet-json.md`. Points clés :
   (maven-metadata) ; cache 10 min en mémoire. Mod qui utilise Fabric API (`utiliseFabricApi` :
   `fabric_version` / `fabric_api_version` de gradle.properties ou `fabric-api` dans build.gradle) : 2ᵉ fenêtre
   pour choisir la version de Fabric API (`versionsFabricApi`, 30 dernières de Modrinth, la plus récente par
-  défaut), imposée à Claude dans la demande. La mise à jour est faite par Claude
+  défaut), imposée à Claude dans la demande ; même version du jeu = changer seulement Fabric API
+  (`demandeChangementFabricApi`, refusé si c'est déjà la version du mod). La mise à jour est faite par Claude
   (`modifierAvecClaude` = sauvegarde Git puis demande prête : fichiers à modifier, code à adapter,
   `gradlew build`, pas de lancement du jeu ni d'envoi sur GitHub).
 

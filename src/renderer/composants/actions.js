@@ -1458,6 +1458,22 @@ function demandeChangementMinecraft(infos, cible, deps) {
   return lignes.join('\n');
 }
 
+// Même version du jeu, seule la version de Fabric API change.
+function demandeChangementFabricApi(infos, version) {
+  return [
+    `Passe ce mod Minecraft Fabric (Minecraft ${infos.versionMinecraft}, qui ne change pas) à la version ${version} de Fabric API`
+      + `${infos.versionFabricApi ? ` (actuellement ${infos.versionFabricApi})` : ''}. Utilise exactement cette version.`,
+    '',
+    'Étapes :',
+    '1. Mets à jour la version de Fabric API dans gradle.properties (ou build.gradle), et la dépendance « fabric-api » / « fabric » '
+      + 'de fabric.mod.json si elle impose une version minimale. Mets aussi à jour Fabric Loader si cette version de Fabric API l\'exige.',
+    '2. Adapte le code si des API ont changé entre les deux versions.',
+    '3. Compile avec « gradlew build » et corrige jusqu\'à ce que la compilation réussisse. Ne lance pas le jeu : je le testerai moi-même avec « Tester en jeu ».',
+    '4. Résume-moi simplement ce qui a changé et ce que je dois vérifier en jeu.',
+    'N\'envoie rien sur GitHub.',
+  ].join('\n');
+}
+
 // Choix de la version de Fabric API (liste de Modrinth pour la version du jeu choisie,
 // la plus récente d'abord et proposée par défaut). Renvoie la version, ou null si annulé.
 async function choisirVersionFabricApi(infos, cible, versions) {
@@ -1493,7 +1509,8 @@ export async function changerVersionMinecraft(projet) {
       valeur: stables[0] || '',
       suggestions: stables.slice(0, 40),
       obligatoire: true,
-      aide: 'Les versions proposées sont les versions stables. Une snapshot peut aussi être tapée.',
+      aide: 'Les versions proposées sont les versions stables. Une snapshot peut aussi être tapée.'
+        + (infos.utiliseFabricApi ? ' Garde la version actuelle pour changer seulement de version de Fabric API.' : ''),
     }],
     bouton: infos.utiliseFabricApi ? 'Suivant' : 'Mettre à jour avec Claude',
   });
@@ -1504,8 +1521,24 @@ export async function changerVersionMinecraft(projet) {
     return;
   }
   if (cible === infos.versionMinecraft) {
-    notifier(`Le mod est déjà pour Minecraft ${cible}.`);
-    return;
+    // Même version du jeu : seul Fabric API peut changer (si le mod l'utilise).
+    if (!infos.utiliseFabricApi) {
+      notifier(`Le mod est déjà pour Minecraft ${cible}.`);
+      return;
+    }
+    const memes = await essayer(() => api.minecraft.dependances(projet.id, cible));
+    if (memes === undefined) return;
+    if (!memes?.versionsFabricApi?.length) {
+      notifier(`Aucune version de Fabric API trouvée pour Minecraft ${cible}.`, 'erreur');
+      return;
+    }
+    const choix = await choisirVersionFabricApi(infos, cible, memes.versionsFabricApi);
+    if (!choix) return;
+    if (choix === infos.versionFabricApi) {
+      notifier(`Le mod utilise déjà Fabric API ${choix}.`);
+      return;
+    }
+    return modifierAvecClaude(projet, demandeChangementFabricApi(infos, choix));
   }
   let deps = null;
   if (infos.chargeur === 'fabric') {
