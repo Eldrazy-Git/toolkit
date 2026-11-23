@@ -605,11 +605,12 @@ dans `docs/projet-json.md`. Points clés :
   `src/main/minecraft.js` (lecture seule, `ipc/minecraft.js`) : chargeur d'après build.gradle
   (fabric-loom / neoforged / minecraftforge), versions du jeu (meta.fabricmc.net pour Fabric,
   manifeste Mojang sinon), et pour Fabric les numéros loader / Fabric API (Modrinth) / Loom
-  (maven-metadata) ; cache 10 min en mémoire. Mod qui utilise Fabric API (`utiliseFabricApi` :
-  `fabric_version` / `fabric_api_version` de gradle.properties ou `fabric-api` dans build.gradle) : 2ᵉ fenêtre
-  pour choisir la version de Fabric API (`versionsFabricApi`, 30 dernières de Modrinth, la plus récente par
-  défaut), imposée à Claude dans la demande ; même version du jeu = changer seulement Fabric API
-  (`demandeChangementFabricApi`, refusé si c'est déjà la version du mod). La mise à jour est faite par Claude
+  (maven-metadata) ; cache 10 min en mémoire. Mod Fabric : 2ᵉ fenêtre « Versions de Fabric »
+  (`choisirVersionsFabric`) pour choisir Fabric Loader (`versionsLoader`, meta.fabricmc.net, défaut = stable
+  le plus récent) et Fabric API si le mod l'utilise (`utiliseFabricApi` : `fabric_version` / `fabric_api_version`
+  de gradle.properties ou `fabric-api` dans build.gradle ; `versionsFabricApi`, Modrinth, défaut = la plus
+  récente), 30 versions au plus, imposées à Claude dans la demande. Même version du jeu = changer seulement
+  ces versions (`demandeChangementFabric`, rien de changé = refusé). La mise à jour est faite par Claude
   (`modifierAvecClaude` = sauvegarde Git puis demande prête : fichiers à modifier, code à adapter,
   `gradlew build`, pas de lancement du jeu ni d'envoi sur GitHub).
 

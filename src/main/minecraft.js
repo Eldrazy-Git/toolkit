@@ -73,6 +73,7 @@ async function infosMod(id) {
   return {
     chargeur, nomChargeur: NOMS_CHARGEURS[chargeur] || null, versionMinecraft, proprietes,
     utiliseFabricApi, versionFabricApi: cleFabricApi ? proprietes[cleFabricApi] : null,
+    versionLoader: chargeur === 'fabric' ? proprietes.loader_version || null : null,
   };
 }
 
@@ -110,7 +111,8 @@ async function ouNull(promesse) {
   }
 }
 
-// Versions des dépendances Fabric pour une version du jeu : { loader, fabricApi, versionsFabricApi, loom }
+// Versions des dépendances Fabric pour une version du jeu :
+// { loader, versionsLoader, fabricApi, versionsFabricApi, loom }
 // (null quand rien n'a été trouvé, par exemple Fabric API pas encore sortie).
 // versionsFabricApi : [{ version, type ('release' | 'beta' | 'alpha'), date }], la plus récente
 // d'abord (30 au plus), pour que l'utilisateur choisisse.
@@ -122,12 +124,17 @@ async function dependancesFabric(version) {
     ouNull(derniereVersionLoom()),
   ]);
   const loader = Array.isArray(loaders) ? (loaders.find((l) => l.loader?.stable) || loaders[0])?.loader?.version || null : null;
+  // [{ version, stable }], la plus récente d'abord (30 au plus), pour que l'utilisateur choisisse.
+  const versionsLoader = (Array.isArray(loaders) ? loaders : [])
+    .filter((l) => l?.loader?.version)
+    .slice(0, 30)
+    .map((l) => ({ version: l.loader.version, stable: Boolean(l.loader.stable) }));
   const versionsFabricApi = (Array.isArray(api) ? api : [])
     .filter((v) => v && v.version_number)
     .slice(0, 30)
     .map((v) => ({ version: v.version_number, type: v.version_type || 'release', date: v.date_published || null }));
   const fabricApi = versionsFabricApi[0]?.version || null;
-  return { loader, fabricApi, versionsFabricApi, loom };
+  return { loader, versionsLoader, fabricApi, versionsFabricApi, loom };
 }
 
 // Tout ce dont l'interface a besoin pour proposer le changement de version.
