@@ -1502,19 +1502,48 @@ async function choisirVersionsFabric(infos, cible, deps) {
   const apis = infos.utiliseFabricApi ? deps.versionsFabricApi || [] : [];
   if (apis.length) {
     const TYPES = { beta: 'bêta', alpha: 'alpha' };
+    const actuelle = infos.versionFabricApi ? ` Version actuelle du mod : ${infos.versionFabricApi}.` : '';
+    // Fabric API recommandée = la plus récente qui accepte ce loader (lue dans son fabric.mod.json).
+    const recommandee = async (loader) => {
+      try {
+        return { ok: true, resultat: await api.minecraft.fabricApiRecommandee(cible, loader) };
+      } catch {
+        return { ok: false };
+      }
+    };
+    const texteAide = (loader, r) => {
+      if (!r.ok) return `Impossible de vérifier quelle version convient à Fabric Loader ${loader}.${actuelle}`;
+      if (!r.resultat) return `Aucune de ces versions ne fonctionne avec Fabric Loader ${loader} : choisis un loader plus récent.${actuelle}`;
+      return `Recommandée pour Fabric Loader ${loader} : ${r.resultat.version}`
+        + `${r.resultat.loaderMinimal ? ` (demande le loader ${r.resultat.loaderMinimal} ou plus)` : ''}.${actuelle}`;
+    };
+    const loaderDepart = champs[0]?.valeur || null;
+    const depart = loaderDepart ? await recommandee(loaderDepart) : null;
+    let demande = 0; // ignore les réponses d'un loader choisi avant le dernier
+    if (champs[0]) {
+      champs[0].auChangement = async (loader, formulaireOuvert) => {
+        const numero = ++demande;
+        formulaireOuvert.aide('fabricApi', 'Recherche de la version recommandée…');
+        const r = await recommandee(loader);
+        if (numero !== demande) return;
+        if (r.ok && r.resultat) formulaireOuvert.ecrire('fabricApi', r.resultat.version);
+        formulaireOuvert.aide('fabricApi', texteAide(loader, r));
+      };
+    }
     champs.push({
       id: 'fabricApi',
       libelle: 'Fabric API',
       type: 'choix',
       options: apis.map((v, i) => ({ valeur: v.version, libelle: libelle(v.version, [i === 0 ? 'la plus récente' : null, TYPES[v.type] || null, date(v.date)].filter(Boolean)) })),
-      valeur: apis[0].version,
-      aide: infos.versionFabricApi ? `Version actuelle du mod : ${infos.versionFabricApi}.` : null,
+      valeur: depart?.ok && depart.resultat ? depart.resultat.version : apis[0].version,
+      aide: depart ? texteAide(loaderDepart, depart) : actuelle.trim() || null,
     });
   }
   if (!champs.length) return { loader: null, fabricApi: null };
   const valeurs = await formulaire({
     titre: 'Versions de Fabric',
-    message: `Versions publiées pour Minecraft ${cible}. Celles proposées par défaut sont les plus récentes.`,
+    message: `Versions publiées pour Minecraft ${cible}.`
+      + (champs.length > 1 ? ' Changer de Fabric Loader sélectionne la version de Fabric API recommandée pour lui.' : ''),
     champs,
     bouton: 'Mettre à jour avec Claude',
   });

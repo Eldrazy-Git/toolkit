@@ -137,6 +137,100 @@ async function dependancesFabric(version) {
   return { loader, versionsLoader, fabricApi, versionsFabricApi, loom };
 }
 
+// --- Fabric API recommandée pour une version de Fabric Loader --------------------------------
+// Chaque version de Fabric API indique dans son fabric.mod.json la version minimale du loader
+// (« depends.fabricloader »). Ce fichier est lu directement dans le .jar du dépôt Maven de Fabric
+// par lectures partielles (Range) : fin du zip -> répertoire central -> fabric.mod.json, soit
+// quelques Ko au lieu de ~2,5 Mo. Résultat gardé en mémoire (une version publiée ne change pas).
+const zlib = require('node:zlib');
+
+const loaderMinimalCache = new Map();
+
+async function lirePlage(url, debut, fin) {
+  let reponse;
+  try {
+    reponse = await net.fetch(url, { headers: { 'user-agent': 'Toolkit', range: debut === null ? `bytes=-${fin}` : `bytes=${debut}-${fin}` } });
+  } catch {
+    throw new Error('Impossible de joindre le dépôt de Fabric. Vérifie ta connexion Internet.');
+  }
+  if (reponse.status !== 206) throw new Error(`Le dépôt de Fabric a répondu par une erreur (${reponse.status}).`);
+  return Buffer.from(await reponse.arrayBuffer());
+}
+
+// Contenu d'un fichier à la racine d'un .jar distant, ou null s'il n'y est pas.
+async function lireFichierDuJar(url, nom) {
+  const fin = await lirePlage(url, null, 65536);
+  const eocd = fin.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+  if (eocd < 0) throw new Error('Fichier de Fabric API illisible.');
+  const tailleRepertoire = fin.readUInt32LE(eocd + 12);
+  const debutRepertoire = fin.readUInt32LE(eocd + 16);
+  const repertoire = await lirePlage(url, debutRepertoire, debutRepertoire + tailleRepertoire - 1);
+  for (let i = 0; i + 46 <= repertoire.length && repertoire.readUInt32LE(i) === 0x02014b50;) {
+    const methode = repertoire.readUInt16LE(i + 10);
+    const tailleCompressee = repertoire.readUInt32LE(i + 20);
+    const longueurNom = repertoire.readUInt16LE(i + 28);
+    const longueurExtra = repertoire.readUInt16LE(i + 30);
+    const longueurCommentaire = repertoire.readUInt16LE(i + 32);
+    const position = repertoire.readUInt32LE(i + 42);
+    if (repertoire.toString('utf8', i + 46, i + 46 + longueurNom) === nom) {
+      // L'en-tête local peut avoir un « extra » différent : marge de 1 Ko.
+      const bloc = await lirePlage(url, position, position + 30 + longueurNom + 1024 + tailleCompressee);
+      const debut = 30 + bloc.readUInt16LE(26) + bloc.readUInt16LE(28);
+      const donnees = bloc.subarray(debut, debut + tailleCompressee);
+      return (methode === 8 ? zlib.inflateRawSync(donnees) : donnees).toString('utf8');
+    }
+    i += 46 + longueurNom + longueurExtra + longueurCommentaire;
+  }
+  return null;
+}
+
+// Version minimale de Fabric Loader exigée par une version de Fabric API (null = aucune).
+async function loaderMinimalFabricApi(version) {
+  if (loaderMinimalCache.has(version)) return loaderMinimalCache.get(version);
+  const v = encodeURIComponent(version);
+  const url = `https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/${v}/fabric-api-${v}.jar`;
+  const texte = await lireFichierDuJar(url, 'fabric.mod.json');
+  let minimum = null;
+  try {
+    const exigence = JSON.parse(texte || '{}').depends?.fabricloader;
+    const m = /(\d+(?:\.\d+)+)/.exec(Array.isArray(exigence) ? exigence.join(' ') : String(exigence || ''));
+    minimum = m ? m[1] : null;
+  } catch {
+    minimum = null;
+  }
+  loaderMinimalCache.set(version, minimum);
+  return minimum;
+}
+
+// Compare deux numéros « 0.16.10 » (suffixes comme « +build.1 » ignorés).
+function comparerVersions(a, b) {
+  const x = String(a).split(/[+-]/)[0].split('.').map((n) => parseInt(n, 10) || 0);
+  const y = String(b).split(/[+-]/)[0].split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(x.length, y.length); i += 1) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0);
+  return 0;
+}
+
+// Fabric API la plus récente (pour cette version du jeu) qui fonctionne avec ce loader :
+// { version, loaderMinimal } ou null si aucune de la liste ne convient.
+// Recherche par dichotomie (le loader exigé ne baisse jamais d'une version à la suivante).
+async function fabricApiRecommandee(versionJeu, loader) {
+  const { versionsFabricApi } = await dependancesFabric(String(versionJeu));
+  const liste = versionsFabricApi.map((v) => v.version);
+  const convient = async (i) => {
+    const minimum = await loaderMinimalFabricApi(liste[i]);
+    return !minimum || comparerVersions(loader, minimum) >= 0;
+  };
+  let bas = 0;
+  let haut = liste.length; // première position (de la plus récente à la plus ancienne) qui convient
+  while (bas < haut) {
+    const milieu = Math.floor((bas + haut) / 2);
+    if (await convient(milieu)) haut = milieu;
+    else bas = milieu + 1;
+  }
+  if (bas >= liste.length) return null;
+  return { version: liste[bas], loaderMinimal: await loaderMinimalFabricApi(liste[bas]) };
+}
+
 // Tout ce dont l'interface a besoin pour proposer le changement de version.
 async function preparerChangement(id) {
   const infos = await infosMod(id);
@@ -150,4 +244,4 @@ async function dependances(id, version) {
   return dependancesFabric(String(version));
 }
 
-module.exports = { preparerChangement, dependances, lireProprietes, chargeurDe };
+module.exports = { preparerChangement, dependances, fabricApiRecommandee, comparerVersions, lireProprietes, chargeurDe };

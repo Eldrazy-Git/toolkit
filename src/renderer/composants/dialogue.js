@@ -104,6 +104,7 @@ export async function informer({ titre, message, bouton = 'Compris' }) {
 }
 
 // Formulaire. champs : [{ id, libelle, type, valeur?, options?, suggestions?, extensions?, exemple?, aide?, obligatoire?, auChangement?, choisir? }]
+// (auChangement : seulement pour les champs texte / zone / choix.)
 // Types : 'texte' | 'zone' (texte sur plusieurs lignes) | 'choix' (options : [{ valeur, libelle }])
 //       | 'case' (case à cocher) | 'fichier' | 'fichiers' | 'dossier' (bouton « Parcourir… »).
 // Renvoie { id: valeur } ou null si annulé (« fichiers » : liste de chemins ; « case » : true/false).
@@ -116,7 +117,12 @@ export function formulaire({ titre, message, champs, bouton = 'Valider' }) {
     const lignes = champs.map((c) => {
       // (Une case à cocher n'est jamais « obligatoire » : pas d'astérisque.)
       const libelle = el('span', { classe: 'champ-libelle' }, c.libelle, c.obligatoire && c.type !== 'case' ? ' *' : '');
-      const aide = c.aide ? el('span', { classe: 'champ-aide' }, c.aide) : null;
+      // Toujours créée (cachée si vide) : auChangement peut la remplir ensuite.
+      const aide = el('span', { classe: 'champ-aide', hidden: !c.aide }, c.aide || '');
+      const ecrireAide = (texte) => {
+        aide.textContent = texte || '';
+        aide.hidden = !texte;
+      };
 
       if (c.type === 'case') {
         const caseACocher = el('input', { type: 'checkbox' });
@@ -168,12 +174,14 @@ export function formulaire({ titre, message, champs, bouton = 'Valider' }) {
         // Suggestions proposées pendant la saisie (ex. catégories existantes).
         if (idListe) suggestions = el('datalist', { id: idListe }, c.suggestions.map((s) => el('option', { value: s })));
       }
-      controles[c.id] = { element: controle, lire: () => controle.value.trim(), ecrire: (v) => { controle.value = v; } };
-      // auChangement(valeur, { lire(id), ecrire(id, valeur) }) : un champ qui en met d'autres à jour.
+      controles[c.id] = { element: controle, lire: () => controle.value.trim(), ecrire: (v) => { controle.value = v; }, ecrireAide };
+      // auChangement(valeur, { lire(id), ecrire(id, valeur), aide(id, texte) }) : un champ qui en met
+      // d'autres à jour (valeur ou texte d'aide).
       if (c.auChangement) {
         controle.addEventListener(c.type === 'choix' ? 'change' : 'input', () => c.auChangement(controle.value, {
           lire: (id) => controles[id]?.lire(),
           ecrire: (id, v) => controles[id]?.ecrire?.(v),
+          aide: (id, texte) => controles[id]?.ecrireAide?.(texte),
         }));
       }
       return el('label', { classe: 'champ-formulaire' }, libelle, controle, suggestions, aide);

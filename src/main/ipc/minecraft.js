@@ -7,6 +7,7 @@ const minecraft = require('../minecraft');
 function enregistrer() {
   gerer('minecraft:preparer', (id) => minecraft.preparerChangement(id));
   gerer('minecraft:dependances', (id, version) => minecraft.dependances(id, version));
+  gerer('minecraft:fabric-api-recommandee', (versionJeu, loader) => minecraft.fabricApiRecommandee(String(versionJeu), String(loader)));
 }
 
 module.exports = { enregistrer };

@@ -609,7 +609,12 @@ dans `docs/projet-json.md`. Points clés :
   (`choisirVersionsFabric`) pour choisir Fabric Loader (`versionsLoader`, meta.fabricmc.net, défaut = stable
   le plus récent) et Fabric API si le mod l'utilise (`utiliseFabricApi` : `fabric_version` / `fabric_api_version`
   de gradle.properties ou `fabric-api` dans build.gradle ; `versionsFabricApi`, Modrinth, défaut = la plus
-  récente), 30 versions au plus, imposées à Claude dans la demande. Même version du jeu = changer seulement
+  récente), 30 versions au plus, imposées à Claude dans la demande. Fabric API recommandée pour le loader
+  choisi (`minecraft:fabric-api-recommandee` = `fabricApiRecommandee()`, à l'ouverture puis à chaque changement
+  de loader : sélectionnée + texte d'aide) = la plus récente dont `depends.fabricloader` (fabric.mod.json) accepte
+  ce loader ; fichier lu dans le .jar de maven.fabricmc.net par requêtes `Range` (quelques Ko ; le CDN de Modrinth
+  refuse les `Range`), dichotomie, résultat gardé en mémoire. `formulaire()` : `auChangement` reçoit aussi
+  `aide(id, texte)`. Même version du jeu = changer seulement
   ces versions (`demandeChangementFabric`, rien de changé = refusé). La mise à jour est faite par Claude
   (`modifierAvecClaude` = sauvegarde Git puis demande prête : fichiers à modifier, code à adapter,
   `gradlew build`, pas de lancement du jeu ni d'envoi sur GitHub).

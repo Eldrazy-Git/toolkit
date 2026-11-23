@@ -65,6 +65,8 @@ contextBridge.exposeInMainWorld('toolkit', {
     preparer: (id) => appeler('minecraft:preparer', id),
     // Fabric : { loader, versionsLoader: [{ version, stable }], fabricApi, versionsFabricApi: [{ version, type, date }], loom } (null = introuvable) ; autres chargeurs : null
     dependances: (id, version) => appeler('minecraft:dependances', id, version),
+    // Fabric API la plus récente compatible avec ce loader : { version, loaderMinimal } ou null
+    fabricApiRecommandee: (versionJeu, loader) => appeler('minecraft:fabric-api-recommandee', versionJeu, loader),
   },
   // Barre de raccourcis vers des logiciels du PC (au-dessus des onglets).
   logiciels: {
