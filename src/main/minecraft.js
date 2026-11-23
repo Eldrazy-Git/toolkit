@@ -67,7 +67,13 @@ async function infosMod(id) {
   const chargeur = chargeurDe(script);
   const versionMinecraft = proprietes.minecraft_version || null;
   if (!versionMinecraft) throw new Error('Ce projet n\'indique pas sa version de Minecraft (ligne « minecraft_version » de gradle.properties).');
-  return { chargeur, nomChargeur: NOMS_CHARGEURS[chargeur] || null, versionMinecraft, proprietes };
+  // Fabric API : déclarée dans gradle.properties (fabric_version, fabric_api_version) ou build.gradle.
+  const cleFabricApi = Object.keys(proprietes).find((cle) => /^fabric_(api_)?version$/i.test(cle)) || null;
+  const utiliseFabricApi = chargeur === 'fabric' && (Boolean(cleFabricApi) || /fabric-api/.test(script));
+  return {
+    chargeur, nomChargeur: NOMS_CHARGEURS[chargeur] || null, versionMinecraft, proprietes,
+    utiliseFabricApi, versionFabricApi: cleFabricApi ? proprietes[cleFabricApi] : null,
+  };
 }
 
 // Versions du jeu, de la plus récente à la plus ancienne : [{ version, stable }].
@@ -104,8 +110,10 @@ async function ouNull(promesse) {
   }
 }
 
-// Versions des dépendances Fabric pour une version du jeu : { loader, fabricApi, loom }
+// Versions des dépendances Fabric pour une version du jeu : { loader, fabricApi, versionsFabricApi, loom }
 // (null quand rien n'a été trouvé, par exemple Fabric API pas encore sortie).
+// versionsFabricApi : [{ version, type ('release' | 'beta' | 'alpha'), date }], la plus récente
+// d'abord (30 au plus), pour que l'utilisateur choisisse.
 async function dependancesFabric(version) {
   const v = encodeURIComponent(version);
   const [loaders, api, loom] = await Promise.all([
@@ -114,8 +122,12 @@ async function dependancesFabric(version) {
     ouNull(derniereVersionLoom()),
   ]);
   const loader = Array.isArray(loaders) ? (loaders.find((l) => l.loader?.stable) || loaders[0])?.loader?.version || null : null;
-  const fabricApi = Array.isArray(api) && api.length ? api[0].version_number || null : null;
-  return { loader, fabricApi, loom };
+  const versionsFabricApi = (Array.isArray(api) ? api : [])
+    .filter((v) => v && v.version_number)
+    .slice(0, 30)
+    .map((v) => ({ version: v.version_number, type: v.version_type || 'release', date: v.date_published || null }));
+  const fabricApi = versionsFabricApi[0]?.version || null;
+  return { loader, fabricApi, versionsFabricApi, loom };
 }
 
 // Tout ce dont l'interface a besoin pour proposer le changement de version.

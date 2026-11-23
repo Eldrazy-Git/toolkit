@@ -1435,7 +1435,9 @@ function demandeChangementMinecraft(infos, cible, deps) {
     lignes.push(
       `Versions trouvées par Toolkit pour Minecraft ${cible} (meta.fabricmc.net, Modrinth, maven.fabricmc.net) :`,
       `- Fabric Loader : ${ou(deps.loader, 'introuvable')}`,
-      `- Fabric API : ${ou(deps.fabricApi, 'pas encore publiée pour cette version')}`,
+      deps.fabricApiChoisie
+        ? `- Fabric API : ${deps.fabricApi} (choisie par moi : utilise exactement cette version)`
+        : `- Fabric API : ${ou(deps.fabricApi, 'pas encore publiée pour cette version')}`,
       `- Fabric Loom (dernière version) : ${ou(deps.loom, 'introuvable')}`,
       'Vérifie-les si un doute subsiste (https://fabricmc.net/develop).',
       '',
@@ -1456,6 +1458,25 @@ function demandeChangementMinecraft(infos, cible, deps) {
   return lignes.join('\n');
 }
 
+// Choix de la version de Fabric API (liste de Modrinth pour la version du jeu choisie,
+// la plus récente d'abord et proposée par défaut). Renvoie la version, ou null si annulé.
+async function choisirVersionFabricApi(infos, cible, versions) {
+  const TYPES = { beta: 'bêta', alpha: 'alpha' };
+  const options = versions.map((v, i) => {
+    const details = [i === 0 ? 'la plus récente' : null, TYPES[v.type] || null,
+      v.date ? new Date(v.date).toLocaleDateString('fr-FR') : null].filter(Boolean);
+    return { valeur: v.version, libelle: details.length ? `${v.version} (${details.join(', ')})` : v.version };
+  });
+  const valeurs = await formulaire({
+    titre: 'Version de Fabric API',
+    message: `Versions de Fabric API publiées pour Minecraft ${cible}.`
+      + `${infos.versionFabricApi ? ` Version actuelle du mod : ${infos.versionFabricApi}.` : ''}`,
+    champs: [{ id: 'fabricApi', libelle: 'Fabric API', type: 'choix', options, valeur: options[0]?.valeur, obligatoire: true }],
+    bouton: 'Mettre à jour avec Claude',
+  });
+  return valeurs ? valeurs.fabricApi : null;
+}
+
 export async function changerVersionMinecraft(projet) {
   if (projet.erreur) return;
   const infos = await essayer(() => api.minecraft.preparer(projet.id));
@@ -1474,7 +1495,7 @@ export async function changerVersionMinecraft(projet) {
       obligatoire: true,
       aide: 'Les versions proposées sont les versions stables. Une snapshot peut aussi être tapée.',
     }],
-    bouton: 'Mettre à jour avec Claude',
+    bouton: infos.utiliseFabricApi ? 'Suivant' : 'Mettre à jour avec Claude',
   });
   if (!valeurs) return;
   const cible = valeurs.version;
@@ -1490,7 +1511,11 @@ export async function changerVersionMinecraft(projet) {
   if (infos.chargeur === 'fabric') {
     deps = await essayer(() => api.minecraft.dependances(projet.id, cible));
     if (deps === undefined) return;
-    if (deps && !deps.fabricApi && Object.keys(infos.proprietes).some((cle) => /fabric_(api_)?version/i.test(cle))) {
+    if (deps && deps.fabricApi && infos.utiliseFabricApi) {
+      const choix = await choisirVersionFabricApi(infos, cible, deps.versionsFabricApi || []);
+      if (!choix) return;
+      deps = { ...deps, fabricApi: choix, fabricApiChoisie: true };
+    } else if (deps && !deps.fabricApi && infos.utiliseFabricApi) {
       const suite = await choisir({
         titre: 'Fabric API pas encore disponible',
         message: `Fabric API n'est pas encore publiée pour Minecraft ${cible}. Ce mod en a besoin : la mise à jour risque de ne pas aboutir. Continuer quand même ?`,
